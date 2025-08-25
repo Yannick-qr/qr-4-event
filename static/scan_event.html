@@ -67,7 +67,9 @@ button:hover {
 
 @media (max-width: 480px) {
   body {
-    align-items: flex-start; /* ✅ le container prend toute la hauteur */
+    display: block;   /* ✅ désactive le flex pour laisser .container occuper toute la largeur */
+    margin: 0;
+    padding: 0;
   }
   .container {
     width:100%;
