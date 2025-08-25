@@ -1,0 +1,53 @@
+# ======================
+# Fichiers sensibles
+# ======================
+.env
+*.sql
+*.sqlite
+*.db
+
+# ======================
+# Python
+# ======================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+.eggs/
+
+# ======================
+# Virtualenv / Poetry / Pipenv
+# ======================
+.venv/
+venv/
+ENV/
+env/
+Pipfile.lock
+poetry.lock
+
+# ======================
+# Logs
+# ======================
+*.log
+logs/
+*.out
+
+# ======================
+# Système (Windows / Mac / Linux)
+# ======================
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ======================
+# Render / Deploy
+# ======================
+# (pas besoin de cacher requirements.txt, Render en a besoin)
+# (les fichiers statiques HTML/CSS/JS DOIVENT être suivis)
