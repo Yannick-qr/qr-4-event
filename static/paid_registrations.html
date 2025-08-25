@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Inscriptions Payées - Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f6fa; margin: 0; padding: 20px; }
+    h2 { color: #007bff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #007bff; color: white; }
+    .btn { background: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; }
+    .btn:hover { background: #218838; }
+  </style>
+</head>
+<body>
+
+  <!-- bloc affichage compte -->
+  <div id="accountInfo" style="text-align:right; font-size:14px; color:#555; margin-bottom:10px;"></div>
+
+  <h2>Liste des Inscriptions Payées ✅</h2>
+  <button class="btn" onclick="exportCSV()">📂 Exporter en CSV</button>
+  <table>
+    <thead>
+      <tr>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Email</th>
+        <th>Événement</th>
+        <th>Montant (€)</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="registrationsTable"></tbody>
+  </table>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+// ✅ fonction pour afficher l'email du compte connecté
+    async function loadAccountInfo() {
+      const res = await fetch("/me", {
+        method: "POST",
+        body: new URLSearchParams({ token })
+      });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById("accountInfo").innerHTML =
+          `📌 Liste provenant du compte <b>QR Event</b> lié à l'adresse : <b>${data.email}</b>`;
+      } else {
+        document.getElementById("accountInfo").innerHTML = "Non connecté";
+      }
+    }
+
+    async function loadPaidRegistrations() {
+      const res = await fetch("/admin/paid-registrations", {
+        method: "POST",
+        body: new URLSearchParams({ token })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.error || "Erreur de chargement");
+        return;
+      }
+
+      const tbody = document.getElementById("registrationsTable");
+      tbody.innerHTML = "";
+      data.registrations.forEach(r => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${r.nom}</td>
+          <td>${r.prenom}</td>
+          <td>${r.email}</td>
+          <td>${r.evenement}</td>
+          <td>${r.montant} €</td>
+          <td>${r.date}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function exportCSV() {
+      window.location.href = "/admin/paid-registrations/csv";
+    }
+    // ✅ appel des fonctions
+    loadAccountInfo();
+    loadPaidRegistrations();
+  </script>
+</body>
+</html>

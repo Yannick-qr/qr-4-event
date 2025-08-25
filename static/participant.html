@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription Événement</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #43e97b, #38f9d7);
+      min-height: 100vh; display: flex; justify-content: center; align-items: center;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      width: 100%; max-width: 400px;
+    }
+    h1 { font-size: 22px; margin-bottom: 20px; text-align: center; }
+    label { font-weight: bold; display: block; margin-top: 12px; }
+    input {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 6px;
+    }
+    button {
+      margin-top: 20px; width: 100%; padding: 12px;
+      background: #43e97b; border: none; border-radius: 8px;
+      color: white; font-size: 16px; font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover { background: #00c6a7; }
+    #result { margin-top: 15px; font-size: 14px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Inscription à l'événement</h1>
+    <form id="participantForm">
+      <label>Nom :</label>
+      <input type="text" name="name" required>
+
+      <label>Email :</label>
+      <input type="email" name="email" required>
+
+      <div id="paypal-button-container" style="margin-top:20px;"></div>
+    </form>
+    <p id="result"></p>
+  </div>
+
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=EUR"></script>
+  <script>
+    const eventId = window.location.pathname.split("/").pop();
+
+    paypal.Buttons({
+      createOrder: function(data, actions) {
+        return actions.order.create({
+          purchase_units: [{ amount: { value: '10.00' } }] // prix fixe (ex: 10€)
+        });
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(async function(details) {
+          const formData = new FormData(document.getElementById("participantForm"));
+          const dataJson = Object.fromEntries(formData.entries());
+
+          const response = await fetch(`/event/${eventId}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dataJson)
+          });
+
+          const result = await response.json();
+          document.getElementById("result").innerText = result.message || result.error;
+        });
+      }
+    }).render('#paypal-button-container');
+  </script>
+</body>
+</html>

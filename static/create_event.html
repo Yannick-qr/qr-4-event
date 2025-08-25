@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Créer un évènement</title>
+</head>
+<body>
+  <h2>Créer un évènement</h2>
+
+  <form id="eventForm">
+    <label>Titre :</label><br>
+    <input type="text" name="title" required><br><br>
+
+    <label>Description :</label><br>
+    <textarea name="description"></textarea><br><br>
+
+    <label>Date :</label><br>
+    <input type="date" name="date" required><br><br>
+
+    <label>Lieu :</label><br>
+    <input type="text" name="location"><br><br>
+
+    <button type="submit">Créer</button>
+  </form>
+
+  <p id="message"></p>
+  <p id="eventLink"></p>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    document.getElementById("eventForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+
+      const response = await fetch("/create_event", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        document.getElementById("message").textContent = result.message;
+        document.getElementById("eventLink").innerHTML =
+          `👉 Lien de l'évènement : <a href="${result.event_url}" target="_blank">${result.event_url}</a>`;
+      } else {
+        document.getElementById("message").textContent = "Erreur : " + (result.detail || "Impossible de créer l'évènement");
+      }
+    });
+  </script>
+</body>
+</html>

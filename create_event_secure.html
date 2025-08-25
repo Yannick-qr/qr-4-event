@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un événement - Pay-QR</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+    .container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      width: 100%; max-width: 500px;
+    }
+    h1 { text-align: center; color: #333; margin-bottom: 20px; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, textarea {
+      width: 100%; padding: 12px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 8px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%; padding: 12px;
+      background: #3498db; color: white;
+      border: none; border-radius: 8px;
+      font-size: 16px; cursor: pointer;
+    }
+    button:hover { background: #2980b9; }
+    #result {
+      margin-top: 15px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .dashboard-link {
+      display: block;
+      margin-top: 15px;
+      text-align: center;
+      text-decoration: none;
+      padding: 10px;
+      background: #2ecc71;
+      color: white;
+      border-radius: 6px;
+    }
+    .dashboard-link:hover {
+      background: #27ae60;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Créer un événement</h1>
+    <form id="eventForm">
+      <label>Titre</label>
+      <input type="text" name="title" required>
+
+      <label>Description</label>
+      <textarea name="description"></textarea>
+
+      <label>Date</label>
+      <input type="date" name="date" required>
+
+      <label>Lieu</label>
+      <input type="text" name="location" required>
+
+      <label>Prix (€)</label>
+      <input type="number" step="0.01" name="price" required>
+
+      <button type="submit">Créer l'événement</button>
+    </form>
+
+    <p id="result"></p>
+    <a id="dashboardLink" href="/static/dashboard_secure.html" class="dashboard-link" style="display:none;">⬅️ Retour au Dashboard</a>
+  </div>
+
+  <script>
+    const form = document.getElementById("eventForm");
+    const result = document.getElementById("result");
+    const dashboardLink = document.getElementById("dashboardLink");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const token = localStorage.getItem("admin_token");
+      if (!token) {
+        alert("⚠️ Vous devez être connecté !");
+        window.location.href = "/static/login.html";
+        return;
+      }
+
+      const formData = new FormData(form);
+
+      const res = await fetch("/create_event", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        result.innerText = "✅ Événement créé avec succès !";
+        result.style.color = "green";
+        dashboardLink.style.display = "block"; // ✅ Affiche le bouton retour
+      } else {
+        result.innerText = data.detail || "❌ Erreur lors de la création.";
+        result.style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

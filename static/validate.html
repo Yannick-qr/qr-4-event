@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Validation du compte</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: linear-gradient(to right, #00c6ff, #0072ff); display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .box { background: #fff; padding: 30px; border-radius: 12px; text-align: center; width: 400px; }
+    h2 { margin-bottom: 20px; }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Validation du compte</h2>
+    <div id="message"></div>
+    <a href="login.html" id="loginBtn" class="btn" style="display:none;">Se connecter</a>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+
+    fetch(`/validate?token=${token}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById("message").innerHTML = `<p class="success">✅ ${data.message}</p>`;
+          document.getElementById("loginBtn").style.display = "inline-block";
+        } else {
+          document.getElementById("message").innerHTML = `<p class="error">❌ Erreur : ${data.error}</p>`;
+        }
+      })
+      .catch(err => {
+        document.getElementById("message").innerHTML = `<p class="error">❌ Erreur interne : ${err}</p>`;
+      });
+  </script>
+</body>
+</html>

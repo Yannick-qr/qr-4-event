@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pay-QR-App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      max-width: 420px;
+      width: 90%;
+      text-align: center;
+    }
+    .logo {
+      margin-bottom: 15px;
+    }
+    .logo img {
+      width: 80px;
+      height: 80px;
+    }
+    h1 {
+      font-size: 22px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      text-align: left;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background-color: #28a745;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+    }
+    /* Mobile adaptation */
+    @media (max-width: 500px) {
+      h1 {
+        font-size: 20px;
+      }
+      input, button {
+        font-size: 16px;
+      }
+      .logo img {
+        width: 60px;
+        height: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Logo Pay-QR -->
+    <div class="logo">
+      <img src="https://cdn-icons-png.flaticon.com/512/3037/3037320.png" alt="Pay-QR Logo">
+    </div>
+
+    <h1>🎟️ Générer et recevoir un QR Code</h1>
+
+    <form id="qrForm">
+      <label>Nom :</label>
+      <input type="text" name="name" required>
+
+      <label>Email :</label>
+      <input type="email" name="email" required>
+
+      <label>Données pour le QR :</label>
+      <input type="text" name="qrdata" value="Hello QR!" required>
+
+      <button type="submit">Envoyer QR par email</button>
+    </form>
+    <p id="result"></p>
+  </div>
+
+  <script>
+    document.getElementById("qrForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+
+      const response = await fetch("/send-qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+      document.getElementById("result").innerText = result.message || result.error;
+    });
+  </script>
+</body>
+</html>

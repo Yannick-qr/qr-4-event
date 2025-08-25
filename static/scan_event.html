@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Scan Event</title>
+<style>
+body { 
+  font-family: Arial, sans-serif; 
+  background:#f4f6f9; 
+  display:flex; 
+  justify-content:center; 
+  align-items:center; 
+  height:100vh; 
+  margin:0;
+}
+
+.container {
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  width:350px;
+  text-align:center;
+}
+
+.container img {
+  height:80px;
+  margin-bottom:15px;
+  background:white;
+  padding:8px;
+  border-radius:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+h2 {
+  color:#007bff;
+  margin-bottom:20px;
+}
+
+input {
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border:1px solid #ddd;
+  border-radius:6px;
+}
+
+button {
+  width:100%;
+  padding:12px;
+  background:#007bff;
+  color:white;
+  border:none;
+  border-radius:6px;
+  font-size:15px;
+  cursor:pointer;
+  transition:background 0.3s;
+}
+button:hover {
+  background:#0056b3;
+}
+
+.success { color:green; font-weight:bold; }
+.error { color:red; font-weight:bold; }
+#reader { width:100%; max-width:400px; margin:20px auto; }
+</style>
+</head>
+<body>
+<div class="container" id="loginBox">
+  <!-- Logo -->
+  <img src="/static/img/scanevent-logo.png" alt="Scan Event Logo">
+  
+  <!-- Titre -->
+  <h2>Connexion Check-in</h2>
+
+  <!-- Formulaire -->
+  <input id="login" placeholder="Login">
+  <input id="password" type="password" placeholder="Mot de passe">
+  <button onclick="login()">Se connecter</button>
+  <p id="loginMessage"></p>
+</div>
+
+
+  <div class="box" id="scanBox" style="display:none;">
+    <h2 id="eventTitle"></h2>
+    <div id="reader"></div> <!-- 📷 zone caméra -->
+    <div id="participantInfo"></div>
+    <button id="checkinBtn" style="display:none;" onclick="validate()">✅ Check-in</button>
+  </div>
+
+  <!-- 📦 Librairie scanner QR -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    let eventId = null;
+    let participantId = null;
+    let qrScanner = null;
+    let lastScanTime = 0;
+
+    // ✅ Login check-in
+    async function login() {
+      const res = await fetch("/checkin/login", {
+        method:"POST",
+        body:new URLSearchParams({
+          login: document.getElementById("login").value,
+          password: document.getElementById("password").value
+        })
+      });
+      const data = await res.json();
+      if(data.success){
+        eventId = data.event_id;
+        document.getElementById("eventTitle").textContent = "🎟️ " + data.event_title;
+        document.getElementById("loginBox").style.display="none";
+        document.getElementById("scanBox").style.display="block";
+
+        // 🚀 Lancer caméra
+        qrScanner = new Html5Qrcode("reader");
+        qrScanner.start(
+          { facingMode: "environment" }, // caméra arrière si dispo
+          { fps: 10, qrbox: 250 },
+          qrCodeMessage => {
+            const now = Date.now();
+            // éviter double scan du même code trop vite
+            if (now - lastScanTime < 2000) return; 
+            lastScanTime = now;
+            handleQr(qrCodeMessage);
+          },
+          errorMessage => {}
+        ).catch(err => {
+          console.error("Erreur caméra:", err);
+          document.getElementById("participantInfo").innerHTML = "<p class='error'>❌ Impossible d’accéder à la caméra</p>";
+        });
+      } else {
+        document.getElementById("loginMessage").textContent="❌ Mauvais identifiants";
+      }
+    }
+
+    // ✅ Extraire participant=XX depuis QR
+    function handleQr(qrInput) {
+      try {
+        let url = new URL(qrInput);
+        participantId = url.searchParams.get("participant");
+      } catch {
+        participantId = qrInput; // si QR = juste l’ID
+      }
+      if (participantId) scan();
+    }
+
+    // ✅ Scan infos participant
+    async function scan() {
+      const res = await fetch("/checkin/scan", {
+        method:"POST",
+        body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
+      });
+      const data = await res.json();
+      if(data.success){
+        document.getElementById("participantInfo").innerHTML =
+          `<p><b>${data.participant.first_name} ${data.participant.last_name}</b></p>
+           <p>Email: ${data.participant.email}</p>
+           <p>Payé: ${data.participant.amount_paid}€</p>
+           <p>Événement: ${data.participant.event_title}</p>
+           <p>Date: ${data.participant.date}</p>
+           <p>Lieu: ${data.participant.location}</p>
+           ${data.participant.scanned ? "<p class='error'>⚠️ Déjà scanné</p>" : ""}`;
+        document.getElementById("checkinBtn").style.display = data.participant.scanned ? "none" : "block";
+      } else {
+        document.getElementById("participantInfo").innerHTML = `<p class="error">${data.message}</p>`;
+        document.getElementById("checkinBtn").style.display="none";
+      }
+    }
+
+    // ✅ Validation check-in
+    async function validate() {
+      const res = await fetch("/checkin/validate", {
+        method:"POST",
+        body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
+      });
+      const data = await res.json();
+      if(data.success){
+        document.getElementById("participantInfo").innerHTML = `<p class="success">✅ ${data.message}. Scanner un nouveau participant...</p>`;
+        document.getElementById("checkinBtn").style.display="none";
+
+        // 🔁 Attendre 2s puis vider pour le suivant
+        setTimeout(() => {
+          document.getElementById("participantInfo").innerHTML = "";
+        }, 2000);
+
+      } else {
+        document.getElementById("participantInfo").innerHTML = `<p class="error">${data.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

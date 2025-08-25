@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tarifs - QR EVENT</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f9fafc;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+
+    header {
+      text-align: center;
+      padding: 50px 20px 20px;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
+
+    header p {
+      font-size: 1.2em;
+      color: #555;
+    }
+
+    .pricing-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 25px;
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 30px 20px;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h3 {
+      font-size: 1.6em;
+      margin-bottom: 10px;
+      color: #007bff;
+    }
+
+    .price {
+      font-size: 2em;
+      margin: 20px 0;
+      font-weight: bold;
+      color: #222;
+    }
+
+    .price span {
+      font-size: 0.6em;
+      color: #555;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    ul li {
+      margin: 10px 0;
+      font-size: 0.95em;
+    }
+
+    ul li::before {
+      content: "✔️ ";
+      color: green;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      color: white;
+      background: #007bff;
+      transition: background 0.3s ease;
+    }
+
+    .btn:hover {
+      background: #0056b3;
+    }
+
+    /* Section titres */
+    .section-title {
+      text-align: center;
+      margin: 60px 0 20px;
+      font-size: 1.8em;
+      color: #222;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Nos Tarifs</h1>
+    <p>Un paiement unique + des crédits flexibles pour vos événements</p>
+  </header>
+
+  <!-- Licence -->
+  <h2 class="section-title">Licence à vie</h2>
+  <section class="pricing-container">
+    <div class="card">
+      <h3>Licence QR EVENT</h3>
+      <p class="price">149€<span> / paiement unique</span></p>
+      <ul>
+        <li>Accès illimité au tableau de bord</li>
+        <li>Gestion des participants + QR codes</li>
+        <li>Branding basique (logo + couleurs)</li>
+        <li>Pas de frais mensuels</li>
+        <li>Événements limités aux crédits achetés</li>
+      </ul>
+      <a href="/static/register.html" class="btn">Acheter la licence</a>
+    </div>
+  </section>
+
+  <!-- Crédits -->
+  <h2 class="section-title">Packs de Crédits Événement</h2>
+  <section class="pricing-container">
+    <div class="card">
+      <h3>Pack 10 événements</h3>
+      <p class="price">29€</p>
+      <ul>
+        <li>1 crédit = 1 événement</li>
+        <li>Soit 2,9 €/événement</li>
+      </ul>
+      <a href="#" class="btn">Acheter</a>
+    </div>
+
+    <div class="card">
+      <h3>Pack 50 événements</h3>
+      <p class="price">99€</p>
+      <ul>
+        <li>1 crédit = 1 événement</li>
+        <li>Soit 1,9 €/événement</li>
+      </ul>
+      <a href="#" class="btn">Acheter</a>
+    </div>
+
+    <div class="card">
+      <h3>Pack 200 événements</h3>
+      <p class="price">299€</p>
+      <ul>
+        <li>1 crédit = 1 événement</li>
+        <li>Soit 1,5 €/événement</li>
+      </ul>
+      <a href="#" class="btn">Acheter</a>
+    </div>
+
+    <div class="card">
+      <h3>Événements illimités</h3>
+      <p class="price">499€<span> / 1 an</span></p>
+      <ul>
+        <li>Événements illimités pendant 12 mois</li>
+        <li>Idéal pour agences & grands comptes</li>
+      </ul>
+      <a href="#" class="btn">Acheter</a>
+    </div>
+  </section>
+
+  <!-- Add-ons -->
+  <h2 class="section-title">Options additionnelles</h2>
+  <section class="pricing-container">
+    <div class="card">
+      <h3>Statistiques avancées</h3>
+      <p class="price">49€</p>
+      <ul>
+        <li>Taux de présence en temps réel</li>
+        <li>Analyse des scans par heure</li>
+      </ul>
+      <a href="#" class="btn">Ajouter</a>
+    </div>
+
+    <div class="card">
+      <h3>QR codes personnalisés</h3>
+      <p class="price">29€</p>
+      <ul>
+        <li>Logo + couleurs personnalisés</li>
+        <li>Meilleure expérience visuelle</li>
+      </ul>
+      <a href="#" class="btn">Ajouter</a>
+    </div>
+
+    <div class="card">
+      <h3>Intégrations externes</h3>
+      <p class="price">99€</p>
+      <ul>
+        <li>Zapier, Google Sheets, Mailchimp</li>
+        <li>Connexion CRM (HubSpot, Salesforce)</li>
+      </ul>
+      <a href="#" class="btn">Ajouter</a>
+    </div>
+  </section>
+
+</body>
+</html>

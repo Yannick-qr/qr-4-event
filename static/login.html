@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Connexion - QR Event</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+      width: 350px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #007bff;
+    }
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      width: 95%;
+      padding: 10px;
+      margin-top: 15px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .links {
+      margin-top: 15px;
+      text-align: center;
+    }
+    .links a {
+      display: block;
+      margin-top: 5px;
+      color: #007bff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .links a:hover {
+      text-decoration: underline;
+    }
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .error {
+      color: red;
+    }
+    .success {
+      color: green;
+    }
+.info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff8e5;
+  color: #8a6d3b;
+  border: 1px solid #ffecb5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.icon {
+  font-size: 18px;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+
+<!-- 🔹 Logo ajouté -->
+    <div style="text-align:center; margin-bottom:15px;">
+      <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
+    </div>
+
+    <h2>Connexion</h2>
+
+    <!-- 🔹 Message logout inactivité -->
+    <div id="logoutMessage" class="info" style="display:none;">
+
+      <span id="logoutText"></span>
+    </div>
+
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Mot de passe" required><br>
+      <button type="submit">Se connecter</button>
+    </form>
+
+    <!-- Liens supplémentaires -->
+    <div class="links">
+      <a href="reset_password.html">🔑 Mot de passe oublié ?</a>
+      <a href="register.html">➕ Créer un compte</a>
+    </div>
+
+    <div id="message" class="message"></div>
+  </div>
+
+
+  <script>
+    // 🔹 Vérifier si une raison de déconnexion est stockée
+    const msg = sessionStorage.getItem("logoutReason");
+    if (msg) {
+      document.getElementById("logoutText").textContent = msg;
+      document.getElementById("logoutMessage").style.display = "flex";
+      sessionStorage.removeItem("logoutReason"); // nettoyer après affichage
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const messageDiv = document.getElementById("message");
+      messageDiv.textContent = "Connexion en cours...";
+
+      try {
+        const response = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          messageDiv.textContent = "Connexion réussie ✅";
+          messageDiv.className = "message success";
+          localStorage.setItem("token", data.token);
+          setTimeout(() => {
+            window.location.href = "/static/dashboard_secure.html";
+          }, 1200);
+        } else {
+          messageDiv.textContent = data.error || "Erreur lors de la connexion.";
+          messageDiv.className = "message error";
+        }
+      } catch (err) {
+        messageDiv.textContent = "Erreur serveur : " + err;
+        messageDiv.className = "message error";
+      }
+    });
+  </script>
+</body>
+</html>

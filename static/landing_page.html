@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Event - Créez et gérez vos événements simplement</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f9fafc;
+      color: #333;
+    }
+
+    /* Navbar sticky */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: white;
+      border-bottom: 1px solid #eee;
+      padding: 12px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .navbar .logo {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #007bff;
+      text-decoration: none;
+    }
+    .navbar .nav-btn {
+      background: #007bff;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 0.95em;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .navbar .nav-btn:hover {
+      background: #0056b3;
+    }
+
+    header {
+      background: #007bff;
+      color: white;
+      padding: 60px 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+    }
+    header p {
+      margin-top: 10px;
+      font-size: 1.2em;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: white;
+      color: #007bff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 20px;
+      transition: 0.3s;
+    }
+    .cta-btn:hover {
+      background: #f1f1f1;
+    }
+
+    /* Hero avec deux images */
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 20px;
+      max-width: 1200px;
+      margin: auto;
+      gap: 40px;
+    }
+    .hero-text {
+      flex: 1;
+      min-width: 280px;
+    }
+    .hero h2 {
+      font-size: 2em;
+      margin-bottom: 15px;
+      color: #007bff;
+    }
+    .hero p {
+      font-size: 1.1em;
+      color: #555;
+    }
+    .hero-images {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .hero-images img {
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .hero-images .desktop {
+      max-width: 450px;
+    }
+    .hero-images .mobile {
+      max-width: 200px;
+    }
+
+    /* Features */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      padding: 50px 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    .feature-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    .feature-card h3 {
+      margin-top: 10px;
+      color: #007bff;
+    }
+    .feature-card p {
+      font-size: 0.95em;
+      color: #555;
+    }
+
+    /* Témoignages */
+    .testimonials {
+      background: #fff;
+      padding: 60px 20px;
+      margin-top: 40px;
+    }
+    .testimonials h2 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 40px;
+    }
+    .testimonial-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    .testimonial-card {
+      background: #f9fafc;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    .testimonial-card img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 15px;
+    }
+    .testimonial-card h4 {
+      margin: 10px 0 5px;
+      color: #333;
+    }
+    .stars {
+      color: #FFD700;
+      margin-bottom: 10px;
+    }
+    .testimonial-card p {
+      font-size: 0.95em;
+      color: #555;
+      font-style: italic;
+    }
+
+    /* FAQ */
+    .faq {
+      background: #f9fafc;
+      padding: 60px 20px;
+      margin-top: 40px;
+    }
+    .faq h2 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 40px;
+    }
+    .faq-list {
+      max-width: 900px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .faq-item {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .faq-item h3 {
+      margin: 0 0 10px;
+      color: #007bff;
+      font-size: 1.1em;
+    }
+    .faq-item p {
+      margin: 0;
+      color: #555;
+      font-size: 0.95em;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 30px;
+      background: #f1f1f1;
+      margin-top: 50px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar sticky -->
+  <div class="navbar">
+    <a href="landing_page.html" class="logo">QR Event</a>
+    <a href="/static/register.html" class="nav-btn">Connexion / Inscription</a>
+  </div>
+
+  <header>
+    <h1>QR Event</h1>
+    <p>Créez, gérez et scannez vos événements en toute simplicité 🚀</p>
+    <a href="/static/register.html" class="cta-btn">Créer un compte / Se connecter</a>
+  </header>
+
+<!-- Section Hero avec 2 images -->
+<section class="hero">
+  <div class="hero-text">
+    <h2>Un outil complet pour vos événements</h2>
+    <p>
+      Organiser un événement ne devrait pas être compliqué. Avec <strong>QR Event</strong>, tout devient simple : 
+      <br><br>
+      ✅ Créez vos événements en quelques clics grâce à une interface claire et intuitive.<br>
+      ✅ Offrez à vos participants des <strong>QR codes uniques</strong> pour fluidifier les entrées et limiter les fraudes.<br>
+      ✅ Suivez en temps réel vos inscriptions, paiements et présences depuis un tableau de bord centralisé.<br>
+      ✅ Gagnez du temps, évitez les tracas logistiques et concentrez-vous sur ce qui compte vraiment : 
+      <em>faire vivre une expérience inoubliable à vos participants</em>.
+    </p>
+    <a href="/static/register.html" class="cta-btn">🚀 Démarrer gratuitement</a>
+  </div>
+  <div class="hero-images">
+    <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
+      <img src="/static/img/scanevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
+  </div>
+</section>
+
+  <!-- Fonctionnalités -->
+  <section class="features">
+    <div class="feature-card">
+      <h3>📅 Création d'événement</h3>
+      <p>Planifiez vos événements en quelques clics, avec toutes les infos utiles centralisées.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🎟️ QR Codes uniques</h3>
+      <p>Chaque participant reçoit un QR code personnel, simple à scanner à l'entrée.</p>
+    </div>
+    <div class="feature-card">
+      <h3>📊 Suivi en temps réel</h3>
+      <p>Suivez les inscriptions et la présence des participants directement sur votre tableau de bord.</p>
+    </div>
+    <div class="feature-card">
+      <h3>💳 Paiements intégrés</h3>
+      <p>Activez les paiements en ligne pour vos événements en toute sécurité.</p>
+    </div>
+  </section>
+
+<!-- Tarifs -->
+<style>
+  .pricing-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 25px;
+    max-width: 1200px;
+    margin: 50px auto;
+    padding: 0 20px;
+  }
+
+  .card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 30px 20px;
+    text-align: center;
+    transition: transform 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+  }
+
+  .card h3 {
+    font-size: 1.6em;
+    margin-bottom: 10px;
+    color: #007bff;
+  }
+
+  .price {
+    font-size: 2em;
+    margin: 20px 0;
+    font-weight: bold;
+    color: #222;
+  }
+
+  .price span {
+    font-size: 0.6em;
+    color: #555;
+  }
+
+  .card ul {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    text-align: left;
+  }
+
+  .card ul li {
+    margin: 10px 0;
+    font-size: 0.95em;
+  }
+
+  .card ul li::before {
+    content: "✔️ ";
+    color: green;
+  }
+
+  .btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    color: white;
+    background: #007bff;
+    transition: background 0.3s ease;
+  }
+
+  .btn:hover {
+    background: #0056b3;
+  }
+
+  .section-title {
+    text-align: center;
+    margin: 60px 0 20px;
+    font-size: 1.8em;
+    color: #222;
+  }
+</style>
+
+<h2 class="section-title">Nos Tarifs</h2>
+
+<!-- Licence -->
+<section class="pricing-container">
+  <div class="card">
+    <h3>Licence QR EVENT</h3>
+    <p class="price">149€<span> / paiement unique</span></p>
+    <ul>
+      <li>Accès illimité au tableau de bord</li>
+      <li>Gestion des participants + QR codes</li>
+      <li>Branding basique (logo + couleurs)</li>
+      <li>Pas de frais mensuels</li>
+      <li>Événements limités aux crédits achetés</li>
+    </ul>
+    <a href="/static/register.html" class="btn">Acheter la licence</a>
+  </div>
+</section>
+
+<!-- Packs de crédits -->
+<h2 class="section-title">Packs de Crédits Événement</h2>
+<p style="text-align:center;">Disponible dans le Dashboard Admin</p>
+<section class="pricing-container">
+  <div class="card">
+    <h3>Pack 10 événements</h3>
+    <p class="price">29€</p>
+    <ul>
+      <li>1 crédit = 1 événement</li>
+      <li>Soit 2,9 €/événement</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Pack 50 événements</h3>
+    <p class="price">99€</p>
+    <ul>
+      <li>1 crédit = 1 événement</li>
+      <li>Soit 1,9 €/événement</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Pack 200 événements</h3>
+    <p class="price">299€</p>
+    <ul>
+      <li>1 crédit = 1 événement</li>
+      <li>Soit 1,5 €/événement</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Événements illimités</h3>
+    <p class="price">499€<span> / 1 an</span></p>
+    <ul>
+      <li>Événements illimités pendant 12 mois</li>
+      <li>Idéal pour agences & grands comptes</li>
+    </ul>
+  </div>
+</section>
+
+  <!-- FAQ -->
+  <section class="faq">
+    <h2>Questions fréquentes ❓</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3>💰 Combien coûte QR Event ?</h3>
+        <p>QR Event propose une formule gratuite pour les petits événements, et des forfaits adaptés aux besoins plus importants. Vous ne payez que pour ce que vous utilisez.</p>
+      </div>
+      <div class="faq-item">
+        <h3>🔒 Est-ce sécurisé ?</h3>
+        <p>Oui ✅ ! Vos données et celles de vos participants sont protégées par un chiffrement SSL et des serveurs sécurisés. Les paiements en ligne sont traités via des partenaires de confiance.</p>
+      </div>
+      <div class="faq-item">
+        <h3>🎨 Peut-on personnaliser l’événement ?</h3>
+        <p>Absolument ! Vous pouvez ajouter votre logo, vos couleurs et vos propres conditions d’inscription pour un rendu 100% professionnel.</p>
+      </div>
+      <div class="faq-item">
+        <h3>📱 Comment les participants accèdent-ils à leur QR code ?</h3>
+        <p>Chaque participant reçoit automatiquement son QR code par email après l’inscription. Il peut l’imprimer ou simplement le présenter depuis son smartphone.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div class="footer">
+    © 2025 QR Event - Tous droits réservés
+  </div>
+</body>
+</html>

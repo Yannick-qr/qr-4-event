@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un compte Admin - QR Event</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #ffecd2, #fcb69f);
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh; margin: 0;
+    }
+    .container {
+      background: #fff; padding: 30px; border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      width: 100%; max-width: 400px;
+      text-align: center;
+    }
+    h1 { margin-bottom: 20px; color: #333; }
+    label { display: block; text-align: left; margin: 10px 0 5px; font-weight: bold; }
+    input {
+      width: 100%; padding: 12px; margin-bottom: 15px;
+      border: 1px solid #ccc; border-radius: 8px;
+    }
+    .error-box, .success-box {
+      padding: 12px; border-radius: 8px; margin-bottom: 15px; display: none;
+    }
+    .error-box { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .success-box { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .btn-link {
+      display: inline-block; margin-top: 15px;
+      background: #3498db; color: white; padding: 10px 18px;
+      border-radius: 8px; text-decoration: none;
+    }
+    .btn-link:hover { background: #2980b9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 🔹 Logo ajouté -->
+    <div style="text-align:center; margin-bottom:15px;">
+      <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
+    </div>
+
+    <h1>Créer un compte Admin</h1>
+
+    <a class="btn-link" href="/static/login.html">🔑 Déjà un compte ? Se connecter</a>
+    <div id="errorBox" class="error-box"></div>
+    <div id="successBox" class="success-box"></div>
+
+    <form id="registerForm">
+      <label>Prénom</label>
+      <input type="text" id="firstName" required>
+      <label>Nom</label>
+      <input type="text" id="lastName" required>
+      <label>Email</label>
+      <input type="email" id="email" required>
+<div id="emailError" style="color:red; font-size: 0.9em; margin-top: 4px;"></div>
+    </form>
+
+    <!-- Conteneur du bouton PayPal -->
+    <div id="paypal-button-container" style="margin-top:20px;"></div>
+  </div>
+
+  <!-- SDK PayPal chargé dynamiquement -->
+  <script>
+    localStorage.removeItem("token");
+
+    async function loadPayPalSdk() {
+      try {
+        const res = await fetch("/api/paypal-client-id");
+        const data = await res.json();
+        if (data.client_id) {
+          const script = document.createElement("script");
+          script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
+          script.async = true;
+          script.onload = function () {
+            paypal.Buttons({
+       createOrder: async function(data, actions) {
+  const email = document.getElementById("email").value.trim();
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+
+  if (!email || !firstName || !lastName) {
+    document.getElementById("errorBox").innerText = "⚠️ Merci de remplir tous les champs.";
+    document.getElementById("errorBox").style.display = "block";
+    return; // ⛔ stoppe proprement
+  }
+
+  // 🔎 Vérifie si l'email existe déjà
+  const checkRes = await fetch("/check-email", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `email=${encodeURIComponent(email)}`
+  });
+
+if (!checkRes.ok) {
+  const data = await checkRes.json();
+  document.getElementById("emailError").innerText =
+    data.detail || "⚠️ Cet email est déjà utilisé, merci d’en choisir un autre.";
+
+  // 🚀 stoppe le flux proprement
+  return Promise.reject('EMAIL_EXISTS');
+} else {
+  document.getElementById("emailError").innerText = "";
+}
+
+  // ✅ Email libre → on demande au backend de créer la commande PayPal
+  const orderRes = await fetch("/paypal/create-order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ type: "license" })
+  });
+  const orderData = await orderRes.json();
+
+if (!orderData.success) {
+  document.getElementById("errorBox").innerText =
+    "❌ Erreur PayPal : " + (orderData.error || "Impossible de créer la commande.") +
+    (orderData.paypal_response ? " → " + JSON.stringify(orderData.paypal_response) : "");
+  document.getElementById("errorBox").style.display = "block";
+  return;
+}
+
+
+  return orderData.id; // 👈 retourne bien l’orderID si tout est ok
+},
+
+       
+              onApprove: function(data, actions) {
+                return actions.order.capture().then(async function(details) {
+                  // Paiement validé → appel API backend
+                  const email = document.getElementById("email").value.trim();
+                  const firstName = document.getElementById("firstName").value.trim();
+                  const lastName = document.getElementById("lastName").value.trim();
+
+                  try {
+                    const res = await fetch("/register", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                      body: `email=${encodeURIComponent(email)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                      document.getElementById("successBox").innerHTML =
+                        "✅ Paiement confirmé !<br>Un email vous a été envoyé pour définir votre mot de passe.";
+                      document.getElementById("successBox").style.display = "block";
+                      document.getElementById("errorBox").style.display = "none";
+                      document.getElementById("registerForm").style.display = "none";
+                      document.getElementById("paypal-button-container").style.display = "none";
+                    } else {
+                      document.getElementById("errorBox").innerText = "❌ " + (data.error || "Erreur lors de la création du compte.");
+                      document.getElementById("errorBox").style.display = "block";
+                    }
+                  } catch (err) {
+                    document.getElementById("errorBox").innerText = "❌ Erreur serveur : " + err.message;
+                    document.getElementById("errorBox").style.display = "block";
+                  }
+                });
+              },
+              onError: function(err) {
+  if (err === 'EMAIL_EXISTS') {
+    // 🔕 Ne rien afficher, c’est géré sous l’input
+    return;
+  }
+                document.getElementById("errorBox").innerText = "❌ Erreur PayPal : " + err;
+                document.getElementById("errorBox").style.display = "block";
+              }
+            }).render("#paypal-button-container");
+          };
+          document.head.appendChild(script);
+        } else {
+          console.error("Erreur PayPal:", data.error || "client_id manquant");
+        }
+      } catch (err) {
+        console.error("Impossible de charger le client_id PayPal", err);
+      }
+    }
+
+    loadPayPalSdk();
+  </script>
+</body>
+</html>

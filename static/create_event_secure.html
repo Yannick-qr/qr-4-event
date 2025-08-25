@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Créer un Événement (Sécurisé) - Pay-QR</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #43e97b, #38f9d7);
+    }
+    .container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      width: 100%; max-width: 500px;
+    }
+    h1 { font-size: 22px; margin-bottom: 15px; color: #333; text-align: center; }
+    label { display: block; margin-top: 12px; font-weight: bold; }
+    input, textarea {
+      width: 100%; padding: 12px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 8px;
+    }
+    button {
+      margin-top: 20px; padding: 12px;
+      width: 100%; background: #43e97b; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    button:hover { background: #00c6a7; }
+    #result {
+      margin-top: 15px; font-weight: bold; text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Créer un Événement (Sécurisé)</h1>
+    <form id="eventForm">
+      <label>Titre</label>
+      <input type="text" name="title" required>
+
+      <label>Description</label>
+      <textarea name="description"></textarea>
+
+      <label>Date</label>
+      <input type="date" name="date" required>
+
+      <label>Lieu</label>
+      <input type="text" name="location">
+
+      <label>Prix (€)</label>
+      <input type="number" name="price" step="0.01" required>
+
+      <button type="submit">Créer l’événement</button>
+    </form>
+    <p id="result"></p>
+  </div>
+
+  <script>
+    document.getElementById("eventForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        document.getElementById("result").innerText = "⚠️ Vous devez être connecté en tant qu’admin.";
+        document.getElementById("result").style.color = "red";
+        return;
+      }
+
+      const formData = new FormData(e.target);
+
+      const response = await fetch("/create_event", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + token },
+        body: formData
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        document.getElementById("result").innerHTML =
+          `✅ Événement créé avec succès ! <br><a href="${result.event_url}" target="_blank">Voir l’événement</a>`;
+        document.getElementById("result").style.color = "green";
+      } else {
+        document.getElementById("result").innerText = result.detail || "Erreur lors de la création.";
+        document.getElementById("result").style.color = "red";
+      }
+    });
+  </script>
+</body>
+</html>

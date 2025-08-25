@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Vérification de l'email</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #74ebd5, #ACB6E5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+      width: 380px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 20px; }
+    .success {
+      color: #2ecc71;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .error {
+      color: #e74c3c;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 15px;
+      background: #007bff;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    a:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Vérification de l'email</h2>
+    <div id="message"></div>
+    <a id="loginLink" href="/static/login.html" style="display:none;">➡ Se connecter</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+
+    const messageBox = document.getElementById("message");
+    const loginLink = document.getElementById("loginLink");
+
+    if (status === "success") {
+      messageBox.innerHTML = "<div class='success'>✅ Votre email a été confirmé avec succès.</div>";
+      loginLink.style.display = "inline-block";
+    } else if (status === "error") {
+      messageBox.innerHTML = "<div class='error'>❌ Lien invalide ou expiré.</div>";
+    } else {
+      messageBox.innerHTML = "<div class='error'>⚠️ Statut inconnu.</div>";
+    }
+  </script>
+</body>
+</html>
