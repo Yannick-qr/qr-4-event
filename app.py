@@ -221,9 +221,9 @@ new_user = AdminUser(
     event_credits=LICENSE_INCLUDED_CREDITS   # 👈 valeur prise du .env
 )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+db.add(new_user)
+db.commit()
+db.refresh(new_user)
 
     # ✅ Prépare le lien de validation
     verify_link = f"{BASE_PUBLIC_URL}/static/set-password.html?token={validation_token}"
