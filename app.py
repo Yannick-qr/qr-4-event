@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Form, Request, Body
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse   # 👈 ajoute FileResponse ici
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant
@@ -75,6 +76,15 @@ Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 env = Environment(loader=FileSystemLoader("templates"))
+
+# ========================
+# ROUTE ACCUEIL (Landing Page)
+# ========================
+from fastapi.responses import FileResponse
+
+@app.get("/")
+def landing_page():
+    return FileResponse("static/landing_page.html")
 
 # ========================
 # ROUTE : Récupérer le client_id PayPal
