@@ -78,13 +78,35 @@
         tbody.appendChild(row);
       });
     }
+async function exportCSV() {
+    const response = await fetch("/admin/paid-registrations/csv", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token })
+    });
 
-    function exportCSV() {
-      window.location.href = "/admin/paid-registrations/csv";
+    if (!response.ok) {
+      alert("Erreur lors de l’export CSV");
+      return;
     }
-    // ✅ appel des fonctions
-    loadAccountInfo();
-    loadPaidRegistrations();
+
+    // récupération du fichier CSV en blob
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    // création du lien de téléchargement
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "inscriptions.csv"; // nom du fichier téléchargé
+    a.click();
+
+    // nettoyage de l'URL blob
+    window.URL.revokeObjectURL(url);
+  }
+
+  // ✅ appel des fonctions
+  loadAccountInfo();
+  loadPaidRegistrations();
   </script>
 </body>
 </html>

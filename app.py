@@ -680,7 +680,7 @@ def get_paid_registrations(token: str = Form(...), db: Session = Depends(get_db)
     return {"success": True, "registrations": result}
 
 
-@app.get("/admin/paid-registrations/csv")
+@app.post("/admin/paid-registrations/csv")
 def export_paid_registrations_csv(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
