@@ -1,20 +1,27 @@
+import os
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey
-from datetime import datetime
 
-DATABASE_URL = "sqlite:///./QREvent.db"  # ⚠️ adapte si tu veux Postgres/MySQL
+# ======================
+# CONFIG DATABASE
+# ======================
+# Récupère l’URL PostgreSQL depuis les variables d’environnement (Render)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}  # utile pour SQLite
-)
+if not DATABASE_URL:
+    raise ValueError("⚠️ DATABASE_URL n'est pas défini dans tes variables d'environnement !")
+
+# Création du moteur de connexion PostgreSQL
+engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
 
-# Dépendance pour FastAPI
+# ======================
+# DÉPENDANCE FASTAPI
+# ======================
 def get_db():
     db = SessionLocal()
     try:
