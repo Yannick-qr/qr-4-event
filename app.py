@@ -79,7 +79,6 @@ env = Environment(loader=FileSystemLoader("templates"))
 # ========================
 # ROUTE ACCUEIL (Landing Page)
 # ========================
-from fastapi.responses import FileResponse
 
 @app.get("/")
 def landing_page():
@@ -213,14 +212,15 @@ def register(
     validation_token = str(uuid.uuid4())
     expiry = datetime.utcnow() + timedelta(hours=48)
 
-    new_user = AdminUser(
-        email=email,
-        password_hash="",  # vide tant qu’il n’a pas défini son mdp
-        is_active=False,
-        token=validation_token,
-        token_expiry=expiry,
+new_user = AdminUser(
+    email=email,
+    password_hash="",  # vide tant qu’il n’a pas défini son mdp
+    is_active=False,
+    token=validation_token,
+    token_expiry=expiry,
     event_credits=LICENSE_INCLUDED_CREDITS   # 👈 valeur prise du .env
-    )
+)
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
