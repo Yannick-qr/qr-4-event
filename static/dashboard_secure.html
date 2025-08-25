@@ -88,6 +88,18 @@ box-sizing: border-box;
     #creditPacks .pack.selected { border-color: #007bff; background: #dceeff; font-weight: bold; }
     #creditPacks .credits { color: #333; }
     #creditPacks .price { color: #007bff; font-weight: bold; }
+
+/* Fix z-index PayPal */
+#paypalModal {
+  z-index: 9998 !important;   /* au-dessus de la nav et du header */
+}
+
+#paypal-button-container iframe,
+iframe[src*="paypal.com"] {
+  z-index: 9999 !important;   /* forcer PayPal au-dessus du modal */
+  position: relative !important;
+}
+
   </style>
 </head>
 <body>
