@@ -66,7 +66,14 @@ button:hover {
 
 .success { color: green; font-weight: bold; }
 .error { color: red; font-weight: bold; }
-#reader { width: 100%; max-width: 400px; margin: 20px auto; }
+#reader {
+  width: 100%;          /* prend toute la largeur dispo */
+  max-width: 100%;      /* supprime la limite */
+  height: 70vh;         /* hauteur = 70% de l’écran */
+  margin: 20px auto;
+  box-sizing: border-box;
+}
+
 
 </style>
 </head>
