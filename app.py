@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Form, Request, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse   # 👈 ajoute FileResponse ici
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse   # 👈 UNE SEULE FOIS
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant
 from passlib.hash import bcrypt
