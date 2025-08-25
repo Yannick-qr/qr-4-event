@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connexion - QR Event</title>
   <style>
     body {
@@ -13,36 +14,43 @@
       height: 100vh;
       margin: 0;
     }
-    .container {
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-      width: 350px;
-      text-align: center;
-    }
+.container {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+  width: 90%;          /* ✅ largeur flexible */
+  max-width: 350px;    /* ✅ limite la taille */
+  text-align: center;
+  box-sizing: border-box;
+}
     h2 {
       margin-bottom: 20px;
       color: #007bff;
     }
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      width: 95%;
-      padding: 10px;
-      margin-top: 15px;
-      border: none;
-      background: #007bff;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
+input {
+  width: 100%;          /* occupe toute la largeur dispo */
+  max-width: 100%;      /* ne dépasse jamais */
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box; /* important pour que padding ne casse pas la largeur */
+}
+
+button {
+  width: 100%;          /* au lieu de 95%, plus propre */
+  max-width: 100%;
+  padding: 10px;
+  margin-top: 15px;
+  border: none;
+  background: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  box-sizing: border-box;
+}
     button:hover {
       background: #0056b3;
     }
