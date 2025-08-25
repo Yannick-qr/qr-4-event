@@ -19,8 +19,10 @@ body {
   padding:30px;
   border-radius:12px;
   box-shadow:0 4px 12px rgba(0,0,0,0.1);
-  width:350px;
+  width:90%;           /* ✅ flexible */
+  max-width:350px;     /* ✅ limite sur PC */
   text-align:center;
+  box-sizing:border-box;
 }
 
 .container img {
@@ -63,6 +65,16 @@ button:hover {
 .success { color:green; font-weight:bold; }
 .error { color:red; font-weight:bold; }
 #reader { width:100%; max-width:400px; margin:20px auto; }
+@media (max-width: 480px) {
+  .container {
+    width:100%;
+    border-radius:0;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+}
 </style>
 </head>
 <body>
