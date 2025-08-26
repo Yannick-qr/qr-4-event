@@ -40,3 +40,5 @@ uvicorn==0.35.0
 watchfiles==1.1.0
 websockets==15.0.1
 psycopg2-binary
+passlib-1.7.4
+bcrypt-4.3.0
