@@ -430,28 +430,28 @@ def register_participant(
     transaction_id: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # 🔒 Nettoyage basique
-    name = html.escape(name.strip())
-    email = email.strip().lower()
+    # 🔒 Nettoyage des entrées
+    safe_name = html.escape(re.sub(r"[<>]", "", name.strip()))
+    safe_email = html.escape(email.strip().lower())
 
-    # 🔍 Validation email
-    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-        return {"success": False, "error": "Adresse email invalide."}
+    # Validation email simple
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", safe_email):
+        return {"success": False, "error": "Email invalide."}
 
-    # 🔍 Vérifie si l'événement existe
+    # Vérifie si l'événement existe
     event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
     if not event:
         return {"success": False, "error": "Événement introuvable ou inactif."}
 
-    # 🔍 Vérifie si déjà inscrit avec cette transaction
+    # Vérifie si déjà inscrit avec cette transaction
     existing = db.query(Participant).filter(Participant.transaction_id == transaction_id).first()
     if existing:
         return {"success": True, "message": "Déjà enregistré."}
 
     # ✅ Crée le participant
     participant = Participant(
-        name=name,
-        email=email,
+        name=safe_name,
+        email=safe_email,
         event_id=event_id,
         amount=amount,
         transaction_id=transaction_id,
@@ -465,13 +465,13 @@ def register_participant(
     qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
     body = f"""
     <h2>Inscription confirmée 🎉</h2>
-    <p>Merci {name}, ton paiement de {amount} € pour l’événement <b>{event.title}</b> a bien été enregistré.</p>
+    <p>Merci {safe_name}, ton paiement de {amount} € pour l’événement <b>{event.title}</b> a bien été enregistré.</p>
     <p>Date : {event.date} – Lieu : {event.location}</p>
     <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
     """
 
     try:
-        send_email_with_qr(email, f"Confirmation inscription - {event.title}", body, qr_data=qr_data)
+        send_email_with_qr(safe_email, f"Confirmation inscription - {event.title}", body, qr_data=qr_data)
     except Exception as e:
         print("❌ Erreur lors de l’envoi du mail participant :", e)
 
