@@ -17,6 +17,7 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 import requests
+import json
 
 load_dotenv()
 
@@ -797,6 +798,9 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         body = await request.body()
         headers = request.headers
 
+        # Charger une seule fois le JSON
+        event = json.loads(body)  
+
         # Vérification de la signature PayPal
         verify_url = f"{PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature"
         auth = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
@@ -808,18 +812,19 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             "auth_algo": headers.get("Paypal-Auth-Algo"),
             "transmission_sig": headers.get("Paypal-Transmission-Sig"),
             "webhook_id": PAYPAL_WEBHOOK_ID,
-            "webhook_event": body.decode("utf-8")
+            "webhook_event": event   # ✅ objet JSON et pas string
         }
 
         r = requests.post(verify_url, auth=auth, json=payload)
         verification = r.json()
+	print("🔎 Résultat vérification PayPal:", verification)
+
 
         if verification.get("verification_status") != "SUCCESS":
-            print("❌ Signature PayPal invalide :", verification)   # DEBUG
+            print("❌ Signature PayPal invalide :", verification)
             return JSONResponse(status_code=400, content={"success": False, "error": "Signature invalide"})
 
         # Lecture de l’événement
-        event = await request.json()
         event_type = event.get("event_type")
 
         # 🟢 DEBUG : log l’événement reçu
