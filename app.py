@@ -92,27 +92,28 @@ def landing_page():
 # ROUTE : Récupérer le client_id PayPal
 # ========================
 @app.get("/api/paypal-client-id")
-def get_paypal_client_id():
-    if not PAYPAL_CLIENT_ID:
+def get_paypal_client_id(event_id: int = None, db: Session = Depends(get_db)):
+    """
+    Retourne le bon client_id PayPal :
+    - Si event_id fourni et l’admin a configuré PayPal → renvoyer son client_id
+    - Sinon fallback sur le global
+    """
+    client_id = PAYPAL_CLIENT_ID
+
+    if event_id:
+        event = db.query(Event).filter(Event.id == event_id).first()
+        if event:
+            admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+            if admin and admin.paypal_client_id:
+                client_id = admin.paypal_client_id
+
+    if not client_id:
         return JSONResponse(
-            {"error": "PAYPAL_CLIENT_ID non configuré"},
+            {"error": "Aucun client_id PayPal disponible"},
             status_code=500
         )
-    return JSONResponse({"client_id": PAYPAL_CLIENT_ID})
+    return JSONResponse({"client_id": client_id})
 
-# ========================
-# ROUTE : Récupérer la config licence + crédits
-# ========================
-@app.get("/api/config")
-def get_config():
-    return {
-        "success": True,
-        "license": {
-            "price": LICENSE_PRICE,
-            "included_credits": LICENSE_INCLUDED_CREDITS
-        },
-        "packs": CREDIT_PACKS
-    }
 
 # ========================
 # UTILS

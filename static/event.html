@@ -112,7 +112,7 @@
     // === Chargement dynamique du SDK PayPal ===
     async function loadPayPalSdk() {
       try {
-        const res = await fetch("/api/paypal-client-id");
+        const res = await fetch(`/api/paypal-client-id?event_id=${eventId}`);
         const data = await res.json();
         if (data.client_id) {
           const script = document.createElement("script");
