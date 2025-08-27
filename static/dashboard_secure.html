@@ -359,6 +359,7 @@ function selectPack(packKey, event) {
 
 document.getElementById("buyCreditsBtn").addEventListener("click", () => {
   paypalModal.style.display = "flex";
+  loadConfig(); // 🔥 recharge la liste des packs
   if (!paypalRendered) {
     paypal.Buttons({
       createOrder: function() {
