@@ -144,17 +144,17 @@
                 return actions.resolve();
               },
 
-              createOrder: function(data, actions) {
-                return actions.order.create({
-                  purchase_units: [{
-                    amount: {
-                      currency_code: "EUR",
-                      value: eventPrice.toString()
-                    },
-                    description: "Inscription à l’événement : " + eventTitle
-                  }]
-                });
-              },
+  // 🚀 ICI : on appelle ton backend
+  createOrder: function(data, actions) {
+    return fetch(`/event/${eventId}/pay`, {
+      method: "POST"
+    })
+    .then(res => res.json())
+    .then(order => {
+      if (!order.success) throw new Error(order.error || "Erreur backend");
+      return order.id;
+    });
+  },
 
               onApprove: function(data, actions) {
                 return actions.order.capture().then(function(details) {

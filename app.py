@@ -679,6 +679,72 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
     }
 
 # ========================
+# EVENT PAYMENT (Public)
+# ========================
+@app.post("/event/{event_id}/pay")
+async def event_pay(event_id: int, request: Request, db: Session = Depends(get_db)):
+    """Créer une commande PayPal pour un participant à un événement"""
+    try:
+        event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
+        if not event:
+            return {"success": False, "error": "Événement introuvable ou inactif"}
+
+        # Récupère l'admin créateur
+        admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+
+        # Choisit les credentials PayPal
+        client_id = admin.paypal_client_id if admin and admin.paypal_client_id else PAYPAL_CLIENT_ID
+        secret = admin.paypal_secret if admin and admin.paypal_secret else PAYPAL_SECRET
+
+        # 🔹 Authentification PayPal
+        auth_req = requests.post(
+            f"{PAYPAL_API_BASE}/v1/oauth2/token",
+            headers={"Accept": "application/json", "Accept-Language": "en_US"},
+            data={"grant_type": "client_credentials"},
+            auth=(client_id, secret)
+        )
+
+        if auth_req.status_code != 200:
+            return {"success": False, "error": "OAuth failed", "paypal_response": auth_req.text}
+
+        access_token = auth_req.json().get("access_token")
+        if not access_token:
+            return {"success": False, "error": "Pas de access_token", "paypal_response": auth_req.json()}
+
+        # 🔹 Crée la commande PayPal (montant = prix de l’événement)
+        order_req = requests.post(
+            f"{PAYPAL_API_BASE}/v2/checkout/orders",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {access_token}"
+            },
+            json={
+                "intent": "CAPTURE",
+                "purchase_units": [{
+                    "reference_id": str(event.id),  # utile dans webhook
+                    "amount": {
+                        "currency_code": "EUR",
+                        "value": str(event.price)
+                    }
+                }]
+            }
+        )
+
+        order_data = order_req.json()
+
+        if "id" not in order_data:
+            return {"success": False, "error": "PayPal n’a pas renvoyé d’ID", "paypal_response": order_data}
+
+        return {"success": True, "id": order_data["id"], "paypal_response": order_data}
+
+    except Exception as e:
+        import traceback
+        print("❌ Exception event_pay:", e)
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+
+# ========================
 # LIST EVENTS
 # ========================
 @app.post("/admin/events/list")
