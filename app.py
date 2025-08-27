@@ -799,7 +799,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         headers = request.headers
 
         # Charger une seule fois le JSON
-        event = json.loads(body)  
+        event = json.loads(body)
 
         # Vérification de la signature PayPal
         verify_url = f"{PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature"
@@ -817,8 +817,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
 
         r = requests.post(verify_url, auth=auth, json=payload)
         verification = r.json()
-	print("🔎 Résultat vérification PayPal:", verification)
-
+        print("🔎 Résultat vérification PayPal:", verification)
 
         if verification.get("verification_status") != "SUCCESS":
             print("❌ Signature PayPal invalide :", verification)
