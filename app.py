@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Form, Request, Body
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse   # 👈 UNE SEULE FOIS
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant, AdminLog
 from passlib.hash import bcrypt
@@ -18,6 +18,9 @@ from email.mime.base import MIMEBase
 from email import encoders
 import requests
 import json
+import csv
+import html   # ✅ utilisé pour html.escape dans register_participant
+import re     # ✅ utilisé pour regex email dans register_participant
 
 load_dotenv()
 
@@ -417,12 +420,20 @@ def register_participant(
     transaction_id: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Vérifie si l'événement existe
+    # 🔒 Nettoyage basique
+    name = html.escape(name.strip())
+    email = email.strip().lower()
+
+    # 🔍 Validation email
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return {"success": False, "error": "Adresse email invalide."}
+
+    # 🔍 Vérifie si l'événement existe
     event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
     if not event:
         return {"success": False, "error": "Événement introuvable ou inactif."}
 
-    # Vérifie si déjà inscrit avec cette transaction
+    # 🔍 Vérifie si déjà inscrit avec cette transaction
     existing = db.query(Participant).filter(Participant.transaction_id == transaction_id).first()
     if existing:
         return {"success": True, "message": "Déjà enregistré."}
@@ -455,6 +466,7 @@ def register_participant(
         print("❌ Erreur lors de l’envoi du mail participant :", e)
 
     return {"success": True, "message": "Inscription enregistrée avec succès, email envoyé."}
+
 
 # ========================
 # USER INFO (profil connecté)
