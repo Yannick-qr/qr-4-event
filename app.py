@@ -477,13 +477,13 @@ def register_participant(
     )
     db.add(participant)
 
-# 🔑 Décrémentation des crédits participants
-admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
-if not admin:
-    return {"success": False, "error": "Admin introuvable pour cet événement."}
-if admin.participant_credits <= 0:
-    return {"success": False, "error": "Pas assez de crédits participants"}
-admin.participant_credits -= 1
+    # 🔑 Décrémentation des crédits participants
+    admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+    if not admin:
+        return {"success": False, "error": "Admin introuvable pour cet événement."}
+    if admin.participant_credits <= 0:
+        return {"success": False, "error": "Pas assez de crédits participants"}
+    admin.participant_credits -= 1
 
     db.commit()
     db.refresh(participant)
@@ -802,7 +802,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
 
     return {
         "success": True,
-	"credits": user.participant_credits,
+	"participant_credits": user.participant_credits,
         "events": [
             {
                 "id": e.id,
@@ -818,8 +818,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
                 "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={e.id}"
             }
             for e in events
-        ],
-        "participant_credits": user.participant_credits   # ✅ ajoute les crédits ici
+        ]
     }
 
 # ========================
@@ -1054,13 +1053,14 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             )
             db.add(participant)
 
-# 🔑 Décrémentation des crédits participants
-admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
-if not admin:
-    return {"success": False, "error": "Admin introuvable pour cet événement."}
-if admin.participant_credits <= 0:
-    return {"success": False, "error": "Pas assez de crédits participants"}
-admin.participant_credits -= 1
+            # 🔑 Décrémentation des crédits participants
+            admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
+            if not admin:
+                return {"success": False, "error": "Admin introuvable pour cet événement."}
+            if admin.participant_credits <= 0:
+                return {"success": False, "error": "Pas assez de crédits participants"}
+            admin.participant_credits -= 1
+
 
             # Envoi email
             qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"

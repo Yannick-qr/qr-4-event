@@ -44,7 +44,7 @@ class AdminUser(Base):
     is_active = Column(Boolean, default=False)
 
     # 🔥 Nouvel attribut : nombre de crédits d’événements
-    event_credits = Column(Integer, default=0)
+    participant_credits = Column(Integer, default=0)
 
     # ✅ Compte PayPal propre à l’admin
     paypal_client_id = Column(String, nullable=True)
