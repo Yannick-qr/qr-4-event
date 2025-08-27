@@ -46,6 +46,11 @@ class AdminUser(Base):
     # 🔥 Nouvel attribut : nombre de crédits d’événements
     event_credits = Column(Integer, default=0)
 
+    # ✅ Compte PayPal propre à l’admin
+    paypal_client_id = Column(String, nullable=True)
+    paypal_secret = Column(String, nullable=True)
+
+
     events = relationship("Event", back_populates="creator")
 
 
@@ -109,4 +114,13 @@ class CreditPurchase(Base):
     admin_id = Column(Integer, ForeignKey("admin_users.id"))
     credits = Column(Integer, nullable=False)
     amount = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class AdminLog(Base):
+    __tablename__ = "admin_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("admin_users.id"))
+    action = Column(String, nullable=False)
+    details = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

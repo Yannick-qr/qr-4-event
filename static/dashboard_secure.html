@@ -140,6 +140,9 @@ iframe[src*="paypal.com"] {
   </button>
   <button id="eventsBtn" class="active" data-i18n="events">Événements</button>
   <button id="buyCreditsBtn" data-i18n="buyCredits">Acheter des crédits</button>
+  <button id="paypalConfigBtn">⚙️ Mon PayPal</button>
+  <button id="logsBtn">📜 Historique</button>
+
   <!-- Logo ScanEvent comme bouton ouvrant une nouvelle fenêtre -->
 <a href="scan_event.html" target="_blank">
   <img src="/static/img/scanevent-logo.png" 
@@ -191,6 +194,61 @@ iframe[src*="paypal.com"] {
   </table>
 </section>
 
+<!-- ======================== -->
+<!-- SECTION COMPTE PAYPAL -->
+<!-- ======================== -->
+<section id="paypalConfig">
+  <h2>⚙️ Mon Compte PayPal</h2>
+  <p id="paypalStatus" style="font-weight:bold; margin-bottom:15px; color:#333;">
+    Vérification du statut PayPal...
+  </p>
+  <form id="paypalForm">
+    <label>Client ID :</label>
+    <input type="text" id="paypal_client_id" placeholder="Ton PayPal Client ID" required>
+
+    <label>Secret :</label>
+    <input type="password" id="paypal_secret" placeholder="Ton PayPal Secret" required>
+
+    <button type="submit">💾 Enregistrer</button>
+  </form>
+
+  <button id="deletePaypalBtn" style="background:#dc3545; color:white; padding:10px 15px; border:none; border-radius:5px; cursor:pointer; margin-top:10px; display:none;">
+    ❌ Supprimer mon compte PayPal
+  </button>
+</section>
+
+<!-- ======================== -->
+<!-- MODALE SUPPRESSION PAYPAL -->
+<!-- ======================== -->
+<div id="deletePaypalModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center;">
+  <div style="background:#fff; padding:20px; border-radius:10px; width:400px; text-align:center;">
+    <h3>Confirmation de suppression</h3>
+    <p>Pour supprimer ton compte PayPal, confirme ton mot de passe :</p>
+    <input type="password" id="confirmPassword" placeholder="Mot de passe" style="width:100%; padding:8px; margin:10px 0; border:1px solid #ccc; border-radius:5px;">
+    <br>
+    <button id="confirmDeleteBtn" style="background:#dc3545; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer;">❌ Supprimer</button>
+    <button id="cancelDeleteBtn" style="background:#6c757d; color:white; padding:8px 15px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;">Annuler</button>
+  </div>
+</div>
+
+<!-- ======================== -->
+<!-- SECTION LOGS -->
+<!-- ======================== -->
+<section id="logs">
+  <h2>📜 Historique des actions</h2>
+  <table id="logsTable">
+    <thead>
+      <tr>
+        <th>Action</th>
+        <th>Détails</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+
 <div id="editModal">
   <div class="modal-content">
     <h3 data-i18n="editEvent">Éditer l'événement</h3>
@@ -240,6 +298,13 @@ function setLanguage(lang) {
 
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/static/login.html";
+
+const eventsBtn = document.getElementById("eventsBtn");
+const paypalConfigBtn = document.getElementById("paypalConfigBtn");
+const logsBtn = document.getElementById("logsBtn");
+const deletePaypalBtn = document.getElementById("deletePaypalBtn");
+const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 // ✅ Charger infos utilisateur
 async function loadUserInfo() {
@@ -408,6 +473,69 @@ async function toggleEvent(id) {
   if (data.success) loadEvents(); else alert("Erreur activation/désactivation : " + (data.error || ""));
 }
 
+// ========================
+// Navigation entre sections
+// ========================
+function showSection(id) {
+  document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+  if (id === "events") eventsBtn.classList.add("active");
+  if (id === "paypalConfig") paypalConfigBtn.classList.add("active");
+  if (id === "logs") logsBtn.classList.add("active");
+}
+
+eventsBtn.addEventListener("click", () => showSection("events"));
+paypalConfigBtn.addEventListener("click", () => { showSection("paypalConfig"); loadPaypalStatus(); });
+logsBtn.addEventListener("click", () => { showSection("logs"); loadLogs(); });
+
+// ========================
+// Vérifier statut PayPal
+// ========================
+async function loadPaypalStatus() {
+  const form = new URLSearchParams();
+  form.append("token", token);
+
+  const res = await fetch("/admin/paypal/status", { method: "POST", body: form });
+  const data = await res.json();
+
+  const statusEl = document.getElementById("paypalStatus");
+  const deleteBtn = document.getElementById("deletePaypalBtn");
+
+  if (data.success && data.configured) {
+    statusEl.innerHTML = `✅ Compte PayPal configuré<br><small>Client ID : ${data.client_id.substring(0,8)}... </small>`;
+    statusEl.style.color = "green";
+    deleteBtn.style.display = "inline-block";
+  } else {
+    statusEl.innerHTML = "❌ Aucun compte PayPal configuré";
+    statusEl.style.color = "red";
+    deleteBtn.style.display = "none";
+  }
+}
+
+// ========================
+// Sauvegarde des identifiants PayPal
+// ========================
+document.getElementById("paypalForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const form = new URLSearchParams();
+  form.append("client_id", document.getElementById("paypal_client_id").value);
+  form.append("secret", document.getElementById("paypal_secret").value);
+  form.append("token", token);
+
+  const res = await fetch("/admin/paypal/set", { method: "POST", body: form });
+  const data = await res.json();
+
+  if (data.success) {
+    alert("✅ Compte PayPal enregistré avec succès !");
+    document.getElementById("paypalForm").reset();
+    loadPaypalStatus();
+  } else {
+    alert("❌ Erreur : " + (data.error || "Impossible d’enregistrer"));
+  }
+});
+
 
 // ✅ Sauvegarde modification
 document.getElementById("editEventForm").addEventListener("submit", async (e) => {
@@ -437,6 +565,66 @@ form.append("checkin_password", document.getElementById("edit_checkin_password")
     alert("❌ Erreur modification : " + (data.error || ""));
   }
 });
+
+// ========================
+// Suppression PayPal sécurisée
+// ========================
+const modal = document.getElementById("deletePaypalModal");
+deletePaypalBtn.addEventListener("click", () => modal.style.display = "flex");
+cancelDeleteBtn.addEventListener("click", () => { 
+  modal.style.display = "none"; 
+  document.getElementById("confirmPassword").value = ""; 
+});
+
+confirmDeleteBtn.addEventListener("click", async () => {
+  const password = document.getElementById("confirmPassword").value;
+  if (!password) return alert("⚠️ Merci de saisir ton mot de passe");
+
+  const form = new URLSearchParams();
+  form.append("token", token);
+  form.append("password", password);
+
+  const res = await fetch("/admin/paypal/delete", { method: "POST", body: form });
+  const data = await res.json();
+
+  if (data.success) {
+    alert("✅ " + data.message);
+    loadPaypalStatus();
+    modal.style.display = "none";
+    document.getElementById("confirmPassword").value = "";
+  } else {
+    alert("❌ Erreur : " + (data.error || ""));
+  }
+});
+
+// ========================
+// Charger les logs admin
+// ========================
+async function loadLogs() {
+  const form = new URLSearchParams();
+  form.append("token", token);
+
+  const res = await fetch("/admin/logs", { method: "POST", body: form });
+  const data = await res.json();
+
+  const tbody = document.querySelector("#logsTable tbody");
+  tbody.innerHTML = "";
+
+  if (data.success) {
+    if (data.logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3">Aucune action enregistrée</td></tr>`;
+      return;
+    }
+
+    data.logs.forEach(log => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${log.action}</td><td>${log.details}</td><td>${log.date}</td>`;
+      tbody.appendChild(row);
+    });
+  } else {
+    alert("❌ Erreur chargement logs : " + (data.error || ""));
+  }
+}
 
 // ✅ Création d’un nouvel événement
 document.getElementById("addEventForm").addEventListener("submit", async (e) => {

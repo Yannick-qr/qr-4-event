@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Form, Request, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse   # 👈 UNE SEULE FOIS
 from sqlalchemy.orm import Session
-from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant
+from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant, AdminLog
 from passlib.hash import bcrypt
 from datetime import datetime, timedelta
 import uuid
@@ -153,6 +153,11 @@ def check_token_valid(user: AdminUser, db: Session):
         db.commit()
         return False
     return True
+
+def log_admin_action(db: Session, admin_id: int, action: str, details: str = None):
+    new_log = AdminLog(admin_id=admin_id, action=action, details=details)
+    db.add(new_log)
+    db.commit()
 
 
 # ========================
@@ -464,6 +469,64 @@ def get_me(token: str = Form(...), db: Session = Depends(get_db)):
         "email": user.email,
         "credits": user.event_credits
     }
+
+# ========================
+# PAYPAL ADMIN (config perso)
+# ========================
+
+@app.post("/admin/paypal/set")
+def set_paypal_credentials(
+    client_id: str = Form(...),
+    secret: str = Form(...),
+    token: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "error": "Non autorisé"}
+
+    user.paypal_client_id = client_id
+    user.paypal_secret = secret
+    db.commit()
+
+    log_admin_action(db, user.id, "SET_PAYPAL", f"Admin {user.email} a configuré un compte PayPal")
+
+    return {"success": True, "message": "Compte PayPal enregistré avec succès"}
+
+
+@app.post("/admin/paypal/status")
+def get_paypal_status(token: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "error": "Non autorisé"}
+
+    return {
+        "success": True,
+        "configured": bool(user.paypal_client_id and user.paypal_secret),
+        "client_id": user.paypal_client_id if user.paypal_client_id else None
+    }
+
+
+@app.post("/admin/paypal/delete")
+def delete_paypal_account(
+    token: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "error": "Non autorisé"}
+
+    if not bcrypt.verify(password, user.password_hash):
+        return {"success": False, "error": "Mot de passe incorrect"}
+
+    user.paypal_client_id = None
+    user.paypal_secret = None
+    db.commit()
+
+    log_admin_action(db, user.id, "DELETE_PAYPAL", f"Admin {user.email} a supprimé son compte PayPal")
+
+    return {"success": True, "message": "Compte PayPal supprimé avec succès"}
 
 
 # ========================
@@ -1006,3 +1069,23 @@ def reset_password_confirm(token: str = Form(...), new_password: str = Form(...)
     db.commit()
 
     return {"success": True, "message": "Mot de passe mis à jour avec succès."}
+
+# ========================
+# ADMIN LOGS
+# ========================
+@app.post("/admin/logs")
+def get_logs(token: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "error": "Non autorisé"}
+
+    logs = db.query(AdminLog).filter(AdminLog.admin_id == user.id).order_by(AdminLog.created_at.desc()).all()
+
+    return {
+        "success": True,
+        "logs": [
+            {"action": l.action, "details": l.details, "date": l.created_at.strftime("%Y-%m-%d %H:%M:%S")}
+            for l in logs
+        ]
+    }
+
