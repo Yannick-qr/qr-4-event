@@ -357,9 +357,21 @@ function selectPack(packKey, event) {
   event.currentTarget.classList.add("selected");
 }
 
-document.getElementById("buyCreditsBtn").addEventListener("click", () => {
+document.getElementById("buyCreditsBtn").addEventListener("click", async () => {
   paypalModal.style.display = "flex";
-  loadConfig(); // 🔥 recharge la liste des packs
+
+  // 🔥 Recharge la liste des packs (et attend que ce soit fini)
+  await loadConfig();
+
+  // ⚠️ Vide le bouton PayPal pour éviter les doublons si on ouvre plusieurs fois
+  document.getElementById("paypal-button-container").innerHTML = "";
+  paypalRendered = false;
+
+  if (!selectedPack) {
+    console.error("Aucun pack sélectionné !");
+    return;
+  }
+
   if (!paypalRendered) {
     paypal.Buttons({
       createOrder: function() {
