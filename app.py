@@ -115,6 +115,20 @@ def get_paypal_client_id(event_id: int = None, db: Session = Depends(get_db)):
         )
     return JSONResponse({"client_id": client_id})
 
+# ========================
+# ROUTE : Récupérer la config licence + crédits
+# ========================
+@app.get("/api/config")
+def get_config():
+    return {
+        "success": True,
+        "license": {
+            "price": LICENSE_PRICE,
+            "included_credits": LICENSE_INCLUDED_CREDITS
+        },
+        "packs": CREDIT_PACKS
+    }
+
 
 # ========================
 # UTILS
