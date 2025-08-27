@@ -19,8 +19,9 @@ from email import encoders
 import requests
 import json
 import csv
-import html   # ✅ utilisé pour html.escape dans register_participant
-import re     # ✅ utilisé pour regex email dans register_participant
+import html
+import re
+import traceback
 
 load_dotenv()
 
@@ -199,7 +200,6 @@ def check_email(email: str = Form(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="⚠️ Cet email est déjà utilisé.")
     return {"success": True}
 
-
 # ========================
 # REGISTER + PAIEMENT
 # ========================
@@ -210,7 +210,16 @@ def register(
     email: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # 🔍 Vérifie si email existe déjà
+    # 🧹 Nettoyage des entrées
+    prenom = html.escape(prenom.strip())
+    nom = html.escape(nom.strip())
+    email = email.strip().lower()
+
+    # Regex email basique
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return {"success": False, "error": "Adresse email invalide."}
+
+    # Vérifie si email existe déjà
     existing_user = db.query(AdminUser).filter(AdminUser.email == email).first()
     if existing_user:
         raise HTTPException(
@@ -228,7 +237,7 @@ def register(
         is_active=False,
         token=validation_token,
         token_expiry=expiry,
-        event_credits=LICENSE_INCLUDED_CREDITS   # 👈 bien aligné ici
+        event_credits=LICENSE_INCLUDED_CREDITS
     )
     db.add(new_user)
     db.commit()
@@ -248,12 +257,12 @@ def register(
         send_email_with_qr(email, "Définir ton mot de passe - QR Event", body, qr_data=verify_link)
     except Exception as e:
         print("❌ Erreur lors de l’envoi du mail d’activation :", e)
+        traceback.print_exc()
 
     return {
         "success": True,
         "message": "Paiement confirmé, email envoyé avec lien pour définir le mot de passe."
     }
-
 
 # ========================
 # SET PASSWORD
