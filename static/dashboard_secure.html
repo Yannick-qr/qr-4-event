@@ -166,7 +166,7 @@ iframe[src*="paypal.com"] {
     <div class="card stat"><h3 id="totalEvents">0</h3><p data-i18n="eventsCreated">Événements créés</p></div>
     <div class="card stat"><h3 id="activeEvents">0</h3><p data-i18n="eventsActive">Événements actifs</p></div>
     <div class="card stat"><h3 id="inactiveEvents">0</h3><p data-i18n="eventsInactive">Événements inactifs</p></div>
-    <div class="card stat"><h3 id="eventCredits">0</h3><p data-i18n="creditsAvailable">Crédits disponibles</p></div>
+    <div class="card stat"><h3 id="participantCredits">0</h3><p data-i18n="creditsAvailable">Crédits participants disponibles</p></div>
   </div>
   <h2 data-i18n="manageEvents">Gestion des événements</h2>
   <form id="addEventForm">
@@ -273,14 +273,14 @@ iframe[src*="paypal.com"] {
 const translations = {
   fr: {
     events: "Événements", buyCredits: "Acheter des crédits", stats: "Statistiques",
-    eventsCreated: "Événements créés", eventsActive: "Événements actifs", eventsInactive: "Événements inactifs", creditsAvailable: "Crédits disponibles",
+    eventsCreated: "Événements créés", eventsActive: "Événements actifs", eventsInactive: "Événements inactifs", creditsAvailable: "Crédits participants disponibles",
     manageEvents: "Gestion des événements", addEvent: "Ajouter un nouvel événement", createEvent: "Créer l’événement",
     title: "Titre", description: "Description", date: "Date", location: "Lieu", price: "Prix", status: "Statut", publicLink: "Lien public", actions: "Actions",
     editEvent: "Éditer l'événement", save: "Enregistrer", cancel: "Annuler"
   },
   en: {
     events: "Events", buyCredits: "Buy credits", stats: "Statistics",
-    eventsCreated: "Events created", eventsActive: "Active events", eventsInactive: "Inactive events", creditsAvailable: "Credits available",
+    eventsCreated: "Events created", eventsActive: "Active events", eventsInactive: "Inactive events", creditsAvailable: "Available participant credits",
     manageEvents: "Manage events", addEvent: "Add a new event", createEvent: "Create event",
     title: "Title", description: "Description", date: "Date", location: "Location", price: "Price", status: "Status", publicLink: "Public link", actions: "Actions",
     editEvent: "Edit event", save: "Save", cancel: "Cancel"
@@ -338,7 +338,7 @@ async function loadConfig() {
     Object.entries(CREDIT_PACKS).forEach(([key, pack]) => {
       const div = document.createElement("div");
       div.className = "pack";
-      div.innerHTML = `<span class="credits">${pack.credits >= 9999 ? "Illimité (1 an)" : pack.credits + " crédits"}</span><span class="price">${pack.price}€</span>`;
+      div.innerHTML = `<span class="credits">${pack.credits >= 9999 ? "Illimité (1 an)" : pack.credits + " participants"}</span><span class="price">${pack.price}€</span>`;
       div.onclick = (e) => selectPack(key, e);
       container.appendChild(div);
     });
@@ -389,7 +389,7 @@ document.getElementById("buyCreditsBtn").addEventListener("click", async () => {
             body: JSON.stringify({ token: token, credits: selectedPack.credits, payment_id: details.id })
           }).then(res => res.json()).then(resp => {
             if (resp.success) {
-              alert("✅ " + (selectedPack.credits >= 9999 ? "Pack illimité" : selectedPack.credits + " crédits") + " ajoutés !");
+              alert("✅ " + (selectedPack.credits >= 9999 ? "Pack illimité" : selectedPack.credits + " participants") + " ajoutés !");
               paypalModal.style.display = "none";
               loadEvents();
             } else {
@@ -438,7 +438,7 @@ async function loadEvents() {
   document.getElementById("totalEvents").textContent = data.events.length;
   document.getElementById("activeEvents").textContent = data.events.filter(e => e.is_active).length;
   document.getElementById("inactiveEvents").textContent = data.events.filter(e => !e.is_active).length;
-  document.getElementById("eventCredits").textContent = data.credits ?? 0;
+  document.getElementById("participantCredits").textContent = data.participant_credits ?? 0;
 }
 loadEvents();
 loadConfig();

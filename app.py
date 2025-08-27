@@ -46,7 +46,7 @@ PAYPAL_API_BASE = os.getenv("PAYPAL_API_BASE", "https://api-m.paypal.com")
 # ========================
 # PARAMÈTRES LICENCE
 # ========================
-LICENSE_INCLUDED_CREDITS = int(os.getenv("LICENSE_INCLUDED_CREDITS", 10))
+LICENSE_INCLUDED_CREDITS = int(os.getenv("LICENSE_INCLUDED_CREDITS", 50))
 LICENSE_PRICE = float(os.getenv("LICENSE_PRICE", 149))
 
 # ========================
@@ -54,20 +54,24 @@ LICENSE_PRICE = float(os.getenv("LICENSE_PRICE", 149))
 # ========================
 CREDIT_PACKS = {
     "small": {
-        "credits": int(os.getenv("CREDIT_PACK_SMALL", 10)),
-        "price": float(os.getenv("CREDIT_PACK_SMALL_PRICE", 29))
+        "credits": int(os.getenv("PARTICIPANT_PACK_SMALL", 50)),
+        "price": float(os.getenv("PARTICIPANT_PACK_SMALL_PRICE", 49))
     },
     "medium": {
-        "credits": int(os.getenv("CREDIT_PACK_MEDIUM", 50)),
-        "price": float(os.getenv("CREDIT_PACK_MEDIUM_PRICE", 99))
+        "credits": int(os.getenv("PARTICIPANT_PACK_MEDIUM", 100)),
+        "price": float(os.getenv("PARTICIPANT_PACK_MEDIUM_PRICE", 79))
     },
     "large": {
-        "credits": int(os.getenv("CREDIT_PACK_LARGE", 200)),
-        "price": float(os.getenv("CREDIT_PACK_LARGE_PRICE", 299))
+        "credits": int(os.getenv("PARTICIPANT_PACK_LARGE", 250)),
+        "price": float(os.getenv("PARTICIPANT_PACK_LARGE_PRICE", 149))
     },
-    "unlimited": {
-        "credits": int(os.getenv("CREDIT_PACK_UNLIMITED", 9999)),
-        "price": float(os.getenv("CREDIT_PACK_UNLIMITED_PRICE", 499))
+    "xl": {
+        "credits": int(os.getenv("PARTICIPANT_PACK_XL", 500)),
+        "price": float(os.getenv("PARTICIPANT_PACK_XL_PRICE", 249))
+    },
+    "enterprise": {
+        "credits": int(os.getenv("PARTICIPANT_PACK_ENTERPRISE", 1000)),
+        "price": float(os.getenv("PARTICIPANT_PACK_ENTERPRISE_PRICE", 399))
     }
 }
 
@@ -251,7 +255,7 @@ def register(
         is_active=False,
         token=validation_token,
         token_expiry=expiry,
-        event_credits=LICENSE_INCLUDED_CREDITS
+        participant_credits=LICENSE_INCLUDED_CREDITS
     )
     db.add(new_user)
     db.commit()
@@ -308,10 +312,10 @@ def buy_credits(token: str = Form(...), quantity: int = Form(...), db: Session =
     if quantity <= 0:
         return {"success": False, "error": "Quantité de crédits invalide"}
 
-    user.event_credits += quantity
+    user.participant_credits += quantity
     db.commit()
 
-    return {"success": True, "new_balance": user.event_credits}
+    return {"success": True, "new_balance": user.participant_credits}
 
 
 # ========================
@@ -427,10 +431,10 @@ def add_credits(payload: dict = Body(...), db: Session = Depends(get_db)):
         return {"success": False, "error": "Crédits invalides"}
 
     # Ajouter les crédits
-    user.event_credits += credits
+    user.participant_credits += credits
     db.commit()
 
-    return {"success": True, "new_credits": user.event_credits}
+    return {"success": True, "new_credits": user.participant_credits}
 
 # ========================
 # REGISTER PARTICIPANT (après paiement réussi)
@@ -472,6 +476,15 @@ def register_participant(
         created_at=datetime.utcnow()
     )
     db.add(participant)
+
+# 🔑 Décrémentation des crédits participants
+admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+if not admin:
+    return {"success": False, "error": "Admin introuvable pour cet événement."}
+if admin.participant_credits <= 0:
+    return {"success": False, "error": "Pas assez de crédits participants"}
+admin.participant_credits -= 1
+
     db.commit()
     db.refresh(participant)
 
@@ -503,7 +516,7 @@ def get_me(token: str = Form(...), db: Session = Depends(get_db)):
     return {
         "success": True,
         "email": user.email,
-        "credits": user.event_credits
+        "credits": user.participant_credits
     }
 
 # ========================
@@ -585,9 +598,6 @@ def create_event(
     if not check_token_valid(user, db):
         return {"success": False, "error": "Non autorisé"}
 
-    if user.event_credits <= 0:
-        return {"success": False, "error": "Pas assez de crédits d’événements."}
-
     new_event = Event(
         title=title, 
 	description=description, 
@@ -599,11 +609,10 @@ def create_event(
         checkin_password=checkin_password
     )
     db.add(new_event)
-    user.event_credits -= 1
     db.commit()
     db.refresh(new_event)
 
-    return {"success": True, "event_id": new_event.id, "remaining_credits": user.event_credits}
+    return {"success": True, "event_id": new_event.id, "remaining_credits": user.participant_credits}
 
 
 @app.post("/admin/events/update")
@@ -793,7 +802,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
 
     return {
         "success": True,
-	"credits": user.event_credits,
+	"credits": user.participant_credits,
         "events": [
             {
                 "id": e.id,
@@ -810,7 +819,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
             }
             for e in events
         ],
-        "event_credits": user.event_credits   # ✅ ajoute les crédits ici
+        "participant_credits": user.participant_credits   # ✅ ajoute les crédits ici
     }
 
 # ========================
@@ -1044,6 +1053,14 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
                 created_at=datetime.utcnow()
             )
             db.add(participant)
+
+# 🔑 Décrémentation des crédits participants
+admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
+if not admin:
+    return {"success": False, "error": "Admin introuvable pour cet événement."}
+if admin.participant_credits <= 0:
+    return {"success": False, "error": "Pas assez de crédits participants"}
+admin.participant_credits -= 1
 
             # Envoi email
             qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
