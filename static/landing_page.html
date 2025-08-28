@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QR Event - Créez et gérez vos événements simplement</title>
+  <title>QR Event - Événements illimités, paiement par participants</title>
   <style>
     body {
       margin: 0;
@@ -73,7 +73,7 @@
       background: #f1f1f1;
     }
 
-    /* Hero avec deux images */
+    /* Hero */
     .hero {
       display: flex;
       flex-wrap: wrap;
@@ -141,49 +141,70 @@
       color: #555;
     }
 
-    /* Témoignages */
-    .testimonials {
-      background: #fff;
-      padding: 60px 20px;
-      margin-top: 40px;
-    }
-    .testimonials h2 {
-      text-align: center;
-      color: #007bff;
-      margin-bottom: 40px;
-    }
-    .testimonial-list {
+    /* Pricing */
+    .pricing-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 30px;
-      max-width: 1100px;
-      margin: auto;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 25px;
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 0 20px;
     }
-    .testimonial-card {
-      background: #f9fafc;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 30px 20px;
       text-align: center;
+      transition: transform 0.2s ease;
     }
-    .testimonial-card img {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 15px;
-    }
-    .testimonial-card h4 {
-      margin: 10px 0 5px;
-      color: #333;
-    }
-    .stars {
-      color: #FFD700;
+    .card:hover { transform: translateY(-5px); }
+    .card h3 {
+      font-size: 1.6em;
       margin-bottom: 10px;
+      color: #007bff;
     }
-    .testimonial-card p {
-      font-size: 0.95em;
+    .price {
+      font-size: 2em;
+      margin: 20px 0;
+      font-weight: bold;
+      color: #222;
+    }
+    .price span {
+      font-size: 0.6em;
       color: #555;
-      font-style: italic;
+    }
+    .card ul {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+      text-align: left;
+    }
+    .card ul li {
+      margin: 10px 0;
+      font-size: 0.95em;
+    }
+    .card ul li::before {
+      content: "✔️ ";
+      color: green;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      color: white;
+      background: #007bff;
+      transition: background 0.3s ease;
+    }
+    .btn:hover { background: #0056b3; }
+    .section-title {
+      text-align: center;
+      margin: 60px 0 20px;
+      font-size: 1.8em;
+      color: #222;
     }
 
     /* FAQ */
@@ -233,200 +254,183 @@
 </head>
 <body>
 
-  <!-- Navbar sticky -->
+  <!-- Navbar -->
   <div class="navbar">
     <a href="landing_page.html" class="logo">QR Event</a>
     <a href="/static/register.html" class="nav-btn">Connexion / Inscription</a>
   </div>
 
+  <!-- Hero -->
   <header>
     <h1>QR Event</h1>
-    <p>Créez, gérez et scannez vos événements en toute simplicité 🚀</p>
-    <a href="/static/register.html" class="cta-btn">Créer un compte / Se connecter</a>
+    <p>🎉 Créez <strong>autant d’événements que vous voulez</strong><br>
+       👥 Vous ne payez que pour le <strong>nombre de participants</strong> inscrits</p>
+    <a href="/static/register.html" class="cta-btn">🚀 Démarrer</a>
   </header>
 
-<!-- Section Hero avec 2 images -->
-<section class="hero">
-  <div class="hero-text">
-    <h2>Un outil complet pour vos événements</h2>
-    <p>
-      Organiser un événement ne devrait pas être compliqué. Avec <strong>QR Event</strong>, tout devient simple : 
-      <br><br>
-      ✅ Créez vos événements en quelques clics grâce à une interface claire et intuitive.<br>
-      ✅ Offrez à vos participants des <strong>QR codes uniques</strong> pour fluidifier les entrées et limiter les fraudes.<br>
-      ✅ Suivez en temps réel vos inscriptions, paiements et présences depuis un tableau de bord centralisé.<br>
-      ✅ Gagnez du temps, évitez les tracas logistiques et concentrez-vous sur ce qui compte vraiment : 
-      <em>faire vivre une expérience inoubliable à vos participants</em>.
-    </p>
-    <a href="/static/register.html" class="cta-btn">🚀 Démarrer gratuitement</a>
-  </div>
-  <div class="hero-images">
-    <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
-      <img src="/static/img/scanevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
-  </div>
-</section>
-
-  <!-- Fonctionnalités -->
-  <section class="features">
-    <div class="feature-card">
-      <h3>📅 Création d'événement</h3>
-      <p>Planifiez vos événements en quelques clics, avec toutes les infos utiles centralisées.</p>
+  <!-- Intro -->
+  <section class="hero">
+    <div class="hero-text">
+      <h2>Un outil complet pour vos événements</h2>
+      <p>
+        Avec <strong>QR Event</strong> : 
+        <br><br>
+        ✅ Événements illimités, pas de contrainte.<br>
+        ✅ Paiement uniquement basé sur vos <strong>participants</strong>.<br>
+        ✅ QR codes uniques et sécurisés.<br>
+        ✅ Suivi en temps réel des inscriptions et présences.<br>
+      </p>
+      <a href="/static/register.html" class="cta-btn">Créer mon compte</a>
     </div>
-    <div class="feature-card">
-      <h3>🎟️ QR Codes uniques</h3>
-      <p>Chaque participant reçoit un QR code personnel, simple à scanner à l'entrée.</p>
-    </div>
-    <div class="feature-card">
-      <h3>📊 Suivi en temps réel</h3>
-      <p>Suivez les inscriptions et la présence des participants directement sur votre tableau de bord.</p>
-    </div>
-    <div class="feature-card">
-      <h3>💳 Paiements intégrés</h3>
-      <p>Activez les paiements en ligne pour vos événements en toute sécurité.</p>
+    <div class="hero-images">
+      <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:150px; height:auto;">
+      <img src="/static/img/scanevent-logo.png" alt="Scan QR EVENT" style="width:150px; height:auto;">
     </div>
   </section>
 
-<!-- Tarifs -->
-<style>
-  .pricing-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 25px;
-    max-width: 1200px;
-    margin: 50px auto;
-    padding: 0 20px;
-  }
+  <!-- Features -->
+  <section class="features">
+    <div class="feature-card">
+      <h3>📅 Événements illimités</h3>
+      <p>Créez autant d’événements que nécessaire, sans frais supplémentaires.</p>
+    </div>
+    <div class="feature-card">
+      <h3>👥 Paiement par participants</h3>
+      <p>Vous achetez des crédits participants, jamais par événement.</p>
+    </div>
+    <div class="feature-card">
+      <h3>🎟️ QR Codes uniques</h3>
+      <p>Chaque participant reçoit un QR code sécurisé à présenter à l’entrée.</p>
+    </div>
+    <div class="feature-card">
+      <h3>📊 Suivi en temps réel</h3>
+      <p>Un tableau de bord centralisé pour gérer vos inscriptions et présences.</p>
+    </div>
+  </section>
 
-  .card {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    padding: 30px 20px;
-    text-align: center;
-    transition: transform 0.2s ease;
-  }
-
-  .card:hover {
-    transform: translateY(-5px);
-  }
-
-  .card h3 {
-    font-size: 1.6em;
-    margin-bottom: 10px;
-    color: #007bff;
-  }
-
-  .price {
-    font-size: 2em;
-    margin: 20px 0;
-    font-weight: bold;
-    color: #222;
-  }
-
-  .price span {
-    font-size: 0.6em;
-    color: #555;
-  }
-
-  .card ul {
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
-    text-align: left;
-  }
-
-  .card ul li {
-    margin: 10px 0;
-    font-size: 0.95em;
-  }
-
-  .card ul li::before {
-    content: "✔️ ";
-    color: green;
-  }
-
-  .btn {
-    display: inline-block;
-    margin-top: 20px;
-    padding: 12px 20px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: bold;
-    color: white;
-    background: #007bff;
-    transition: background 0.3s ease;
-  }
-
-  .btn:hover {
-    background: #0056b3;
-  }
-
-  .section-title {
-    text-align: center;
-    margin: 60px 0 20px;
-    font-size: 1.8em;
-    color: #222;
-  }
-</style>
-
-<h2 class="section-title">Nos Tarifs</h2>
-
-<!-- Licence -->
-<section class="pricing-container">
-  <div class="card">
-    <h3>Licence QR EVENT</h3>
-    <p class="price">149€<span> / paiement unique</span></p>
-    <ul>
-      <li>Accès illimité au tableau de bord</li>
-      <li>Gestion des participants + QR codes</li>
-      <li>Branding basique (logo + couleurs)</li>
-      <li>Pas de frais mensuels</li>
-      <li>Événements limités aux crédits achetés</li>
-    </ul>
-    <a href="/static/register.html" class="btn">Acheter la licence</a>
+<!-- Définition Crédit -->
+<section class="faq">
+  <h2>👉 Qu’est-ce qu’un crédit participant ?</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <h3>🔹 Définition</h3>
+      <p>Un crédit = un participant inscrit à l’un de vos événements.<br>
+         Peu importe le nombre d’événements créés (illimités 🚀), 
+         seul le nombre de participants décomptés consomme vos crédits.</p>
+    </div>
+    <div class="faq-item">
+      <h3>📌 Exemple concret</h3>
+      <p>🎤 Vous organisez 3 événements :<br>
+         - Concert A : 30 inscrits<br>
+         - Conférence B : 50 inscrits<br>
+         - Atelier C : 20 inscrits<br><br>
+         Total = <strong>100 participants</strong> → Vous consommez 100 crédits, 
+         même si vous avez créé 3 événements.</p>
+    </div>
+    <div class="faq-item">
+      <h3>⚡ Avantage</h3>
+      <p>Vos événements sont totalement illimités ✅.  
+         Vous payez uniquement pour les vrais participants, 
+         ce qui rend QR Event ultra flexible.</p>
+    </div>
   </div>
 </section>
 
-<!-- Packs de crédits -->
-<h2 class="section-title">Packs de Crédits Événement</h2>
-<p style="text-align:center;">Disponible dans le Dashboard Admin</p>
-<section class="pricing-container">
-  <div class="card">
-    <h3>Pack 10 événements</h3>
-    <p class="price">29€</p>
-    <ul>
-      <li>1 crédit = 1 événement</li>
-      <li>Soit 2,9 €/événement</li>
-    </ul>
-  </div>
+  <!-- Tarifs -->
+  <h2 class="section-title">Nos Tarifs</h2>
+  <p style="text-align:center;">Organisez <strong>autant d’événements que vous voulez</strong>.<br>
+  Vous ne payez que pour le <strong>nombre de participants inscrits</strong>.</p>
 
-  <div class="card">
-    <h3>Pack 50 événements</h3>
-    <p class="price">99€</p>
-    <ul>
-      <li>1 crédit = 1 événement</li>
-      <li>Soit 1,9 €/événement</li>
-    </ul>
-  </div>
+  <section class="pricing-container">
+    <div class="card">
+      <h3>Licence QR EVENT</h3>
+      <p class="price">49€<span> / paiement unique</span></p>
+      <ul>
+        <li>Accès à l'application</li>
+        <li>Événements illimités à vie</li>
+        <li>Tableau de bord complet</li>
+        <li>QR codes sécurisés</li>
+        <li>Pas d’abonnement mensuel</li>
+        <li>Comprend un crédit de 50 partipants pour votre 1er événement</li>
+      </ul>
+      <a href="/static/register.html" class="btn">Acheter la licence</a>
+    </div>
+  </section>
 
-  <div class="card">
-    <h3>Pack 200 événements</h3>
-    <p class="price">299€</p>
-    <ul>
-      <li>1 crédit = 1 événement</li>
-      <li>Soit 1,5 €/événement</li>
-    </ul>
-  </div>
+  <h2 class="section-title">Packs de Crédits Participants</h2>
+  <p style="text-align:center;">Disponible dans le Dashboard Admin</p>
 
-  <div class="card">
-    <h3>Événements illimités</h3>
-    <p class="price">499€<span> / 1 an</span></p>
-    <ul>
-      <li>Événements illimités pendant 12 mois</li>
-      <li>Idéal pour agences & grands comptes</li>
-    </ul>
-  </div>
-</section>
+  <section class="pricing-container">
+    <div class="card">
+      <h3>Pack 50 participants</h3>
+      <p class="price">29€</p>
+      <ul>
+        <li>1 crédit = 1 participant inscrit</li>
+        <li>Soit 0,58 €/participant</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Pack 200 participants</h3>
+      <p class="price">79€</p>
+      <ul>
+        <li>1 crédit = 1 participant inscrit</li>
+        <li>Soit 0,39 €/participant</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Pack 1000 participants</h3>
+      <p class="price">299€</p>
+      <ul>
+        <li>1 crédit = 1 participant inscrit</li>
+        <li>Soit 0,29 €/participant</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Participants illimités</h3>
+      <p class="price">999€<span> / 1 an</span></p>
+      <ul>
+        <li>Nombre de participants illimité pendant 12 mois</li>
+        <li>Idéal pour grands organisateurs & agences</li>
+      </ul>
+    </div>
+  </section>
+
+ </div>
+    <div class="hero-images">
+      <img src="/static/img/scanevent-logo.png" alt="Scan QR EVENT" style="width:150px; height:auto;">
+    </div>
+  </section>
+  
+  <!-- Module complémentaire ScanEvent -->
+  <section class="faq">
+    <h2>📲 Module complémentaire : ScanEvent</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <h3>🎟️ Contrôle d’accès rapide</h3>
+        <p>Avec <strong>ScanEvent</strong>, scannez facilement les QR codes de vos participants 
+           depuis un smartphone, une tablette ou un PC équipé d’une caméra.</p>
+      </div>
+      <div class="faq-item">
+        <h3>⚡ Anti-fraude</h3>
+        <p>Chaque QR code est <strong>unique</strong> et peut être validé une seule fois.  
+           Impossible de le partager ou de le falsifier ✅.</p>
+      </div>
+      <div class="faq-item">
+        <h3>📊 Suivi en direct</h3>
+        <p>À chaque scan, l’information est envoyée vers votre tableau de bord.  
+           Vous voyez en temps réel qui est déjà entré et combien de places restent.</p>
+      </div>
+      <div class="faq-item">
+        <h3>🙌 Facile à déployer</h3>
+        <p>Aucune installation complexe : ScanEvent est accessible directement depuis 
+           votre navigateur (Chrome, Safari, Edge).  
+           <br>Idéal pour vos équipes d’accueil.</p>
+      </div>
+    </div>
+  </section>
 
   <!-- FAQ -->
   <section class="faq">
@@ -434,19 +438,19 @@
     <div class="faq-list">
       <div class="faq-item">
         <h3>💰 Combien coûte QR Event ?</h3>
-        <p>QR Event propose une formule gratuite pour les petits événements, et des forfaits adaptés aux besoins plus importants. Vous ne payez que pour ce que vous utilisez.</p>
+        <p>La licence coûte 149€ (paiement unique). Ensuite, vous achetez simplement des crédits participants selon vos besoins.</p>
+      </div>
+      <div class="faq-item">
+        <h3>📅 Y a-t-il une limite d’événements ?</h3>
+        <p>Non 🚀 ! Vous pouvez créer autant d’événements que vous voulez. Vous ne payez que pour les participants réellement inscrits.</p>
       </div>
       <div class="faq-item">
         <h3>🔒 Est-ce sécurisé ?</h3>
-        <p>Oui ✅ ! Vos données et celles de vos participants sont protégées par un chiffrement SSL et des serveurs sécurisés. Les paiements en ligne sont traités via des partenaires de confiance.</p>
+        <p>Oui ✅ ! Les données et paiements sont protégés avec SSL et partenaires de confiance.</p>
       </div>
       <div class="faq-item">
-        <h3>🎨 Peut-on personnaliser l’événement ?</h3>
-        <p>Absolument ! Vous pouvez ajouter votre logo, vos couleurs et vos propres conditions d’inscription pour un rendu 100% professionnel.</p>
-      </div>
-      <div class="faq-item">
-        <h3>📱 Comment les participants accèdent-ils à leur QR code ?</h3>
-        <p>Chaque participant reçoit automatiquement son QR code par email après l’inscription. Il peut l’imprimer ou simplement le présenter depuis son smartphone.</p>
+        <h3>📱 Comment mes participants reçoivent-ils leur QR code ?</h3>
+        <p>Chaque participant reçoit automatiquement un QR code unique par email après inscription.</p>
       </div>
     </div>
   </section>
