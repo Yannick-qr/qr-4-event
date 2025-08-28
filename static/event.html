@@ -129,8 +129,8 @@
       document.getElementById("event-location").textContent = event.location;
       document.getElementById("event-price").textContent = event.price;
 
-      // Charger crédits restants
-      const resCredits = await fetch("/api/license/credits");
+      // Charger crédits restants pour cet event
+      const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
       const credits = await resCredits.json();
 
       let complet = false;

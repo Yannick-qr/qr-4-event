@@ -1237,12 +1237,22 @@ def get_logs(token: str = Form(...), db: Session = Depends(get_db)):
 # ==============================
 # API - CREDITS DISPONIBLES
 # ==============================
-
 @app.get("/api/license/credits")
-def get_license_credits(db: Session = Depends(get_db)):
-    # récupère le premier admin actif (ou celui connecté)
+def get_license_credits(event_id: int = None, db: Session = Depends(get_db)):
+    # Si on fournit un event_id → on récupère l'admin qui a créé cet event
+    if event_id:
+        event = db.query(Event).filter(Event.id == event_id).first()
+        if not event:
+            return {"remaining_participant_credits": 0}
+        admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+        if not admin:
+            return {"remaining_participant_credits": 0}
+        return {"remaining_participant_credits": max(0, admin.participant_credits)}
+
+    # Sinon, fallback (ancien comportement) → premier admin actif
     license_owner = db.query(AdminUser).filter_by(is_active=True).first()
     if not license_owner:
         return {"remaining_participant_credits": 0}
 
     return {"remaining_participant_credits": max(0, license_owner.participant_credits)}
+
