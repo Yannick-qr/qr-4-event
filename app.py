@@ -637,8 +637,9 @@ def update_event(
 	date: str = Form(...), 
 	location: str = Form(...), 
 	price: float = Form(...), 
-    checkin_login: str = Form(None),
-    checkin_password: str = Form(None),
+        checkin_login: str = Form(None),
+        checkin_password: str = Form(None),
+        max_participants: int = Form(None),   # ✅ ajouté ici
 	token: str = Form(...), 
 	db: Session = Depends(get_db)):
 
