@@ -104,6 +104,28 @@ iframe[src*="paypal.com"] {
   z-index: 9999 !important;   /* forcer PayPal au-dessus */
   position: relative !important;
 }
+/* ✅ Style pour le bouton Export CSV */
+.btn {
+  background: #007bff;   /* bleu vif */
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 15px;
+  font-size: 15px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;  /* espace entre l’emoji et le texte */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  background: #0056b3; /* bleu foncé au survol */
+  transform: translateY(-2px); /* petit effet flottant */
+}
   </style>
 </head>
 <body>
