@@ -89,17 +89,21 @@ box-sizing: border-box;
     #creditPacks .credits { color: #333; }
     #creditPacks .price { color: #007bff; font-weight: bold; }
 
-/* Fix z-index PayPal */
+#creditPacks .price { 
+  color: #007bff; 
+  font-weight: bold; 
+}
+
+/* ✅ Fix affichage popup PayPal */
 #paypalModal {
   z-index: 9998 !important;   /* au-dessus de la nav et du header */
 }
 
 #paypal-button-container iframe,
 iframe[src*="paypal.com"] {
-  z-index: 9999 !important;   /* forcer PayPal au-dessus du modal */
+  z-index: 9999 !important;   /* forcer PayPal au-dessus */
   position: relative !important;
 }
-
   </style>
 </head>
 <body>
@@ -139,10 +143,8 @@ iframe[src*="paypal.com"] {
     📋 Inscriptions Payées
   </button>
   <button id="eventsBtn" class="active" data-i18n="events">Événements</button>
-  <button id="buyCreditsBtn" data-i18n="buyCredits"
-        onclick="window.location.href='acheter_credits.html'">
-  Acheter des crédits
-  </button>
+  <button id="buyCreditsBtn" data-i18n="buyCredits">Acheter des crédits</button>
+
 
   <button id="paypalConfigBtn">⚙️ Mon PayPal</button>
   <button id="logsBtn">📜 Historique</button>
@@ -241,6 +243,31 @@ iframe[src*="paypal.com"] {
     </thead>
     <tbody></tbody>
   </table>
+</section>
+
+<!-- ======================== -->
+<!-- SECTION ACHETER DES CRÉDITS -->
+<!-- ======================== -->
+<section id="buyCredits">
+  <h2>💳 Acheter des Crédits</h2>
+  <p>
+    Les crédits sont utilisés pour gérer vos participants aux événements.<br>
+    Chaque participant validé consomme <strong>1 crédit</strong>.
+  </p>
+
+  <div class="info-box">
+    <p><strong>Exemple :</strong></p>
+    <ul>
+      <li>50 crédits = 50 participants</li>
+      <li>100 crédits = 100 participants</li>
+      <li>250 crédits = 250 participants</li>
+    </ul>
+  </div>
+
+  <p>Sélectionnez un pack puis procédez au paiement :</p>
+
+  <div id="creditPacks"></div>
+  <div id="paypal-button-container"></div>
 </section>
 
 
@@ -637,5 +664,48 @@ function resetInactivityTimer() {
 resetInactivityTimer();
 
 </script>
+<script>
+function renderPayPalButton() {
+  if (!window.paypal) {
+    console.error("SDK PayPal non chargé !");
+    return;
+  }
+
+  paypal.Buttons({
+    createOrder: function(data, actions) {
+      return actions.order.create({
+        purchase_units: [{
+          amount: {
+            value: selectedPack ? selectedPack.price : '149.00' // 💶 montant dynamique ou valeur par défaut
+          }
+        }]
+      });
+    },
+    onApprove: function(data, actions) {
+      return actions.order.capture().then(function(details) {
+        console.log("✅ Paiement validé :", details);
+        // Redirection vers page succès
+        window.location.href = "/static/success.html?orderId=" + data.orderID;
+      });
+    },
+    onCancel: function (data) {
+      window.location.href = "/static/cancel.html";
+    },
+    onError: function (err) {
+      console.error("❌ Erreur PayPal :", err);
+      window.location.href = "/static/error.html";
+    }
+  }).render('#paypal-button-container');
+}
+
+// ⚡ Attendre que le SDK soit chargé avant de lancer le bouton
+const checkPaypal = setInterval(() => {
+  if (window.paypal) {
+    clearInterval(checkPaypal);
+    renderPayPalButton();
+  }
+}, 500);
+</script>
+
 </body>
 </html>
