@@ -324,6 +324,7 @@ if (!token) window.location.href = "/static/login.html";
 const eventsBtn = document.getElementById("eventsBtn");
 const paypalConfigBtn = document.getElementById("paypalConfigBtn");
 const logsBtn = document.getElementById("logsBtn");
+const buyCreditsBtn = document.getElementById("buyCreditsBtn"); // ✅ ajouté
 const deletePaypalBtn = document.getElementById("deletePaypalBtn");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
@@ -473,6 +474,10 @@ function showSection(id) {
 eventsBtn.addEventListener("click", () => showSection("events"));
 paypalConfigBtn.addEventListener("click", () => { showSection("paypalConfig"); loadPaypalStatus(); });
 logsBtn.addEventListener("click", () => { showSection("logs"); loadLogs(); });
+buyCreditsBtn.addEventListener("click", () => { 
+  showSection("buyCredits"); 
+  loadConfig(); // charge les packs et prépare PayPal
+});
 
 // ========================
 // Vérifier statut PayPal
