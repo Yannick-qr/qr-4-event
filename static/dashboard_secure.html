@@ -352,51 +352,6 @@ function selectPack(packKey, event) {
   event.currentTarget.classList.add("selected");
 }
 
-document.getElementById("buyCreditsBtn").addEventListener("click", async () => {
-  paypalModal.style.display = "flex";
-
-  // 🔥 Recharge la liste des packs (et attend que ce soit fini)
-  await loadConfig();
-
-  // ⚠️ Vide le bouton PayPal pour éviter les doublons si on ouvre plusieurs fois
-  document.getElementById("paypal-button-container").innerHTML = "";
-  paypalRendered = false;
-
-  if (!selectedPack) {
-    console.error("Aucun pack sélectionné !");
-    return;
-  }
-
-  if (!paypalRendered) {
-    paypal.Buttons({
-      createOrder: function() {
-        return fetch("/paypal/create-order", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "credits", credits: selectedPack.credits })
-        }).then(res => res.json()).then(order => order.id);
-      },
-      onApprove: function(data, actions) {
-        return actions.order.capture().then(function(details) {
-          fetch("/admin/credits/add", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: token, credits: selectedPack.credits, payment_id: details.id })
-          }).then(res => res.json()).then(resp => {
-            if (resp.success) {
-              alert("✅ " + (selectedPack.credits >= 9999 ? "Pack illimité" : selectedPack.credits + " participants") + " ajoutés !");
-              paypalModal.style.display = "none";
-              loadEvents();
-            } else {
-              alert("❌ Erreur backend : " + (resp.error || "Impossible d’ajouter les crédits"));
-            }
-          });
-        });
-      }
-    }).render("#paypal-button-container");
-    paypalRendered = true;
-  }
-});
 
 const paypalModal = document.getElementById("paypalModal");
 document.getElementById("closePaypalModal").addEventListener("click", () => paypalModal.style.display = "none");
