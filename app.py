@@ -1104,11 +1104,6 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             except Exception as e:
                 print("❌ Erreur envoi email participant :", e)
 
-            # Lock event après 1er paiement
-            if not event_db.is_locked:
-                event_db.is_locked = True
-                print(f"🔒 Événement {event_db.id} verrouillé après premier paiement.")
-
             db.commit()
 
             return {"success": True, "message": "Inscription validée et enregistrée."}
