@@ -201,7 +201,10 @@ iframe[src*="paypal.com"] {
     <input type="date" id="date" required>
     <input type="text" id="location" placeholder="Lieu" required>
     <input type="number" id="price" placeholder="Prix (€)" required step="0.01">
-    <input type="number" id="max_participants" placeholder="Nombre max de participants">
+    <input type="number" id="max_participants" placeholder="100">
+    <small style="color:gray; display:block; margin-top:4px;">
+     Par défaut, fixé à <b>100 participants</b> si laissé vide.
+    </small>
     <input type="text" id="checkin_login" placeholder="Login Check-in">
     <input type="password" id="checkin_password" placeholder="Password Check-in">
     <button type="submit" data-i18n="createEvent">Créer l’événement</button>
@@ -337,7 +340,10 @@ iframe[src*="paypal.com"] {
       <label data-i18n="location">Lieu :</label><input type="text" id="edit_location" required>
       <label data-i18n="price">Prix (€) :</label><input type="number" id="edit_price" step="0.01" required>
       <label>Max participants :</label>
-      <input type="number" id="edit_max_participants">
+      <input type="number" id="edit_max_participants" placeholder="100">
+      <small style="color:gray; display:block; margin-top:4px;">
+        Par défaut, fixé à <b>100 participants</b> si laissé vide.
+      </small>
       <label>Login Check-in :</label>
       <input type="text" id="edit_checkin_login">
       <label>Mot de passe Check-in :</label>

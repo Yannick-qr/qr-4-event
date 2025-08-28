@@ -602,7 +602,7 @@ def create_event(
 	price: float = Form(...),
         checkin_login: str = Form(None),
         checkin_password: str = Form(None),
-        max_participants: int = Form(None),
+        max_participants: int = Form(100),
 	token: str = Form(...),
 	db: Session = Depends(get_db)
 ):
@@ -639,7 +639,7 @@ def update_event(
 	price: float = Form(...), 
         checkin_login: str = Form(None),
         checkin_password: str = Form(None),
-        max_participants: int = Form(None),   # ✅ ajouté ici
+        max_participants: int = Form(100),   # ✅ ajouté ici
 	token: str = Form(...), 
 	db: Session = Depends(get_db)):
 
