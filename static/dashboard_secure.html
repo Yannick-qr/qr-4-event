@@ -353,10 +353,6 @@ function selectPack(packKey, event) {
 }
 
 
-const paypalModal = document.getElementById("paypalModal");
-document.getElementById("closePaypalModal").addEventListener("click", () => paypalModal.style.display = "none");
-window.addEventListener("click", (e) => { if (e.target === paypalModal) paypalModal.style.display = "none"; });
-
 // ✅ Charger événements et stats
 async function loadEvents() {
   const res = await fetch("/admin/events/list", { method: "POST", body: new URLSearchParams({ token }) });
