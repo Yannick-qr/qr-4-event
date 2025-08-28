@@ -194,21 +194,69 @@ iframe[src*="paypal.com"] {
     <div class="card stat"><h3 id="participantCredits">0</h3><p data-i18n="creditsAvailable">Crédits participants disponibles</p></div>
   </div>
   <h2 data-i18n="manageEvents">Gestion des événements</h2>
-  <form id="addEventForm">
-    <h3 data-i18n="addEvent">Ajouter un nouvel événement</h3>
-    <input type="text" id="title" placeholder="Titre" required>
-    <textarea id="description" placeholder="Description"></textarea>
-    <input type="date" id="date" required>
-    <input type="text" id="location" placeholder="Lieu" required>
-    <input type="number" id="price" placeholder="Prix (€)" required step="0.01">
-    <input type="number" id="max_participants" placeholder="100">
-    <small style="color:gray; display:block; margin-top:4px;">
-     Par défaut, fixé à <b>100 participants</b> si laissé vide.
-    </small>
-    <input type="text" id="checkin_login" placeholder="Login Check-in">
-    <input type="password" id="checkin_password" placeholder="Password Check-in">
-    <button type="submit" data-i18n="createEvent">Créer l’événement</button>
-  </form>
+
+<form id="addEventForm" style="max-width:600px;margin:40px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+
+  <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;color:#007bff;">
+    🗓️ Ajouter un nouvel événement
+  </h2>
+
+  <!-- Infos générales -->
+  <h3 style="margin:15px 0;color:#333;">Informations générales</h3>
+
+  <label for="title">Titre de l’événement</label>
+  <input type="text" id="title" placeholder="Ex: Conférence Paris 2025" class="input" required>
+
+  <label for="description">Description</label>
+  <textarea id="description" placeholder="Décrivez votre événement..." class="input"></textarea>
+
+  <label for="date">Date</label>
+  <input type="date" id="date" class="input" required>
+
+  <label for="location">Lieu</label>
+  <input type="text" id="location" placeholder="Ex: Paris, Salle X" class="input" required>
+
+  <label for="price">Prix (€)</label>
+  <input type="number" id="price" placeholder="Ex: 50" class="input" required step="0.01">
+
+  <!-- Participants -->
+  <h3 style="margin:20px 0;color:#333;">Participants</h3>
+
+  <label for="max_participants">Nombre maximum</label>
+  <input type="number" id="max_participants" placeholder="100" class="input">
+  <small style="color:#666;">Par défaut fixé à <b>100 participants</b> si laissé vide.</small>
+
+  <label for="checkin_login">Login Check-in</label>
+  <input type="text" id="checkin_login" class="input">
+
+  <label for="checkin_password">Password Check-in</label>
+  <input type="password" id="checkin_password" class="input">
+
+  <!-- Bouton -->
+  <button type="submit" data-i18n="createEvent" 
+    style="margin-top:25px;width:100%;padding:12px;background:#007bff;color:white;font-size:16px;border:none;border-radius:8px;cursor:pointer;">
+    ➕ Créer l’événement
+  </button>
+</form>
+
+<style>
+  .input {
+    width:100%;
+    padding:10px;
+    margin:8px 0 15px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:14px;
+    box-sizing: border-box;
+  }
+  .input:focus {
+    outline:none;
+    border-color:#007bff;
+    box-shadow:0 0 4px rgba(0,123,255,0.3);
+  }
+</style>
+
+
   <table id="eventsTable">
     <thead>
       <tr>
