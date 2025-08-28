@@ -109,7 +109,7 @@
       }
     });
 
-    // === Nouvelle logique : bloquer si crédits épuisés ou max atteint ===
+    // === Nouvelle logique : blocage prioritaire sur les crédits ===
     async function loadEvent() {
       const urlParams = new URLSearchParams(window.location.search);
       const eventId = urlParams.get("id");
@@ -135,10 +135,12 @@
 
       let complet = false;
       if (credits.remaining_participant_credits <= 0) {
+        // 🔒 Priorité aux crédits épuisés
         complet = true;
         document.getElementById("paypal-button-container").innerHTML =
-          "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (crédits épuisés)</p>";
+          "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes</p>";
       } else if (event.participants_count >= event.max_participants) {
+        // 🔒 Sinon, limite max participants atteinte
         complet = true;
         document.getElementById("paypal-button-container").innerHTML =
           "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
