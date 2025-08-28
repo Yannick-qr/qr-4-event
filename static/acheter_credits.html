@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Acheter des Crédits - QR4Event</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f6fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #007bff;
+      margin-bottom: 15px;
+    }
+    p {
+      font-size: 16px;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background: #f1f8ff;
+      border-left: 4px solid #007bff;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 6px;
+      text-align: left;
+    }
+    .pack {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 10px 0;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+      transition: all 0.3s;
+    }
+    .pack:hover { border-color:#007bff; background:#eef6ff; }
+    .pack.selected { border-color:#007bff; background:#dceeff; font-weight:bold; }
+    #paypal-button-container { margin-top: 25px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Acheter des Crédits</h1>
+    <p>
+      Les crédits sont utilisés pour gérer vos participants aux événements.<br>
+      Chaque participant validé consomme <strong>1 crédit</strong>.
+    </p>
+    <div class="info-box">
+      <p><strong>Exemple :</strong></p>
+      <ul>
+        <li>50 crédits = 50 participants</li>
+        <li>100 crédits = 100 participants</li>
+        <li>250 crédits = 250 participants</li>
+      </ul>
+    </div>
+    <p>Sélectionnez un pack puis procédez au paiement :</p>
+
+    <div id="creditPacks"></div>
+    <div id="paypal-button-container"></div>
+  </div>
+
+  <script>
+  const token = localStorage.getItem("token");
+  let CREDIT_PACKS = {};
+  let selectedPack = null;
+
+  // Charger les packs depuis /api/config
+  async function loadConfig() {
+    const res = await fetch("/api/config");
+    const data = await res.json();
+    if (!data.success) {
+      alert("⚠️ Impossible de charger la configuration des packs");
+      return;
+    }
+    CREDIT_PACKS = data.packs;
+
+    const container = document.getElementById("creditPacks");
+    container.innerHTML = "";
+
+    Object.entries(CREDIT_PACKS).forEach(([key, pack]) => {
+      const div = document.createElement("div");
+      div.className = "pack";
+      div.innerHTML = `<span>${pack.credits} crédits</span><span>${pack.price}€</span>`;
+      div.onclick = () => selectPack(key, div);
+      container.appendChild(div);
+    });
+
+    // sélection automatique du 1er pack
+    const firstKey = Object.keys(CREDIT_PACKS)[0];
+    selectPack(firstKey, container.firstChild);
+  }
+
+  function selectPack(key, el) {
+    selectedPack = CREDIT_PACKS[key];
+    document.querySelectorAll(".pack").forEach(p => p.classList.remove("selected"));
+    el.classList.add("selected");
+    renderPayPalButton();
+  }
+
+  async function renderPayPalButton() {
+    document.getElementById("paypal-button-container").innerHTML = "";
+
+    const res = await fetch("/api/paypal-client-id");
+    const data = await res.json();
+    if (!data.client_id) {
+      alert("⚠️ Erreur : Client ID PayPal introuvable");
+      return;
+    }
+
+    if (!window.paypal) {
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
+      script.onload = initButtons;
+      document.head.appendChild(script);
+    } else {
+      initButtons();
+    }
+  }
+
+  function initButtons() {
+    paypal.Buttons({
+      createOrder: () => {
+        return fetch("/paypal/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "credits", credits: selectedPack.credits })
+        }).then(res => res.json()).then(order => order.id);
+      },
+      onApprove: (data, actions) => {
+        return actions.order.capture().then(function(details) {
+          fetch("/admin/credits/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token: token,
+              credits: selectedPack.credits,
+              payment_id: details.id
+            })
+          })
+          .then(r => r.json())
+          .then(resp => {
+            if (resp.success) {
+              alert(`✅ ${selectedPack.credits} crédits ajoutés !`);
+              window.location.href = "dashboard_secure.html";
+            } else {
+              alert("❌ Erreur backend : " + resp.error);
+            }
+          });
+        });
+      }
+    }).render("#paypal-button-container");
+  }
+
+  // au chargement → afficher packs
+  loadConfig();
+  </script>
+</body>
+</html>
