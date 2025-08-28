@@ -137,25 +137,33 @@ iframe[src*="paypal.com"] {
   </div>
 </header>
 
-  <!-- BARRE DE NAVIGATION GRISE -->
+<!-- BARRE DE NAVIGATION GRISE -->
 <nav>
+  <!-- 1. Événements -->
+  <button id="eventsBtn" class="active" data-i18n="events">Événements</button>
+
+  <!-- 2. Inscriptions Payées -->
   <button class="nav-btn" onclick="window.open('paid_registrations.html', '_blank')">
     📋 Inscriptions Payées
   </button>
-  <button id="eventsBtn" class="active" data-i18n="events">Événements</button>
+
+  <!-- 3. Acheter des crédits -->
   <button id="buyCreditsBtn" data-i18n="buyCredits">Acheter des crédits</button>
 
-
+  <!-- 4. Mon PayPal -->
   <button id="paypalConfigBtn">⚙️ Mon PayPal</button>
+
+  <!-- 5. Historique -->
   <button id="logsBtn">📜 Historique</button>
 
   <!-- Logo ScanEvent comme bouton ouvrant une nouvelle fenêtre -->
-<a href="scan_event.html" target="_blank">
-  <img src="/static/img/scanevent-logo.png" 
-       alt="Scan Event" 
-       style="height:65px; width:auto; margin-left:20px; cursor:pointer; padding:5px; background:white; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-</a>
+  <a href="scan_event.html" target="_blank">
+    <img src="/static/img/scanevent-logo.png" 
+         alt="Scan Event" 
+         style="height:65px; width:auto; margin-left:20px; cursor:pointer; padding:5px; background:white; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+  </a>
 </nav>
+
 
 <section id="events" class="active">
   <h2 data-i18n="stats">Statistiques</h2>
@@ -463,21 +471,27 @@ async function toggleEvent(id) {
 // Navigation entre sections
 // ========================
 function showSection(id) {
+  // Masquer toutes les sections
   document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
+
+  // Afficher uniquement la section choisie
   document.getElementById(id).classList.add("active");
+
+  // Réinitialiser l'état des boutons
   document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+
+  // Activer le bouton correspondant
   if (id === "events") eventsBtn.classList.add("active");
   if (id === "paypalConfig") paypalConfigBtn.classList.add("active");
   if (id === "logs") logsBtn.classList.add("active");
+  if (id === "buyCredits") buyCreditsBtn.classList.add("active");
 }
 
+// ⚡ Brancher les boutons
 eventsBtn.addEventListener("click", () => showSection("events"));
 paypalConfigBtn.addEventListener("click", () => { showSection("paypalConfig"); loadPaypalStatus(); });
 logsBtn.addEventListener("click", () => { showSection("logs"); loadLogs(); });
-buyCreditsBtn.addEventListener("click", () => { 
-  showSection("buyCredits"); 
-  loadConfig(); // charge les packs et prépare PayPal
-});
+buyCreditsBtn.addEventListener("click", () => { showSection("buyCredits"); loadConfig(); });
 
 // ========================
 // Vérifier statut PayPal
