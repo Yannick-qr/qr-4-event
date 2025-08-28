@@ -109,17 +109,49 @@
       }
     });
 
-    // === Chargement dynamique du SDK PayPal ===
-    async function loadPayPalSdk() {
-      try {
+    // === Nouvelle logique : bloquer si crédits épuisés ou max atteint ===
+    async function loadEvent() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const eventId = urlParams.get("id");
+
+      // Charger infos event
+      const resEvent = await fetch(`/api/event/${eventId}`);
+      const dataEvent = await resEvent.json();
+      if (!dataEvent.success) {
+        document.querySelector(".box").innerHTML = "<h2>❌ Événement introuvable</h2>";
+        return;
+      }
+      const event = dataEvent.event;
+
+      document.getElementById("event-title").textContent = event.title;
+      document.getElementById("event-description").textContent = event.description || "Pas de description disponible.";
+      document.getElementById("event-date").textContent = event.date;
+      document.getElementById("event-location").textContent = event.location;
+      document.getElementById("event-price").textContent = event.price;
+
+      // Charger crédits restants
+      const resCredits = await fetch("/api/license/credits");
+      const credits = await resCredits.json();
+
+      let complet = false;
+      if (credits.remaining_participant_credits <= 0) {
+        complet = true;
+        document.getElementById("paypal-button-container").innerHTML =
+          "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (crédits épuisés)</p>";
+      } else if (event.participants_count >= event.max_participants) {
+        complet = true;
+        document.getElementById("paypal-button-container").innerHTML =
+          "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
+      }
+
+      // Charger PayPal seulement si pas complet
+      if (!complet) {
         const res = await fetch(`/api/paypal-client-id?event_id=${eventId}`);
         const data = await res.json();
         if (data.client_id) {
           const script = document.createElement("script");
           script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
-          script.async = true;
           script.onload = function () {
-            // === Bouton PayPal ===
             paypal.Buttons({
               onClick: function(data, actions) {
                 const name = document.getElementById("name").value.trim();
@@ -129,32 +161,25 @@
                 const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
                 if (name === "" || email === "") {
-                  messageDiv.innerHTML =
-                    "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
+                  messageDiv.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
                   return actions.reject();
                 }
-
                 if (!emailValid) {
-                  messageDiv.innerHTML =
-                    "<p class='error'>❌ Veuillez entrer une adresse email valide.</p>";
+                  messageDiv.innerHTML = "<p class='error'>❌ Veuillez entrer une adresse email valide.</p>";
                   return actions.reject();
                 }
-
                 messageDiv.innerHTML = "";
                 return actions.resolve();
               },
 
-  // 🚀 ICI : on appelle ton backend
-  createOrder: function(data, actions) {
-    return fetch(`/event/${eventId}/pay`, {
-      method: "POST"
-    })
-    .then(res => res.json())
-    .then(order => {
-      if (!order.success) throw new Error(order.error || "Erreur backend");
-      return order.id;
-    });
-  },
+              createOrder: function(data, actions) {
+                return fetch(`/event/${eventId}/pay`, { method: "POST" })
+                  .then(res => res.json())
+                  .then(order => {
+                    if (!order.success) throw new Error(order.error || "Erreur backend");
+                    return order.id;
+                  });
+              },
 
               onApprove: function(data, actions) {
                 return actions.order.capture().then(function(details) {
@@ -165,7 +190,7 @@
                   formData.append("name", name);
                   formData.append("email", email);
                   formData.append("event_id", eventId);
-                  formData.append("amount", eventPrice);
+                  formData.append("amount", event.price);
                   formData.append("transaction_id", details.id);
 
                   fetch("/register_participant", {
@@ -193,15 +218,12 @@
             }).render('#paypal-button-container');
           };
           document.head.appendChild(script);
-        } else {
-          console.error("Erreur PayPal:", data.error || "client_id manquant");
         }
-      } catch (err) {
-        console.error("Impossible de charger le client_id PayPal", err);
       }
     }
 
-    loadPayPalSdk();
+    loadEvent();
+
   </script>
 </body>
 </html>

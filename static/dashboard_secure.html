@@ -201,17 +201,22 @@ iframe[src*="paypal.com"] {
     <input type="date" id="date" required>
     <input type="text" id="location" placeholder="Lieu" required>
     <input type="number" id="price" placeholder="Prix (€)" required step="0.01">
-<input type="text" id="checkin_login" placeholder="Login Check-in">
-<input type="password" id="checkin_password" placeholder="Password Check-in">
+    <input type="number" id="max_participants" placeholder="Nombre max de participants">
+    <input type="text" id="checkin_login" placeholder="Login Check-in">
+    <input type="password" id="checkin_password" placeholder="Password Check-in">
     <button type="submit" data-i18n="createEvent">Créer l’événement</button>
   </form>
   <table id="eventsTable">
     <thead>
       <tr>
-        <th data-i18n="title">Titre</th><th data-i18n="description">Description</th>
-        <th data-i18n="date">Date</th><th data-i18n="location">Lieu</th>
-        <th data-i18n="price">Prix</th><th data-i18n="status">Identifiant Scanner</th>
-<th>Login Check-in</th>
+        <th data-i18n="title">Titre</th>
+        <th data-i18n="description">Description</th>
+        <th data-i18n="date">Date</th>
+        <th data-i18n="location">Lieu</th>
+        <th data-i18n="price">Prix</th>
+        <th>Max participants</th>
+        <th data-i18n="status">Identifiant Scanner</th>
+        <th>Login Check-in</th>
         <th data-i18n="publicLink">Lien public</th><th data-i18n="actions">Actions</th>
       </tr>
     </thead>
@@ -331,10 +336,12 @@ iframe[src*="paypal.com"] {
       <label data-i18n="date">Date :</label><input type="date" id="edit_date" required>
       <label data-i18n="location">Lieu :</label><input type="text" id="edit_location" required>
       <label data-i18n="price">Prix (€) :</label><input type="number" id="edit_price" step="0.01" required>
-<label>Login Check-in :</label>
-<input type="text" id="edit_checkin_login">
-<label>Mot de passe Check-in :</label>
-<input type="password" id="edit_checkin_password">
+      <label>Max participants :</label>
+      <input type="number" id="edit_max_participants">
+      <label>Login Check-in :</label>
+      <input type="text" id="edit_checkin_login">
+      <label>Mot de passe Check-in :</label>
+      <input type="password" id="edit_checkin_password">
       <button type="submit" id="saveEditBtn">💾 <span data-i18n="save">Enregistrer</span></button>
       <button type="button" id="cancelEditBtn">❌ <span data-i18n="cancel">Annuler</span></button>
     </form>
@@ -444,11 +451,13 @@ async function loadEvents() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${ev.title}</td><td>${ev.description}</td><td>${ev.date}</td>
-      <td>${ev.location}</td><td>${ev.price} €</td>
-<td>
-  ${ev.checkin_login ? "<b>Login : </b>" + ev.checkin_login : "❌ Non défini"}<br>
-  ${ev.checkin_password ? "<b>Password : </b>" + ev.checkin_password : ""}
-</td>
+      <td>${ev.location}</td>
+      <td>${ev.price} €</td>
+      <td>${ev.max_participants || "∞"}</td>
+      <td>
+        ${ev.checkin_login ? "<b>Login : </b>" + ev.checkin_login : "❌ Non défini"}<br>
+        ${ev.checkin_password ? "<b>Password : </b>" + ev.checkin_password : ""}
+      </td>
       <td>${ev.is_active ? "✅ Actif" : "❌ Inactif"}</td>
 
       <td><a href="${ev.public_url}" target="_blank"><button class="action-btn link-btn">🔗 Voir</button></a></td>
@@ -527,6 +536,7 @@ function editEvent(ev) {
   document.getElementById("edit_date").value = ev.date;
   document.getElementById("edit_location").value = ev.location;
   document.getElementById("edit_price").value = ev.price;
+  document.getElementById("edit_max_participants").value = ev.max_participants || 100;
   document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
   document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
 
@@ -652,9 +662,10 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
   form.append("date", document.getElementById("edit_date").value);
   form.append("location", document.getElementById("edit_location").value);
   form.append("price", document.getElementById("edit_price").value);
+  form.append("max_participants", document.getElementById("edit_max_participants").value);
   form.append("token", token);
-form.append("checkin_login", document.getElementById("edit_checkin_login").value);
-form.append("checkin_password", document.getElementById("edit_checkin_password").value);
+  form.append("checkin_login", document.getElementById("edit_checkin_login").value);
+  form.append("checkin_password", document.getElementById("edit_checkin_password").value);
 
   const res = await fetch("/admin/events/update", {
     method: "POST",
@@ -740,9 +751,10 @@ document.getElementById("addEventForm").addEventListener("submit", async (e) => 
   form.append("date", document.getElementById("date").value);
   form.append("location", document.getElementById("location").value);
   form.append("price", document.getElementById("price").value);
+  form.append("max_participants", document.getElementById("max_participants").value);
   form.append("token", token);
-form.append("checkin_login", document.getElementById("checkin_login").value);
-form.append("checkin_password", document.getElementById("checkin_password").value);
+  form.append("checkin_login", document.getElementById("checkin_login").value);
+  form.append("checkin_password", document.getElementById("checkin_password").value);
 
   const res = await fetch("/admin/events", {
     method: "POST",

@@ -461,10 +461,22 @@ def register_participant(
     if not event:
         return {"success": False, "error": "Événement introuvable ou inactif."}
 
+    # Vérifie si l'événement a atteint sa limite de participants
+    participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
+    if event.max_participants and participants_count >= event.max_participants:
+        return {"success": False, "error": "Événement complet"}
+
     # Vérifie si déjà inscrit avec cette transaction
     existing = db.query(Participant).filter(Participant.transaction_id == transaction_id).first()
     if existing:
         return {"success": True, "message": "Déjà enregistré."}
+
+    # Vérifie si l'admin a encore des crédits
+    admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+    if not admin:
+       return {"success": False, "error": "Admin introuvable pour cet événement."}
+    if admin.participant_credits <= 0:
+       return {"success": False, "error": "Pas assez de crédits participants"}
 
     # ✅ Crée le participant
     participant = Participant(
@@ -588,8 +600,9 @@ def create_event(
 	date: str = Form(...),
 	location: str = Form(...),
 	price: float = Form(...),
-    checkin_login: str = Form(None),
-    checkin_password: str = Form(None),
+        checkin_login: str = Form(None),
+        checkin_password: str = Form(None),
+        max_participants: int = Form(None),
 	token: str = Form(...),
 	db: Session = Depends(get_db)
 ):
@@ -606,7 +619,8 @@ def create_event(
 	price=price,
         created_by=user.id,
         checkin_login=checkin_login,
-        checkin_password=checkin_password
+        checkin_password=checkin_password,
+        max_participants=max_participants  # ✅ ajouté ici
     )
     db.add(new_event)
     db.commit()
@@ -642,6 +656,7 @@ def update_event(
     event.price = price
     event.checkin_login = checkin_login
     event.checkin_password = checkin_password
+    event.max_participants = max_participants
 
     db.commit()
     return {"success": True, "message": "Événement mis à jour"}
@@ -709,6 +724,8 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
     if not event:
         return JSONResponse(status_code=404, content={"success": False, "error": "Événement introuvable ou inactif"})
 
+    participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
+
     return {
         "success": True,
         "event": {
@@ -719,6 +736,8 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
             "location": event.location,
             "price": event.price,
             "is_active": event.is_active,
+            "max_participants": event.max_participants,   # ✅ ajouté
+            "participants_count": participants_count,     # ✅ ajouté
             "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={event.id}"
         }
     }
@@ -815,6 +834,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
                 "checkin_password": e.checkin_password,    # ✅ ajouté
                 "is_active": e.is_active,
                 "is_locked": e.is_locked,
+                "max_participants": e.max_participants,
                 "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={e.id}"
             }
             for e in events
@@ -1035,6 +1055,12 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
                 print("❌ Événement introuvable en DB")
                 return {"success": False, "error": "Événement introuvable"}
 
+            # Vérifie si l'événement a atteint sa limite de participants
+            participants_count = db.query(Participant).filter(Participant.event_id == event_db.id).count()
+            if event_db.max_participants and participants_count >= event_db.max_participants:
+               print("⚠️ Paiement reçu mais event complet → refus")
+               return {"success": False, "error": "Événement complet"}
+
             # Enregistrement DB
             new_reg = EventRegistration(
                 user_id=None,
@@ -1207,4 +1233,15 @@ def get_logs(token: str = Form(...), db: Session = Depends(get_db)):
             for l in logs
         ]
     }
+# ==============================
+# API - CREDITS DISPONIBLES
+# ==============================
 
+@app.get("/api/license/credits")
+def get_license_credits(db: Session = Depends(get_db)):
+    # récupère le premier admin actif (ou celui connecté)
+    license_owner = db.query(AdminUser).filter_by(is_active=True).first()
+    if not license_owner:
+        return {"remaining_participant_credits": 0}
+
+    return {"remaining_participant_credits": max(0, license_owner.participant_credits)}

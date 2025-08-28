@@ -63,6 +63,7 @@ class Event(Base):
     date = Column(String)
     location = Column(String)
     price = Column(Float)
+    max_participants = Column(Integer, default=100)  # limite définie par l'admin
     created_by = Column(Integer, ForeignKey("admin_users.id"))
 
     # 🔥 nouveaux champs check-in
@@ -84,7 +85,7 @@ class EventRegistration(Base):
     user_id = Column(Integer, index=True)   # identifie le participant (AdminUser)
     event_id = Column(Integer, index=True)  # identifie l'événement
     payment_id = Column(String, unique=True, index=True)  # ID PayPal (évite doublons)
-    created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class Participant(Base):
