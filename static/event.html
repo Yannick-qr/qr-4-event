@@ -16,25 +16,22 @@
     }
 
     /* ✅ Header image façon bannière */
-.event-header {
-  position: relative;
-  max-width: 900px;   /* ✅ largeur max */
-  margin: 20px auto;  /* ✅ centrer */
-  height: auto;
-  max-height: 400px;
-  overflow: hidden;
-  border-radius: 12px;
-}
-
-/* Image */
-.event-header img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-  border-radius: 12px;
-}
-    /* ✅ Overlay dégradé */
+    .event-header {
+      position: relative;
+      max-width: 900px;
+      margin: 20px auto;
+      height: auto;
+      max-height: 400px;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+    .event-header img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+      border-radius: 12px;
+    }
     .event-header::after {
       content: "";
       position: absolute;
@@ -45,8 +42,6 @@
       background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
       border-radius: 0 0 12px 12px;
     }
-
-    /* ✅ Titre superposé */
     .event-header h2 {
       position: absolute;
       bottom: 20px;
@@ -84,6 +79,46 @@
     .success { color: green; margin-top: 10px; }
     .error { color: red; margin-top: 10px; }
 
+    /* ✅ Bouton personnalisé */
+    #custom-paypal-btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: block;
+      margin: 20px auto 0;
+      position: relative;
+    }
+    #custom-paypal-btn:hover {
+      background: #0056b3;
+    }
+    #custom-paypal-btn.loading {
+      cursor: wait;
+      opacity: 0.8;
+    }
+    /* ✅ Spinner dans le bouton */
+    #custom-paypal-btn.loading::after {
+      content: "";
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: translateY(-50%) rotate(0deg); }
+      100% { transform: translateY(-50%) rotate(360deg); }
+    }
+
     /* 🎯 Responsive */
     @media (max-width: 768px) {
       .event-header {
@@ -103,11 +138,12 @@
   </style>
 </head>
 <body>
+
   <!-- ✅ Header avec image -->
-<div class="event-header">
-  <img id="event-image" src="/static/img/placeholder.jpg" alt="Image de l'événement">
-  <h2 id="event-title">Chargement...</h2>
-</div>
+  <div class="event-header">
+    <img id="event-image" src="/static/img/placeholder.jpg" alt="Image de l'événement">
+    <h2 id="event-title">Chargement...</h2>
+  </div>
 
   <!-- ✅ Box infos + inscription -->
   <div class="box">
@@ -124,7 +160,11 @@
       <input type="email" id="email" placeholder="Votre email" required>
     </form>
 
-    <div id="paypal-button-container" style="margin-top:20px; text-align:center;"></div>
+    <!-- ✅ Nouveau bouton bleu -->
+    <button id="custom-paypal-btn">M’inscrire</button>
+
+    <!-- ✅ Bouton PayPal caché -->
+    <div id="paypal-hidden-btn" style="display:none;"></div>
   </div>
 
   <script>
@@ -157,38 +197,24 @@
       document.getElementById("event-location").textContent = event.location;
       document.getElementById("event-price").textContent = event.price;
 
-// ✅ Gestion stable de l’image
-const img = document.getElementById("event-image");
-
-// Image par défaut (placeholder)
-img.src = "/static/img/placeholder.png";
-
-// Si une image est définie pour l’événement
-if (event.image_url) {
-  img.onload = () => {
-    console.log("✅ Image événement chargée :", event.image_url);
-  };
-  img.onerror = () => {
-    console.warn("⚠️ Erreur image, retour au placeholder.");
-    img.src = "/static/img/placeholder.png";
-  };
-  img.src = event.image_url;
-}
-
+      // ✅ Gestion image
+      const img = document.getElementById("event-image");
+      img.src = "/static/img/placeholder.png";
+      if (event.image_url) {
+        img.onload = () => console.log("✅ Image événement chargée :", event.image_url);
+        img.onerror = () => { img.src = "/static/img/placeholder.png"; };
+        img.src = event.image_url;
+      }
 
       // Vérif crédits
       const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
       const credits = await resCredits.json();
 
       let complet = false;
-      if (credits.remaining_participant_credits <= 0) {
+      if (credits.remaining_participant_credits <= 0 || event.participants_count >= event.max_participants) {
         complet = true;
-        document.getElementById("paypal-button-container").innerHTML =
+        document.getElementById("custom-paypal-btn").outerHTML =
           "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes</p>";
-      } else if (event.participants_count >= event.max_participants) {
-        complet = true;
-        document.getElementById("paypal-button-container").innerHTML =
-          "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
       }
 
       // PayPal
@@ -201,25 +227,24 @@ if (event.image_url) {
           script.onload = function () {
             paypal.Buttons({
               onClick: function(data, actions) {
-  const name = document.getElementById("name").value.trim();
-  const email = document.getElementById("email").value.trim();  // ✅ trim ici
-  const messageDiv = document.getElementById("message");
+                const name = document.getElementById("name").value.trim();
+                const email = document.getElementById("email").value.trim();
+                const messageDiv = document.getElementById("message");
 
-  // ✅ regex propre
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  if (name === "" || email === "") {
-    messageDiv.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
-    return actions.reject();
-  }
-  if (!emailValid) {
-    messageDiv.innerHTML = "<p class='error'>❌ Veuillez entrer une adresse email valide.</p>";
-    return actions.reject();
-  }
+                if (name === "" || email === "") {
+                  messageDiv.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
+                  return actions.reject();
+                }
+                if (!emailValid) {
+                  messageDiv.innerHTML = "<p class='error'>❌ Veuillez entrer une adresse email valide.</p>";
+                  return actions.reject();
+                }
 
-  messageDiv.innerHTML = "";
-  return actions.resolve();
-},
+                messageDiv.innerHTML = "";
+                return actions.resolve();
+              },
 
               createOrder: function(data, actions) {
                 return fetch(`/event/${eventId}/pay`, { method: "POST" })
@@ -264,10 +289,28 @@ if (event.image_url) {
               onError: function(err) {
                 console.error("Erreur PayPal:", err);
               }
-            }).render('#paypal-button-container');
+            }).render('#paypal-hidden-btn');
           };
           document.head.appendChild(script);
         }
+
+        // ✅ Connecte bouton personnalisé -> PayPal caché avec loader
+        const customBtn = document.getElementById("custom-paypal-btn");
+        customBtn.addEventListener("click", () => {
+          const iframe = document.querySelector("#paypal-hidden-btn iframe");
+          if (iframe) {
+            // Ajoute le loader
+            customBtn.classList.add("loading");
+            customBtn.textContent = "Chargement...";
+            iframe.contentWindow.focus();
+            iframe.click();
+            // Retire loader après 2s (le temps que PayPal ouvre sa pop-up)
+            setTimeout(() => {
+              customBtn.classList.remove("loading");
+              customBtn.textContent = "M’inscrire";
+            }, 2000);
+          }
+        });
       }
     }
 
