@@ -1011,7 +1011,7 @@ def checkin_validate(
     return {"success": True, "message": f"✅ Check-in validé pour {participant.name}"}
 
 # ========================
-# WEBHOOK PAYPAL
+# WEBHOOK PAYPAL (CAPTURE ONLY)
 # ========================
 @app.post("/paypal/webhook")
 async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
@@ -1034,118 +1034,84 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         }
         r = requests.post(verify_url, auth=auth, json=payload)
         verification = r.json()
-        print("🔎 Résultat vérification PayPal:", verification)
+        print("🔎 Vérification PayPal:", verification)
 
         if verification.get("verification_status") != "SUCCESS":
-            print("❌ Signature PayPal invalide :", verification)
             return JSONResponse(status_code=400, content={"success": False, "message": "Signature invalide"})
 
         # 📩 Lecture de l’événement
         event_type = event.get("event_type")
         resource = event.get("resource", {})
-        print(f"📩 Webhook PayPal reçu : type={event_type}")
-        print(f"Payload complet reçu : {event}")
+        print(f"📩 Webhook reçu: {event_type}")
+        print(f"Payload: {event}")
 
-        payer_email = None
-        payer_name = None
-        amount = None
-        transaction_id = None
-        event_id = None
+        # 👉 On ne traite que les CAPTURES validées
+        if event_type != "PAYMENT.CAPTURE.COMPLETED":
+            print(f"ℹ️ Ignoré: {event_type}")
+            return {"success": True, "message": f"Ignoré {event_type}"}
 
-        # 🟢 Cas 1 : CHECKOUT.ORDER.APPROVED
-        if event_type == "CHECKOUT.ORDER.APPROVED":
-            payer = resource.get("payer", {})
-            payer_email = payer.get("email_address")
-            payer_name = payer.get("name", {}).get("given_name")
-            amount = resource.get("purchase_units", [{}])[0].get("amount", {}).get("value")
-            transaction_id = resource.get("id")
-            try:
-                event_id = int(resource.get("purchase_units", [{}])[0].get("reference_id"))
-            except Exception:
-                print("⚠️ event_id manquant dans ORDER.APPROVED")
-                return {"success": False, "message": "event_id manquant"}
+        # ---------------------------
+        # EXTRACTION DES INFOS
+        # ---------------------------
+        amount = resource.get("amount", {}).get("value")
+        transaction_id = resource.get("id")
+        order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
 
+        if not order_id:
+            print("⚠️ Pas de order_id dans CAPTURE")
+            return {"success": False, "message": "order_id manquant"}
 
-        # 🟢 Cas 2 : PAYMENT.CAPTURE.COMPLETED (nouvelle version avec fallback API Orders)
-        elif event_type == "PAYMENT.CAPTURE.COMPLETED":
-            amount = resource.get("amount", {}).get("value")
-            transaction_id = resource.get("id")
-            order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
+        # 🔹 Authentification PayPal
+        auth_req = requests.post(
+            f"{PAYPAL_API_BASE}/v1/oauth2/token",
+            headers={"Accept": "application/json", "Accept-Language": "en_US"},
+            data={"grant_type": "client_credentials"},
+            auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
+        )
+        access_token = auth_req.json().get("access_token")
+        if not access_token:
+            return {"success": False, "message": "OAuth PayPal échoué"}
 
-            if not order_id:
-                print("⚠️ order_id manquant dans CAPTURE")
-                return {"success": False, "message": "order_id manquant"}
+        # 🔹 Récupérer l’Order pour obtenir payer_email + event_id
+        order_req = requests.get(
+            f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        order_data = order_req.json()
+        print("🔎 Order récupéré:", order_data)
 
-            # 🔹 Appel API PayPal Orders pour retrouver payer_email + event_id
-            try:
-                # Authentification OAuth
-                auth_req = requests.post(
-                    f"{PAYPAL_API_BASE}/v1/oauth2/token",
-                    headers={"Accept": "application/json", "Accept-Language": "en_US"},
-                    data={"grant_type": "client_credentials"},
-                    auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
-                )
-                access_token = auth_req.json().get("access_token")
+        payer = order_data.get("payer", {})
+        payer_email = payer.get("email_address")
+        payer_name = payer.get("name", {}).get("given_name")
 
-                if not access_token:
-                    print("❌ Impossible d’obtenir access_token PayPal")
-                    return {"success": False, "message": "OAuth PayPal échoué"}
+        try:
+            event_id = int(order_data["purchase_units"][0]["reference_id"])
+        except Exception:
+            return {"success": False, "message": "event_id manquant"}
 
-                # Requête Orders
-                order_req = requests.get(
-                    f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
-                    headers={"Authorization": f"Bearer {access_token}"}
-                )
-                order_data = order_req.json()
-                print("🔎 Order récupéré via API:", order_data)
-
-                payer = order_data.get("payer", {})
-                payer_email = payer.get("email_address")
-                payer_name = payer.get("name", {}).get("given_name")
-
-                # 🎯 Le vrai event_id est dans reference_id
-                try:
-                    event_id = int(order_data["purchase_units"][0]["reference_id"])
-                except Exception:
-                    print("⚠️ Pas de reference_id dans order_data")
-                    return {"success": False, "message": "event_id manquant"}
-
-            except Exception as e:
-                print("❌ Erreur lors de la récupération via Orders API:", e)
-                return {"success": False, "message": "Impossible de récupérer les infos du paiement"}
-
-
-
-        # 🔎 Vérifie si paiement déjà enregistré
-        existing = db.query(EventRegistration).filter_by(payment_id=transaction_id).first()
-        if existing:
-            print("ℹ️ Paiement déjà enregistré (ignorer).")
+        # ---------------------------
+        # VÉRIFS DB
+        # ---------------------------
+        if db.query(EventRegistration).filter_by(payment_id=transaction_id).first():
             return {"success": True, "message": "Paiement déjà enregistré"}
-        existing_participant = db.query(Participant).filter_by(transaction_id=transaction_id).first()
-        if existing_participant:
-            print("ℹ️ Participant déjà créé (ignorer).")
+        if db.query(Participant).filter_by(transaction_id=transaction_id).first():
             return {"success": True, "message": "Participant déjà enregistré"}
 
-        # 🔎 Vérifie si l’événement existe
         event_db = db.query(Event).filter(Event.id == event_id).first()
         if not event_db:
-            print("❌ Événement introuvable")
             return {"success": False, "message": "Événement introuvable"}
 
-        # 🔎 Vérifie limite de participants
         participants_count = db.query(Participant).filter(Participant.event_id == event_db.id).count()
         if event_db.max_participants and participants_count >= event_db.max_participants:
-            print("⚠️ Paiement reçu mais event complet → refus")
             return {"success": False, "message": "Événement complet"}
 
-        # 🔎 Vérifie crédits de l’admin
         admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
-        if not admin:
-            return {"success": False, "message": "Admin introuvable"}
-        if admin.participant_credits <= 0:
+        if not admin or admin.participant_credits <= 0:
             return {"success": False, "message": "Pas assez de crédits"}
 
-        # ✅ Création en DB
+        # ---------------------------
+        # CRÉATION EN DB
+        # ---------------------------
         new_reg = EventRegistration(user_id=None, event_id=event_id, payment_id=transaction_id)
         db.add(new_reg)
 
@@ -1159,31 +1125,32 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         )
         db.add(participant)
 
-        # Décrémente crédits
         admin.participant_credits -= 1
         db.commit()
         db.refresh(participant)
 
-        # ✅ Envoi email avec QR
+        # ---------------------------
+        # ENVOI EMAIL
+        # ---------------------------
         qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
         body = f"""
         <h2>Inscription confirmée 🎉</h2>
-        <p>Merci {participant.name}, ton paiement de {participant.amount} € pour l’événement <b>{event_db.title}</b> a bien été enregistré.</p>
+        <p>Merci {participant.name}, ton paiement de {participant.amount} € pour <b>{event_db.title}</b> a bien été enregistré.</p>
         <p>Date : {event_db.date} – Lieu : {event_db.location}</p>
-        <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
+        <p>Ton QR code est en pièce jointe ✅</p>
         """
         try:
             send_email_with_qr(payer_email, f"Confirmation inscription - {event_db.title}", body, qr_data=qr_data)
-            print(f"📧 Email envoyé à {payer_email}")
         except Exception as e:
-            print("❌ Erreur envoi email :", e)
+            print("❌ Erreur envoi email:", e)
 
         return {"success": True, "message": "Inscription validée et email envoyé"}
 
     except Exception as e:
-        print("❌ Exception webhook PayPal:", e)
+        print("❌ Exception webhook:", e)
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
+
 
 
 # ========================
