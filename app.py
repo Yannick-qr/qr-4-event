@@ -1052,7 +1052,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         transaction_id = None
         event_id = None
 
-        # 🟢 Cas 1 : ORDER.APPROVED
+        # 🟢 Cas 1 : CHECKOUT.ORDER.APPROVED
         if event_type == "CHECKOUT.ORDER.APPROVED":
             payer = resource.get("payer", {})
             payer_email = payer.get("email_address")
@@ -1060,31 +1060,56 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             amount = resource.get("purchase_units", [{}])[0].get("amount", {}).get("value")
             transaction_id = resource.get("id")
             try:
-                event_id = int(resource["purchase_units"][0]["reference_id"])
+                event_id = int(resource.get("purchase_units", [{}])[0].get("reference_id"))
             except Exception:
                 print("⚠️ event_id manquant dans ORDER.APPROVED")
                 return {"success": False, "message": "event_id manquant"}
 
-        # 🟢 Cas 2 : PAYMENT.CAPTURE.COMPLETED
+        # 🟢 Cas 2 : PAYMENT.CAPTURE.COMPLETED (nouvelle version avec fallback API Orders)
         elif event_type == "PAYMENT.CAPTURE.COMPLETED":
-            payer_email = resource.get("payer", {}).get("email_address")  # parfois présent
             amount = resource.get("amount", {}).get("value")
             transaction_id = resource.get("id")
+
             try:
-                event_id = int(resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id"))
+                order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
+                event_id = int(order_id)
             except Exception:
                 print("⚠️ event_id manquant dans CAPTURE")
                 return {"success": False, "message": "event_id manquant"}
 
-        else:
-            print(f"ℹ️ Type d’événement ignoré: {event_type}")
-            return {"success": True, "message": f"Ignoré {event_type}"}
+            # Tente de récupérer payer_email directement
+            payer_email = resource.get("payer", {}).get("email_address")
 
-        if not payer_email:
-            print("⚠️ Impossible de trouver payer_email")
-            return {"success": False, "message": "payer_email manquant"}
+            # 👉 Si pas trouvé, on appelle l’API Orders PayPal
+            if not payer_email:
+                try:
+                    auth_req = requests.post(
+                        f"{PAYPAL_API_BASE}/v1/oauth2/token",
+                        headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                        data={"grant_type": "client_credentials"},
+                        auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
+                    )
+                    access_token = auth_req.json().get("access_token")
 
-        print(f"✅ Paiement détecté : payment_id={transaction_id}, email={payer_email}")
+                    if access_token:
+                        order_req = requests.get(
+                            f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
+                            headers={"Authorization": f"Bearer {access_token}"}
+                        )
+                        order_data = order_req.json()
+                        print("🔎 Order details récupérés:", order_data)
+
+                        payer = order_data.get("payer", {})
+                        payer_email = payer.get("email_address")
+                        payer_name = payer.get("name", {}).get("given_name")
+
+                except Exception as e:
+                    print("❌ Impossible de récupérer payer_email via Orders API:", e)
+
+            if not payer_email:
+                print("⚠️ Aucun payer_email disponible même via Orders API")
+                return {"success": False, "message": "payer_email manquant"}
+
 
         # 🔎 Vérifie si paiement déjà enregistré
         existing = db.query(EventRegistration).filter_by(payment_id=transaction_id).first()
