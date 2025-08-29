@@ -1018,14 +1018,11 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.body()
         headers = request.headers
-
-        # Charger une seule fois le JSON
         event = json.loads(body)
 
-        # Vérification de la signature PayPal
+        # 🔒 Vérification de la signature PayPal
         verify_url = f"{PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature"
         auth = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
-
         payload = {
             "transmission_id": headers.get("Paypal-Transmission-Id"),
             "transmission_time": headers.get("Paypal-Transmission-Time"),
@@ -1033,9 +1030,8 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             "auth_algo": headers.get("Paypal-Auth-Algo"),
             "transmission_sig": headers.get("Paypal-Transmission-Sig"),
             "webhook_id": PAYPAL_WEBHOOK_ID,
-            "webhook_event": event   # ✅ objet JSON et pas string
+            "webhook_event": event
         }
-
         r = requests.post(verify_url, auth=auth, json=payload)
         verification = r.json()
         print("🔎 Résultat vérification PayPal:", verification)
@@ -1044,107 +1040,120 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             print("❌ Signature PayPal invalide :", verification)
             return JSONResponse(status_code=400, content={"success": False, "message": "Signature invalide"})
 
-        # Lecture de l’événement
+        # 📩 Lecture de l’événement
         event_type = event.get("event_type")
-
-        # 🟢 DEBUG : log l’événement reçu
+        resource = event.get("resource", {})
         print(f"📩 Webhook PayPal reçu : type={event_type}")
         print(f"Payload complet reçu : {event}")
 
-        # On gère les deux types d’events
-        if event_type in ["CHECKOUT.ORDER.APPROVED", "PAYMENT.CAPTURE.COMPLETED"]:
-            payer_email = event["resource"]["payer"]["email_address"]
-            payment_id = event["resource"]["id"]
+        payer_email = None
+        payer_name = None
+        amount = None
+        transaction_id = None
+        event_id = None
 
-            print(f"✅ Paiement détecté : payment_id={payment_id}, email={payer_email}")
-
-            # Récupérer l’event_id
+        # 🟢 Cas 1 : ORDER.APPROVED
+        if event_type == "CHECKOUT.ORDER.APPROVED":
+            payer = resource.get("payer", {})
+            payer_email = payer.get("email_address")
+            payer_name = payer.get("name", {}).get("given_name")
+            amount = resource.get("purchase_units", [{}])[0].get("amount", {}).get("value")
+            transaction_id = resource.get("id")
             try:
-                event_id = int(event["resource"]["purchase_units"][0]["reference_id"])
-                print(f"🎟️ Inscription liée à l’événement ID={event_id}")
+                event_id = int(resource["purchase_units"][0]["reference_id"])
             except Exception:
-                print("⚠️ event_id manquant dans reference_id")
-                return {"success": False, "message": "event_id manquant dans purchase_units.reference_id"}
+                print("⚠️ event_id manquant dans ORDER.APPROVED")
+                return {"success": False, "message": "event_id manquant"}
 
-            # Vérifie si déjà inscrit
-            existing = db.query(EventRegistration).filter_by(payment_id=payment_id).first()
-            if existing:
-                print("ℹ️ Paiement déjà enregistré (ignorer).")
-                return {"success": True, "message": "Paiement déjà enregistré"}
-
-            existing_participant = db.query(Participant).filter_by(transaction_id=payment_id).first()
-            if existing_participant:
-                print("ℹ️ Participant déjà créé (ignorer).")
-                return {"success": True, "message": "Participant déjà enregistré"}
-
-            # Vérifie l'événement
-            event_db = db.query(Event).filter(Event.id == event_id).first()
-            if not event_db:
-                print("❌ Événement introuvable en DB")
-                return {"success": False, "message": "Événement introuvable"}
-
-            # Vérifie si l'événement a atteint sa limite de participants
-            participants_count = db.query(Participant).filter(Participant.event_id == event_db.id).count()
-            if event_db.max_participants and participants_count >= event_db.max_participants:
-               print("⚠️ Paiement reçu mais event complet → refus")
-               return {"success": False, "message": "Événement complet"}
-
-            # Enregistrement DB
-            new_reg = EventRegistration(
-                user_id=None,
-                event_id=event_id,
-                payment_id=payment_id
-            )
-            db.add(new_reg)
-
-            participant = Participant(
-                name=payer_email.split("@")[0],
-                email=payer_email,
-                amount=float(event["resource"]["amount"]["value"]) if "amount" in event["resource"] else event_db.price,
-                transaction_id=payment_id,
-                event_id=event_id,
-                created_at=datetime.utcnow()
-            )
-            db.add(participant)
-
-            # 🔑 Décrémentation des crédits participants
-            admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
-            if not admin:
-                return {"success": False, "message": "Admin introuvable pour cet événement."}
-            if admin.participant_credits <= 0:
-                return {"success": False, "message": "Pas assez de crédits participants"}
-            admin.participant_credits -= 1
-
-
-            # Envoi email
-            qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
-            body = f"""
-            <h2>Inscription confirmée 🎉</h2>
-            <p>Merci {participant.email}, ton paiement de {participant.amount} € pour l’événement <b>{event_db.title}</b> a bien été enregistré.</p>
-            <p>Date : {event_db.date} – Lieu : {event_db.location}</p>
-            <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
-            """
-
+        # 🟢 Cas 2 : PAYMENT.CAPTURE.COMPLETED
+        elif event_type == "PAYMENT.CAPTURE.COMPLETED":
+            payer_email = resource.get("payer", {}).get("email_address")  # parfois présent
+            amount = resource.get("amount", {}).get("value")
+            transaction_id = resource.get("id")
             try:
-                send_email_with_qr(participant.email, f"Confirmation inscription - {event_db.title}", body, qr_data=qr_data)
-                print(f"📧 Email envoyé à {participant.email}")
-            except Exception as e:
-                print("❌ Erreur envoi email participant :", e)
+                event_id = int(resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id"))
+            except Exception:
+                print("⚠️ event_id manquant dans CAPTURE")
+                return {"success": False, "message": "event_id manquant"}
 
-            db.commit()
+        else:
+            print(f"ℹ️ Type d’événement ignoré: {event_type}")
+            return {"success": True, "message": f"Ignoré {event_type}"}
 
-            return {"success": True, "message": "Inscription validée et enregistrée."}
+        if not payer_email:
+            print("⚠️ Impossible de trouver payer_email")
+            return {"success": False, "message": "payer_email manquant"}
 
-        # Si un autre event PayPal arrive
-        print(f"ℹ️ Webhook ignoré : {event_type}")
-        return {"success": True, "message": f"Webhook reçu ({event_type}) mais ignoré"}
+        print(f"✅ Paiement détecté : payment_id={transaction_id}, email={payer_email}")
+
+        # 🔎 Vérifie si paiement déjà enregistré
+        existing = db.query(EventRegistration).filter_by(payment_id=transaction_id).first()
+        if existing:
+            print("ℹ️ Paiement déjà enregistré (ignorer).")
+            return {"success": True, "message": "Paiement déjà enregistré"}
+        existing_participant = db.query(Participant).filter_by(transaction_id=transaction_id).first()
+        if existing_participant:
+            print("ℹ️ Participant déjà créé (ignorer).")
+            return {"success": True, "message": "Participant déjà enregistré"}
+
+        # 🔎 Vérifie si l’événement existe
+        event_db = db.query(Event).filter(Event.id == event_id).first()
+        if not event_db:
+            print("❌ Événement introuvable")
+            return {"success": False, "message": "Événement introuvable"}
+
+        # 🔎 Vérifie limite de participants
+        participants_count = db.query(Participant).filter(Participant.event_id == event_db.id).count()
+        if event_db.max_participants and participants_count >= event_db.max_participants:
+            print("⚠️ Paiement reçu mais event complet → refus")
+            return {"success": False, "message": "Événement complet"}
+
+        # 🔎 Vérifie crédits de l’admin
+        admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
+        if not admin:
+            return {"success": False, "message": "Admin introuvable"}
+        if admin.participant_credits <= 0:
+            return {"success": False, "message": "Pas assez de crédits"}
+
+        # ✅ Création en DB
+        new_reg = EventRegistration(user_id=None, event_id=event_id, payment_id=transaction_id)
+        db.add(new_reg)
+
+        participant = Participant(
+            name=payer_name or payer_email.split("@")[0],
+            email=payer_email,
+            amount=float(amount) if amount else event_db.price,
+            transaction_id=transaction_id,
+            event_id=event_id,
+            created_at=datetime.utcnow()
+        )
+        db.add(participant)
+
+        # Décrémente crédits
+        admin.participant_credits -= 1
+        db.commit()
+        db.refresh(participant)
+
+        # ✅ Envoi email avec QR
+        qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
+        body = f"""
+        <h2>Inscription confirmée 🎉</h2>
+        <p>Merci {participant.name}, ton paiement de {participant.amount} € pour l’événement <b>{event_db.title}</b> a bien été enregistré.</p>
+        <p>Date : {event_db.date} – Lieu : {event_db.location}</p>
+        <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
+        """
+        try:
+            send_email_with_qr(payer_email, f"Confirmation inscription - {event_db.title}", body, qr_data=qr_data)
+            print(f"📧 Email envoyé à {payer_email}")
+        except Exception as e:
+            print("❌ Erreur envoi email :", e)
+
+        return {"success": True, "message": "Inscription validée et email envoyé"}
 
     except Exception as e:
-        import traceback
         print("❌ Exception webhook PayPal:", e)
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"success": False, "message": f"❌ Erreur serveur : {str(e)}"})
-
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 
 # ========================
