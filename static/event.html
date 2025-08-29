@@ -123,7 +123,11 @@
       <input type="email" id="email" placeholder="Votre email" required>
     </form>
 
+    <!-- ✅ Ton bouton bleu -->
     <button id="custom-paypal-btn">M’inscrire</button>
+
+    <!-- ✅ Bouton PayPal natif caché -->
+    <div id="paypal-hidden-btn" style="display:none;"></div>
   </div>
 
   <script>
@@ -155,7 +159,21 @@
       document.getElementById("event-location").textContent = event.location;
       document.getElementById("event-price").textContent = event.price;
 
-      // ✅ Charger PayPal SDK
+      // ✅ Image
+      const img = document.getElementById("event-image");
+      img.src = event.image_url || "/static/img/placeholder.png";
+
+      // Vérif crédits
+      const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
+      const credits = await resCredits.json();
+
+      if (credits.remaining_participant_credits <= 0 || event.participants_count >= event.max_participants) {
+        document.getElementById("custom-paypal-btn").outerHTML =
+          "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes</p>";
+        return;
+      }
+
+      // Charger PayPal SDK
       const res = await fetch(`/api/paypal-client-id?event_id=${eventId}`);
       const data = await res.json();
       if (!data.client_id) return;
@@ -165,66 +183,79 @@
       document.head.appendChild(script);
 
       script.onload = () => {
-        const customBtn = document.getElementById("custom-paypal-btn");
-        customBtn.addEventListener("click", async () => {
-          const name = document.getElementById("name").value.trim();
-          const email = document.getElementById("email").value.trim();
-          const msg = document.getElementById("message");
+        paypal.Buttons({
+          onClick: function(data, actions) {
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const msg = document.getElementById("message");
 
-          const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-if (!name || !email) {
-  msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
-  return;
-}
-if (!emailValid) {
-  msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
-  return;
-}
+            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-// ✅ Si valide → on efface les erreurs
-msg.innerHTML = "";
-
-
-          // ✅ Activer loader
-          customBtn.classList.add("loading");
-          customBtn.textContent = "Chargement...";
-
-          try {
-            const order = await fetch(`/event/${eventId}/pay`, { method: "POST" })
-              .then(r => r.json());
-            if (!order.success) throw new Error(order.error || "Erreur backend");
-
-            const paypalOrder = await paypal.Orders.create({ purchase_units: [{ amount: { value: event.price } }] });
-            const approval = await paypal.Orders.capture(order.id);
-
-            // ✅ Enregistrer participant
-            const formData = new FormData();
-            formData.append("name", name);
-            formData.append("email", email);
-            formData.append("event_id", eventId);
-            formData.append("amount", event.price);
-            formData.append("transaction_id", approval.id);
-
-            const save = await fetch("/register_participant", { method: "POST", body: formData }).then(r => r.json());
-
-            if (save.success) {
-              msg.innerHTML = `<p class='success'>Merci ${name} ! Paiement validé ✅<br>
-                Confirmation envoyée à ${email}.</p>`;
-              document.getElementById("registerForm").reset();
-            } else {
-              msg.innerHTML = `<p class='error'>⚠️ Erreur d'enregistrement : ${save.error}</p>`;
+            if (!name || !email) {
+              msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
+              return actions.reject();
             }
-          } catch (err) {
+            if (!emailValid) {
+              msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
+              return actions.reject();
+            }
+            msg.innerHTML = "";
+            return actions.resolve();
+          },
+          createOrder: function(data, actions) {
+            return fetch(`/event/${eventId}/pay`, { method: "POST" })
+              .then(r => r.json())
+              .then(order => order.id);
+          },
+          onApprove: function(data, actions) {
+            return actions.order.capture().then(function(details) {
+              const name = document.getElementById("name").value;
+              const email = document.getElementById("email").value;
+
+              const formData = new FormData();
+              formData.append("name", name);
+              formData.append("email", email);
+              formData.append("event_id", eventId);
+              formData.append("amount", event.price);
+              formData.append("transaction_id", details.id);
+
+              fetch("/register_participant", { method: "POST", body: formData })
+                .then(r => r.json())
+                .then(data => {
+                  if (data.success) {
+                    document.getElementById("message").innerHTML =
+                      `<p class='success'>Merci ${name} ! Paiement validé ✅<br>
+                      Confirmation envoyée à ${email}.</p>`;
+                    document.getElementById("registerForm").reset();
+                  } else {
+                    document.getElementById("message").innerHTML =
+                      `<p class='error'>⚠️ Erreur d'enregistrement : ${data.error}</p>`;
+                  }
+                });
+            });
+          },
+          onError: function(err) {
             console.error("Erreur PayPal:", err);
-            msg.innerHTML = "<p class='error'>❌ Erreur avec PayPal</p>";
-          } finally {
-            // ✅ Désactiver loader
-            customBtn.classList.remove("loading");
-            customBtn.textContent = "M’inscrire";
+            document.getElementById("message").innerHTML = "<p class='error'>❌ Erreur avec PayPal</p>";
+          }
+        }).render("#paypal-hidden-btn");
+
+        // ✅ Connecte ton bouton bleu -> bouton PayPal caché
+        const customBtn = document.getElementById("custom-paypal-btn");
+        customBtn.addEventListener("click", () => {
+          const iframe = document.querySelector("#paypal-hidden-btn iframe");
+          if (iframe) {
+            customBtn.classList.add("loading");
+            customBtn.textContent = "Chargement...";
+            iframe.click();
+            setTimeout(() => {
+              customBtn.classList.remove("loading");
+              customBtn.textContent = "M’inscrire";
+            }, 2000);
           }
         });
 
-        // ✅ Efface l’erreur dès qu’on modifie un champ
+        // ✅ Supprime le message d’erreur si on corrige le champ
         document.getElementById("name").addEventListener("input", () => {
           document.getElementById("message").innerHTML = "";
         });
