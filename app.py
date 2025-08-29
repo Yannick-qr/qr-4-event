@@ -761,7 +761,7 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
             "is_active": event.is_active,
             "max_participants": event.max_participants,   # ✅ ajouté
             "participants_count": participants_count,     # ✅ ajouté
-            "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={event.id}"
+            "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={event.id}",
             # ✅ ajoute ça :
             "image_url": event.image_url
         }
