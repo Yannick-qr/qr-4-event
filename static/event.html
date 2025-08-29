@@ -184,24 +184,6 @@
 
       script.onload = () => {
         paypal.Buttons({
-          onClick: function(data, actions) {
-            const name = document.getElementById("name").value.trim();
-            const email = document.getElementById("email").value.trim();
-            const msg = document.getElementById("message");
-
-            const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-            if (!name || !email) {
-              msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
-              return actions.reject();
-            }
-            if (!emailValid) {
-              msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
-              return actions.reject();
-            }
-            msg.innerHTML = "";
-            return actions.resolve();
-          },
           createOrder: function(data, actions) {
             return fetch(`/event/${eventId}/pay`, { method: "POST" })
               .then(r => r.json())
@@ -243,19 +225,41 @@
         // ✅ Connecte ton bouton bleu -> bouton PayPal caché
         const customBtn = document.getElementById("custom-paypal-btn");
         customBtn.addEventListener("click", () => {
+          const name = document.getElementById("name").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const msg = document.getElementById("message");
+
+          const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+          // ✅ Validation AVANT PayPal
+          if (!name || !email) {
+            msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
+            return;
+          }
+          if (!emailValid) {
+            msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
+            return;
+          }
+
+          msg.innerHTML = "";
+          customBtn.classList.add("loading");
+          customBtn.textContent = "Chargement...";
+
           const iframe = document.querySelector("#paypal-hidden-btn iframe");
           if (iframe) {
-            customBtn.classList.add("loading");
-            customBtn.textContent = "Chargement...";
             iframe.click();
-            setTimeout(() => {
-              customBtn.classList.remove("loading");
-              customBtn.textContent = "M’inscrire";
-            }, 2000);
           }
+
+          // ✅ Quand la pop-up PayPal se ferme → on restaure le bouton
+          const restoreBtn = () => {
+            customBtn.classList.remove("loading");
+            customBtn.textContent = "M’inscrire";
+            window.removeEventListener("focus", restoreBtn);
+          };
+          window.addEventListener("focus", restoreBtn);
         });
 
-        // ✅ Supprime le message d’erreur si on corrige le champ
+        // ✅ Efface les erreurs quand on corrige
         document.getElementById("name").addEventListener("input", () => {
           document.getElementById("message").innerHTML = "";
         });
