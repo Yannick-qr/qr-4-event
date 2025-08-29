@@ -127,8 +127,8 @@
     <button id="custom-paypal-btn">M’inscrire</button>
   </div>
 
-<!-- ✅ Bouton PayPal caché (cible du render) -->
-<div id="paypal-hidden-btn" style="display:none;"></div>
+  <!-- ✅ Bouton PayPal caché (cible du render) -->
+  <div id="paypal-hidden-btn" style="display:none;"></div>
 
 <script>
   let eventId = null;
@@ -190,78 +190,106 @@
       const customBtn = document.getElementById("custom-paypal-btn");
       const msg = document.getElementById("message");
 
+      // ✅ On prépare PayPal Buttons une seule fois
+      const paypalBtns = paypal.Buttons({
+        createOrder: function(data, actions) {
+          return fetch(`/event/${eventId}/pay`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: document.getElementById("name").value.trim(),
+              email: document.getElementById("email").value.trim()
+            })
+          })
+          .then(r => r.json())
+          .then(order => {
+            if (!order || !order.id) throw new Error("Impossible de créer la commande PayPal");
+            return order.id;
+          });
+        },
+onApprove: function(data, actions) {
+  return actions.order.capture().then(details => {
+    console.log("✅ Paiement capturé:", details);
+
+    // 🔹 Récupère infos du paiement
+    const transactionId = details.id;
+    const amount = details.purchase_units[0].amount.value;
+
+    // 🔹 Appelle ton backend pour enregistrer le participant
+    fetch("/register_participant", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        event_id: eventId,
+        amount: amount,
+        transaction_id: transactionId
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        msg.innerHTML = `<p class='success'>🎉 Inscription confirmée ! Un email a été envoyé à ${document.getElementById("email").value.trim()}.</p>`;
+        document.getElementById("registerForm").reset();
+      } else {
+        msg.innerHTML = "<p class='error'>❌ Paiement validé mais erreur d’inscription : " + (res.error || "inconnue") + "</p>";
+      }
+      restoreBtn();
+    })
+    .catch(err => {
+      console.error("❌ Erreur enregistrement participant:", err);
+      msg.innerHTML = "<p class='error'>❌ Paiement validé mais impossible d’enregistrer ton inscription.</p>";
+      restoreBtn();
+    });
+  });
+},
+
+        onError: function(err) {
+          msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>";
+          restoreBtn();
+        },
+        onCancel: function() {
+          msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
+          restoreBtn();
+        }
+      });
+
+      paypalBtns.render("#paypal-hidden-btn");
+
+      // ✅ Clic sur bouton bleu → simule clic PayPal
       customBtn.addEventListener("click", () => {
         const name = document.getElementById("name").value.trim();
         const email = document.getElementById("email").value.trim();
-        const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
         if (!name || !email) {
-          msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
-          return;
-        }
-        if (!emailValid) {
-          msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
+          msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner vos infos.</p>";
           return;
         }
 
-        msg.innerHTML = "";
         customBtn.classList.add("loading");
         customBtn.disabled = true;
         customBtn.textContent = "Chargement...";
 
-        paypal.Buttons({
-          createOrder: function(data, actions) {
-            return fetch(`/event/${eventId}/pay`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email })
-            })
-            .then(r => r.json())
-            .then(order => {
-              if (!order || !order.id) {
-                throw new Error("Impossible de créer la commande PayPal : " + (order.error || "Erreur inconnue"));
-              }
-              return order.id;
-            });
-          },
-          onApprove: function(data, actions) {
-            return actions.order.capture().then(function(details) {
-              console.log("✅ Paiement capturé:", details);
-              msg.innerHTML = "<p class='success'>Paiement confirmé 🎉</p>";
-            });
-          },
-          onError: function(err) {
-            console.error("Erreur PayPal:", err);
-            msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>";
-            customBtn.classList.remove("loading");
-            customBtn.disabled = false;
-            customBtn.textContent = "M’inscrire";
-          },
-          onCancel: function() {
-            msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement. Aucune transaction n’a été effectuée.</p>";
-            customBtn.classList.remove("loading");
-            customBtn.disabled = false;
-            customBtn.textContent = "M’inscrire";
-          }
-        }).render("#paypal-hidden-btn");
-
-        // ✅ Restaurer bouton quand on revient sur la page
-        const restoreBtn = () => {
-          customBtn.classList.remove("loading");
-          customBtn.disabled = false;
-          customBtn.textContent = "M’inscrire";
-          window.removeEventListener("focus", restoreBtn);
-        };
-        window.addEventListener("focus", restoreBtn);
+        // Déclenche le bouton PayPal caché
+        const paypalIframeBtn = document.querySelector("#paypal-hidden-btn iframe")
+          ?.contentWindow.document.querySelector("button");
+        if (paypalIframeBtn) {
+          paypalIframeBtn.click();
+        } else {
+          msg.innerHTML = "<p class='error'>❌ Impossible d’initialiser PayPal.</p>";
+          restoreBtn();
+        }
       });
+
+      function restoreBtn() {
+        customBtn.classList.remove("loading");
+        customBtn.disabled = false;
+        customBtn.textContent = "M’inscrire";
+      }
 
       // ✅ Efface les erreurs quand on corrige
-      document.getElementById("name").addEventListener("input", () => {
-        msg.innerHTML = "";
-      });
-      document.getElementById("email").addEventListener("input", () => {
-        msg.innerHTML = "";
-      });
+      document.getElementById("name").addEventListener("input", () => { msg.innerHTML = ""; });
+      document.getElementById("email").addEventListener("input", () => { msg.innerHTML = ""; });
     };
   }
 
