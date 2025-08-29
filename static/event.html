@@ -16,23 +16,22 @@
     }
 
     /* ✅ Header image façon bannière */
-    .event-header {
-      position: relative;
-      width: 100%;
-      max-width: 1000px;
-      max-height: 400px;
-      overflow: hidden;
-      border-radius: 12px;
-      margin: 20px auto;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
+.event-header {
+  position: relative;
+  width: 100%;
+  height: 250px;          /* ✅ hauteur fixe (tu peux mettre 300px si tu veux plus grand) */
+  overflow: hidden;
+  border-radius: 0 0 10px 10px;
+  background: #ddd;       /* ✅ couleur placeholder tant que l’image n’est pas là */
+}
 
-    .event-header img {
-      width: 100%;
-      height: auto;
-      display: block;
-      object-fit: cover;
-    }
+.event-header img {
+  width: 100%;
+  height: 100%;           /* ✅ occupe toute la zone */
+  object-fit: cover;      /* ✅ recadrage sans déformation */
+  display: block;
+}
+
 
     /* ✅ Overlay dégradé */
     .event-header::after {
@@ -104,10 +103,10 @@
 </head>
 <body>
   <!-- ✅ Header avec image -->
-  <div class="event-header">
-    <img id="event-image" src="" alt="Image de l'événement">
-    <h2 id="event-title">Chargement...</h2>
-  </div>
+<div class="event-header">
+  <img id="event-image" src="/static/img/placeholder.jpg" alt="Image de l'événement">
+  <h2 id="event-title">Chargement...</h2>
+</div>
 
   <!-- ✅ Box infos + inscription -->
   <div class="box">
@@ -157,9 +156,24 @@
       document.getElementById("event-location").textContent = event.location;
       document.getElementById("event-price").textContent = event.price;
 
-      if (event.image_url) {
-        document.getElementById("event-image").src = event.image_url;
-      }
+// ✅ Gestion stable de l’image
+const img = document.getElementById("event-image");
+
+// Image par défaut (placeholder)
+img.src = "/static/img/placeholder.jpg";
+
+// Si une image est définie pour l’événement
+if (event.image_url) {
+  img.onload = () => {
+    console.log("✅ Image événement chargée :", event.image_url);
+  };
+  img.onerror = () => {
+    console.warn("⚠️ Erreur image, retour au placeholder.");
+    img.src = "/static/img/placeholder.jpg";
+  };
+  img.src = event.image_url;
+}
+
 
       // Vérif crédits
       const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
