@@ -212,39 +212,44 @@
 
 paypal.Buttons({
   createOrder: function(data, actions) {
-    return fetch(`/event/${eventId}/pay`, { method: "POST" })
-      .then(r => r.json())
-      .then(order => {
-        if (!order || !order.id) {
-          // ⚠️ Important : on interrompt proprement
-          throw new Error("Impossible de créer la commande PayPal : " + (order.error || "Erreur inconnue"));
-        }
-        return order.id;
-      });
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+
+    return fetch(`/event/${eventId}/pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email })   // ✅ Envoi infos participant
+    })
+    .then(r => r.json())
+    .then(order => {
+      if (!order || !order.id) {
+        throw new Error("Impossible de créer la commande PayPal : " + (order.error || "Erreur inconnue"));
+      }
+      return order.id;  // ✅ PayPal reçoit bien un id
+    });
   },
   onApprove: function(data, actions) {
     return actions.order.capture().then(function(details) {
-      // ton traitement actuel (inscription + email)
+      console.log("✅ Paiement capturé:", details);
+      msg.innerHTML = "<p class='success'>Paiement confirmé 🎉</p>";
+      // ⚠️ Ici tu peux ensuite appeler ton backend /register_participant
     });
   },
   onError: function(err) {
     console.error("Erreur PayPal:", err);
-    msg.innerHTML = "<p class='error'>❌ Erreur avec PayPal : " + err.message + "</p>";
-
-    // ✅ Restaure le bouton bleu
+    msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>";
     customBtn.classList.remove("loading");
     customBtn.disabled = false;
     customBtn.textContent = "M’inscrire";
   },
   onCancel: function() {
     msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement. Aucune transaction n’a été effectuée.</p>";
-
-    // ✅ Restaure le bouton
     customBtn.classList.remove("loading");
     customBtn.disabled = false;
     customBtn.textContent = "M’inscrire";
   }
 }).render("#paypal-hidden-btn");
+
 
 
           // ✅ Restaurer bouton quand on revient
