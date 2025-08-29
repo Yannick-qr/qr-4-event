@@ -201,23 +201,25 @@ if (event.image_url) {
           script.onload = function () {
             paypal.Buttons({
               onClick: function(data, actions) {
-                const name = document.getElementById("name").value.trim();
-                const email = document.getElementById("email").value.trim();
-                const messageDiv = document.getElementById("message");
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();  // ✅ trim ici
+  const messageDiv = document.getElementById("message");
 
-                const emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+  // ✅ regex propre
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-                if (name === "" || email === "") {
-                  messageDiv.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
-                  return actions.reject();
-                }
-                if (!emailValid) {
-                  messageDiv.innerHTML = "<p class='error'>❌ Veuillez entrer une adresse email valide.</p>";
-                  return actions.reject();
-                }
-                messageDiv.innerHTML = "";
-                return actions.resolve();
-              },
+  if (name === "" || email === "") {
+    messageDiv.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
+    return actions.reject();
+  }
+  if (!emailValid) {
+    messageDiv.innerHTML = "<p class='error'>❌ Veuillez entrer une adresse email valide.</p>";
+    return actions.reject();
+  }
+
+  messageDiv.innerHTML = "";
+  return actions.resolve();
+},
 
               createOrder: function(data, actions) {
                 return fetch(`/event/${eventId}/pay`, { method: "POST" })
