@@ -172,14 +172,18 @@
           const msg = document.getElementById("message");
 
           const emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
-          if (!name || !email) {
-            msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
-            return;
-          }
-          if (!emailValid) {
-            msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
-            return;
-          }
+if (!name || !email) {
+  msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
+  return;
+}
+if (!emailValid) {
+  msg.innerHTML = "<p class='error'>❌ Adresse email invalide.</p>";
+  return;
+}
+
+// ✅ Si valide → on efface les erreurs
+msg.innerHTML = "";
+
 
           // ✅ Activer loader
           customBtn.classList.add("loading");
@@ -218,6 +222,14 @@
             customBtn.classList.remove("loading");
             customBtn.textContent = "M’inscrire";
           }
+        });
+
+        // ✅ Efface l’erreur dès qu’on modifie un champ
+        document.getElementById("name").addEventListener("input", () => {
+          document.getElementById("message").innerHTML = "";
+        });
+        document.getElementById("email").addEventListener("input", () => {
+          document.getElementById("message").innerHTML = "";
         });
       };
     }
