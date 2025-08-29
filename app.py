@@ -689,8 +689,6 @@ def delete_event(event_id: int = Form(...), token: str = Form(...), db: Session 
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
         return {"success": False, "error": "Événement introuvable"}
-    if event.is_locked:
-        return {"success": False, "error": "Événement verrouillé, suppression impossible."}
 
     db.delete(event)
     db.commit()
