@@ -1065,53 +1065,56 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
                 print("⚠️ event_id manquant dans ORDER.APPROVED")
                 return {"success": False, "message": "event_id manquant"}
 
+
         # 🟢 Cas 2 : PAYMENT.CAPTURE.COMPLETED (nouvelle version avec fallback API Orders)
-elif event_type == "PAYMENT.CAPTURE.COMPLETED":
-    amount = resource.get("amount", {}).get("value")
-    transaction_id = resource.get("id")
-    order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
+        elif event_type == "PAYMENT.CAPTURE.COMPLETED":
+            amount = resource.get("amount", {}).get("value")
+            transaction_id = resource.get("id")
+            order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
 
-    if not order_id:
-        print("⚠️ order_id manquant dans CAPTURE")
-        return {"success": False, "message": "order_id manquant"}
+            if not order_id:
+                print("⚠️ order_id manquant dans CAPTURE")
+                return {"success": False, "message": "order_id manquant"}
 
-    # 🔹 Appel API PayPal Orders pour retrouver payer_email + event_id
-    try:
-        # Authentification OAuth
-        auth_req = requests.post(
-            f"{PAYPAL_API_BASE}/v1/oauth2/token",
-            headers={"Accept": "application/json", "Accept-Language": "en_US"},
-            data={"grant_type": "client_credentials"},
-            auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
-        )
-        access_token = auth_req.json().get("access_token")
+            # 🔹 Appel API PayPal Orders pour retrouver payer_email + event_id
+            try:
+                # Authentification OAuth
+                auth_req = requests.post(
+                    f"{PAYPAL_API_BASE}/v1/oauth2/token",
+                    headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                    data={"grant_type": "client_credentials"},
+                    auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
+                )
+                access_token = auth_req.json().get("access_token")
 
-        if not access_token:
-            print("❌ Impossible d’obtenir access_token PayPal")
-            return {"success": False, "message": "OAuth PayPal échoué"}
+                if not access_token:
+                    print("❌ Impossible d’obtenir access_token PayPal")
+                    return {"success": False, "message": "OAuth PayPal échoué"}
 
-        # Requête Orders
-        order_req = requests.get(
-            f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
-        order_data = order_req.json()
-        print("🔎 Order récupéré via API:", order_data)
+                # Requête Orders
+                order_req = requests.get(
+                    f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
+                    headers={"Authorization": f"Bearer {access_token}"}
+                )
+                order_data = order_req.json()
+                print("🔎 Order récupéré via API:", order_data)
 
-        payer = order_data.get("payer", {})
-        payer_email = payer.get("email_address")
-        payer_name = payer.get("name", {}).get("given_name")
+                payer = order_data.get("payer", {})
+                payer_email = payer.get("email_address")
+                payer_name = payer.get("name", {}).get("given_name")
 
-        # 🎯 Le vrai event_id est dans reference_id
-        try:
-            event_id = int(order_data["purchase_units"][0]["reference_id"])
-        except Exception:
-            print("⚠️ Pas de reference_id dans order_data")
-            return {"success": False, "message": "event_id manquant"}
+                # 🎯 Le vrai event_id est dans reference_id
+                try:
+                    event_id = int(order_data["purchase_units"][0]["reference_id"])
+                except Exception:
+                    print("⚠️ Pas de reference_id dans order_data")
+                    return {"success": False, "message": "event_id manquant"}
 
-    except Exception as e:
-        print("❌ Erreur lors de la récupération via Orders API:", e)
-        return {"success": False, "message": "Impossible de récupérer les infos du paiement"}
+            except Exception as e:
+                print("❌ Erreur lors de la récupération via Orders API:", e)
+                return {"success": False, "message": "Impossible de récupérer les infos du paiement"}
+
+
 
         # 🔎 Vérifie si paiement déjà enregistré
         existing = db.query(EventRegistration).filter_by(payment_id=transaction_id).first()
