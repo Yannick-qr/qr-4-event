@@ -116,7 +116,7 @@ def get_paypal_client_id(event_id: int = None, db: Session = Depends(get_db)):
 
     if not client_id:
         return JSONResponse(
-            {"error": "Aucun client_id PayPal disponible"},
+            {"message": "Aucun client_id PayPal disponible"},
             status_code=500
         )
     return JSONResponse({"client_id": client_id})
@@ -193,13 +193,13 @@ def login(email: str = Form(...), password: str = Form(...), db: Session = Depen
     user = db.query(AdminUser).filter(AdminUser.email == email).first()
 
     if not user:
-        return {"success": False, "error": "Utilisateur introuvable"}
+        return {"success": False, "message": "Utilisateur introuvable"}
 
     if not bcrypt.verify(password, user.password_hash):
-        return {"success": False, "error": "Mot de passe incorrect"}
+        return {"success": False, "message": "Mot de passe incorrect"}
 
     if not user.is_active:
-        return {"success": False, "error": "Compte inactif, vérifie ton email"}
+        return {"success": False, "message": "⚠️ Compte inactif, vérifie ton email"}
 
     # Génère un nouveau token valable 24h
     token = str(uuid.uuid4())
@@ -237,7 +237,7 @@ def register(
 
     # Regex email basique
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-        return {"success": False, "error": "Adresse email invalide."}
+        return {"success": False, "message": "❌ Adresse email invalide."}
 
     # Vérifie si email existe déjà
     existing_user = db.query(AdminUser).filter(AdminUser.email == email).first()
@@ -291,7 +291,7 @@ def register(
 def set_password(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user or datetime.utcnow() > user.token_expiry:
-        return {"success": False, "error": "Token invalide ou expiré"}
+        return {"success": False, "message": "Token invalide ou expiré"}
 
     user.password_hash = bcrypt.hash(new_password)
     user.is_active = True
@@ -309,10 +309,10 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
 def buy_credits(token: str = Form(...), quantity: int = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Session invalide"}
+        return {"success": False, "message": "Session invalide"}
 
     if quantity <= 0:
-        return {"success": False, "error": "Quantité de crédits invalide"}
+        return {"success": False, "message": "Quantité de crédits invalide"}
 
     user.participant_credits += quantity
     db.commit()
@@ -346,12 +346,13 @@ async def create_order(request: Request):
                     break
 
             if not matched_pack:
-                return {"success": False, "error": f"Pack de crédits invalide: {credits}"}
+                return {"success": False, "message": f"Pack de crédits invalide: {credits}"}
 
             amount = matched_pack["price"]
 
         else:
-            return {"success": False, "error": "Type d'achat invalide"}
+            return {"success": False, "message": "❌ Type d'achat invalide"}
+
 
         # 🔹 Étape 1 : Authentification OAuth PayPal
         auth_req = requests.post(
@@ -362,11 +363,11 @@ async def create_order(request: Request):
         )
 
         if auth_req.status_code != 200:
-            return {"success": False, "error": "OAuth failed", "paypal_response": auth_req.text}
+            return {"success": False, "message": "OAuth failed", "paypal_response": auth_req.text}
 
         access_token = auth_req.json().get("access_token")
         if not access_token:
-            return {"success": False, "error": "Pas de access_token", "paypal_response": auth_req.json()}
+            return {"success": False, "message": "Pas de access_token", "paypal_response": auth_req.json()}
 
         # 🔹 Étape 2 : Créer la commande PayPal
         order_req = requests.post(
@@ -389,7 +390,7 @@ async def create_order(request: Request):
         order_data = order_req.json()
 
         if "id" not in order_data:
-            return {"success": False, "error": "PayPal n’a pas renvoyé d’ID", "paypal_response": order_data}
+            return {"success": False, "message": "PayPal n’a pas renvoyé d’ID", "paypal_response": order_data}
 
         return {"success": True, "id": order_data["id"], "paypal_response": order_data}
 
@@ -397,7 +398,7 @@ async def create_order(request: Request):
         import traceback
         print("❌ Exception dans create_order:", e)
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return {"success": False, "message": str(e)}
 
 
 # ========================
@@ -427,10 +428,10 @@ def add_credits(payload: dict = Body(...), db: Session = Depends(get_db)):
 
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user:
-        return {"success": False, "error": "Utilisateur non trouvé ou session expirée"}
+        return {"success": False, "message": "Utilisateur non trouvé ou session expirée"}
 
     if credits <= 0:
-        return {"success": False, "error": "Crédits invalides"}
+        return {"success": False, "message": "Crédits invalides"}
 
     # Ajouter les crédits
     user.participant_credits += credits
@@ -450,74 +451,74 @@ def register_participant(
     transaction_id: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # 🔒 Nettoyage des entrées
-    safe_name = html.escape(re.sub(r"[<>]", "", name.strip()))
-    safe_email = html.escape(email.strip().lower())
-
-    # Validation email simple
-    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", safe_email):
-        return {"success": False, "error": "Email invalide."}
-
-    # Vérifie si l'événement existe
-    event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
-    if not event:
-        return {"success": False, "error": "Événement introuvable ou inactif."}
-
-    # Vérifie si l'événement a atteint sa limite de participants
-    participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
-    if event.max_participants and participants_count >= event.max_participants:
-        return {"success": False, "error": "Événement complet"}
-
-    # Vérifie si déjà inscrit avec cette transaction
-    existing = db.query(Participant).filter(Participant.transaction_id == transaction_id).first()
-    if existing:
-        return {"success": True, "message": "Déjà enregistré."}
-
-    # Vérifie si l'admin a encore des crédits
-    admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
-    if not admin:
-       return {"success": False, "error": "Admin introuvable pour cet événement."}
-    if admin.participant_credits <= 0:
-       return {"success": False, "error": "Pas assez de crédits participants"}
-
-    # ✅ Crée le participant
-    participant = Participant(
-        name=safe_name,
-        email=safe_email,
-        event_id=event_id,
-        amount=amount,
-        transaction_id=transaction_id,
-        created_at=datetime.utcnow()
-    )
-    db.add(participant)
-
-    # 🔑 Décrémentation des crédits participants
-    admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
-    if not admin:
-        return {"success": False, "error": "Admin introuvable pour cet événement."}
-    if admin.participant_credits <= 0:
-        return {"success": False, "error": "Pas assez de crédits participants"}
-    admin.participant_credits -= 1
-
-    db.commit()
-    db.refresh(participant)
-
-    # ✅ Génère QR code et envoie email
-    qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
-    body = f"""
-    <h2>Inscription confirmée 🎉</h2>
-    <p>Merci {safe_name}, ton paiement de {amount} € pour l’événement <b>{event.title}</b> a bien été enregistré.</p>
-    <p>Date : {event.date} – Lieu : {event.location}</p>
-    <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
-    """
-
     try:
-        send_email_with_qr(safe_email, f"Confirmation inscription - {event.title}", body, qr_data=qr_data)
+        # 🔒 Nettoyage des entrées
+        safe_name = html.escape(re.sub(r"[<>]", "", name.strip()))
+        safe_email = html.escape(email.strip().lower())
+
+        # Validation email simple
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", safe_email):
+            return {"success": False, "message": "❌ Email invalide."}
+
+        # Vérifie si l'événement existe
+        event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
+        if not event:
+            return {"success": False, "message": "❌ Événement introuvable ou inactif."}
+
+        # Vérifie si l'événement a atteint sa limite de participants
+        participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
+        if event.max_participants and participants_count >= event.max_participants:
+            return {"success": False, "message": "⚠️ Événement complet."}
+
+        # Vérifie si déjà inscrit avec cette transaction
+        existing = db.query(Participant).filter(Participant.transaction_id == transaction_id).first()
+        if existing:
+            return {"success": True, "message": "ℹ️ Déjà enregistré."}
+
+        # Vérifie si l'admin a encore des crédits
+        admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+        if not admin:
+            return {"success": False, "message": "❌ Admin introuvable pour cet événement."}
+        if admin.participant_credits <= 0:
+            return {"success": False, "message": "⚠️ Pas assez de crédits participants."}
+
+        # ✅ Crée le participant
+        participant = Participant(
+            name=safe_name,
+            email=safe_email,
+            event_id=event_id,
+            amount=amount,
+            transaction_id=transaction_id,
+            created_at=datetime.utcnow()
+        )
+        db.add(participant)
+
+        # 🔑 Décrémentation des crédits participants
+        admin.participant_credits -= 1
+        db.commit()
+        db.refresh(participant)
+
+        # ✅ Génère QR code et envoie email
+        qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
+        body = f"""
+        <h2>Inscription confirmée 🎉</h2>
+        <p>Merci {safe_name}, ton paiement de {amount} € pour l’événement <b>{event.title}</b> a bien été enregistré.</p>
+        <p>Date : {event.date} – Lieu : {event.location}</p>
+        <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
+        """
+
+        try:
+            send_email_with_qr(safe_email, f"Confirmation inscription - {event.title}", body, qr_data=qr_data)
+        except Exception as e:
+            print("❌ Erreur lors de l’envoi du mail participant :", e)
+
+        return {"success": True, "message": "🎉 Inscription enregistrée avec succès, email envoyé."}
+
     except Exception as e:
-        print("❌ Erreur lors de l’envoi du mail participant :", e)
-
-    return {"success": True, "message": "Inscription enregistrée avec succès, email envoyé."}
-
+        import traceback
+        print("❌ Exception dans /register_participant:", e)
+        traceback.print_exc()
+        return {"success": False, "message": f"❌ Erreur serveur : {str(e)}"}
 
 # ========================
 # USER INFO (profil connecté)
@@ -526,7 +527,7 @@ def register_participant(
 def get_me(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Session invalide"}
+        return {"success": False, "message": "Session invalide"}
     return {
         "success": True,
         "email": user.email,
@@ -546,7 +547,7 @@ def set_paypal_credentials(
 ):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     user.paypal_client_id = client_id
     user.paypal_secret = secret
@@ -561,7 +562,7 @@ def set_paypal_credentials(
 def get_paypal_status(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     return {
         "success": True,
@@ -578,10 +579,10 @@ def delete_paypal_account(
 ):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     if not bcrypt.verify(password, user.password_hash):
-        return {"success": False, "error": "Mot de passe incorrect"}
+        return {"success": False, "message": "Mot de passe incorrect"}
 
     user.paypal_client_id = None
     user.paypal_secret = None
@@ -611,7 +612,7 @@ async def create_event(
 ):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     # ✅ Sauvegarde image
     image_url = None
@@ -659,7 +660,7 @@ async def update_event(
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
-        return {"success": False, "error": "Événement introuvable"}
+        return {"success": False, "message": "Événement introuvable"}
 
     event.title = title
     event.description = description
@@ -688,7 +689,7 @@ def delete_event(event_id: int = Form(...), token: str = Form(...), db: Session 
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
-        return {"success": False, "error": "Événement introuvable"}
+        return {"success": False, "message": "Événement introuvable"}
 
     db.delete(event)
     db.commit()
@@ -700,7 +701,7 @@ def toggle_event(event_id: int = Form(...), token: str = Form(...), db: Session 
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
-        return {"success": False, "error": "Événement introuvable"}
+        return {"success": False, "message": "Événement introuvable"}
 
     event.is_active = not event.is_active
     db.commit()
@@ -741,7 +742,7 @@ def public_event(event_id: int, db: Session = Depends(get_db)):
 def api_event(event_id: int, db: Session = Depends(get_db)):
     event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
     if not event:
-        return JSONResponse(status_code=404, content={"success": False, "error": "Événement introuvable ou inactif"})
+        return JSONResponse(status_code=404, content={"success": False, "message": "Événement introuvable ou inactif"})
 
     participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
 
@@ -772,7 +773,9 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
     try:
         event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
         if not event:
-            return {"success": False, "error": "Événement introuvable ou inactif"}
+            # ⚠️ Toujours renvoyer un id, même si None
+            return {"id": None, "message": "❌ Événement introuvable ou inactif"}
+
 
         # Récupère l'admin créateur
         admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
@@ -790,11 +793,12 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         )
 
         if auth_req.status_code != 200:
-            return {"success": False, "error": "OAuth failed", "paypal_response": auth_req.text}
+            return {"id": None, "message": "❌ OAuth PayPal échoué", "paypal_response": auth_req.text}
+
 
         access_token = auth_req.json().get("access_token")
         if not access_token:
-            return {"success": False, "error": "Pas de access_token", "paypal_response": auth_req.json()}
+            return {"id": None, "message": "Pas de access_token", "paypal_response": auth_req.json()}
 
         # 🔹 Crée la commande PayPal (montant = prix de l’événement)
         order_req = requests.post(
@@ -818,15 +822,17 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         order_data = order_req.json()
 
         if "id" not in order_data:
-            return {"success": False, "error": "PayPal n’a pas renvoyé d’ID", "paypal_response": order_data}
+            return {"id": None, "message": "PayPal n’a pas renvoyé d’ID", "paypal_response": order_data}
 
-        return {"success": True, "id": order_data["id"], "paypal_response": order_data}
+        # ✅ Retour toujours au format attendu par PayPal SDK
+        return {"id": order_data["id"]}
 
     except Exception as e:
         import traceback
         print("❌ Exception event_pay:", e)
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return {"id": None, "message": str(e)}
+
 
 
 # ========================
@@ -836,7 +842,7 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
 def list_events(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     events = db.query(Event).filter(Event.created_by == user.id).all()
 
@@ -873,7 +879,7 @@ import csv
 def get_paid_registrations(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     # 🔎 On filtre uniquement les événements créés par l’admin connecté
     events = db.query(Event).filter(Event.created_by == user.id).all()
@@ -900,7 +906,7 @@ def get_paid_registrations(token: str = Form(...), db: Session = Depends(get_db)
 def export_paid_registrations_csv(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     events = db.query(Event).filter(Event.created_by == user.id).all()
     event_ids = [e.id for e in events]
@@ -1036,7 +1042,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
 
         if verification.get("verification_status") != "SUCCESS":
             print("❌ Signature PayPal invalide :", verification)
-            return JSONResponse(status_code=400, content={"success": False, "error": "Signature invalide"})
+            return JSONResponse(status_code=400, content={"success": False, "message": "Signature invalide"})
 
         # Lecture de l’événement
         event_type = event.get("event_type")
@@ -1058,7 +1064,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
                 print(f"🎟️ Inscription liée à l’événement ID={event_id}")
             except Exception:
                 print("⚠️ event_id manquant dans reference_id")
-                return {"success": False, "error": "event_id manquant dans purchase_units.reference_id"}
+                return {"success": False, "message": "event_id manquant dans purchase_units.reference_id"}
 
             # Vérifie si déjà inscrit
             existing = db.query(EventRegistration).filter_by(payment_id=payment_id).first()
@@ -1075,13 +1081,13 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             event_db = db.query(Event).filter(Event.id == event_id).first()
             if not event_db:
                 print("❌ Événement introuvable en DB")
-                return {"success": False, "error": "Événement introuvable"}
+                return {"success": False, "message": "Événement introuvable"}
 
             # Vérifie si l'événement a atteint sa limite de participants
             participants_count = db.query(Participant).filter(Participant.event_id == event_db.id).count()
             if event_db.max_participants and participants_count >= event_db.max_participants:
                print("⚠️ Paiement reçu mais event complet → refus")
-               return {"success": False, "error": "Événement complet"}
+               return {"success": False, "message": "Événement complet"}
 
             # Enregistrement DB
             new_reg = EventRegistration(
@@ -1104,9 +1110,9 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             # 🔑 Décrémentation des crédits participants
             admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
             if not admin:
-                return {"success": False, "error": "Admin introuvable pour cet événement."}
+                return {"success": False, "message": "Admin introuvable pour cet événement."}
             if admin.participant_credits <= 0:
-                return {"success": False, "error": "Pas assez de crédits participants"}
+                return {"success": False, "message": "Pas assez de crédits participants"}
             admin.participant_credits -= 1
 
 
@@ -1137,7 +1143,8 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         import traceback
         print("❌ Exception webhook PayPal:", e)
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+        return JSONResponse(status_code=500, content={"success": False, "message": f"❌ Erreur serveur : {str(e)}"})
+
 
 
 # ========================
@@ -1147,7 +1154,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
 def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.email == email).first()
     if not user:
-        return {"success": False, "error": "Aucun compte associé à cet email."}
+        return {"success": False, "message": "Aucun compte associé à cet email."}
 
     # Générer un token de reset valable 1h
     token = str(uuid.uuid4())
@@ -1213,7 +1220,7 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
         import traceback
         print("❌ Erreur reset-password:", e)
         traceback.print_exc()
-        return {"success": False, "error": "Impossible d’envoyer l’email."}
+        return {"success": False, "message": "Impossible d’envoyer l’email."}
 
 
 # ========================
@@ -1223,7 +1230,7 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
 def reset_password_confirm(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user or not user.token_expiry or datetime.utcnow() > user.token_expiry:
-        return {"success": False, "error": "Lien invalide ou expiré."}
+        return {"success": False, "message": "Lien invalide ou expiré."}
 
     user.password_hash = bcrypt.hash(new_password)
     user.token = None
@@ -1239,7 +1246,7 @@ def reset_password_confirm(token: str = Form(...), new_password: str = Form(...)
 def get_logs(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
-        return {"success": False, "error": "Non autorisé"}
+        return {"success": False, "message": "Non autorisé"}
 
     logs = db.query(AdminLog).filter(AdminLog.admin_id == user.id).order_by(AdminLog.created_at.desc()).all()
 
