@@ -218,21 +218,23 @@ paypal.Buttons({
     return fetch(`/event/${eventId}/pay`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email })   // ✅ Envoi infos participant
+      body: JSON.stringify({ name, email })   // ✅ envoi des infos participant
     })
     .then(r => r.json())
     .then(order => {
       if (!order || !order.id) {
         throw new Error("Impossible de créer la commande PayPal : " + (order.error || "Erreur inconnue"));
       }
-      return order.id;  // ✅ PayPal reçoit bien un id
+      return order.id;  // ✅ PayPal reçoit bien un orderId
     });
   },
   onApprove: function(data, actions) {
     return actions.order.capture().then(function(details) {
       console.log("✅ Paiement capturé:", details);
       msg.innerHTML = "<p class='success'>Paiement confirmé 🎉</p>";
-      // ⚠️ Ici tu peux ensuite appeler ton backend /register_participant
+
+      // ⚠️ Ici : soit tu appelles /register_participant
+      // soit on adapte ton backend pour que /event/{id}/pay fasse directement l’enregistrement
     });
   },
   onError: function(err) {
@@ -250,25 +252,23 @@ paypal.Buttons({
   }
 }).render("#paypal-hidden-btn");
 
+// ✅ Restaurer bouton quand on revient sur la page
+const restoreBtn = () => {
+  customBtn.classList.remove("loading");
+  customBtn.disabled = false;
+  customBtn.textContent = "M’inscrire";
+  window.removeEventListener("focus", restoreBtn);
+};
+window.addEventListener("focus", restoreBtn);
 
+// ✅ Efface les erreurs quand on corrige
+document.getElementById("name").addEventListener("input", () => {
+  document.getElementById("message").innerHTML = "";
+});
+document.getElementById("email").addEventListener("input", () => {
+  document.getElementById("message").innerHTML = "";
+});
 
-          // ✅ Restaurer bouton quand on revient
-          const restoreBtn = () => {
-            customBtn.classList.remove("loading");
-            customBtn.disabled = false;
-            customBtn.textContent = "M’inscrire";
-            window.removeEventListener("focus", restoreBtn);
-          };
-          window.addEventListener("focus", restoreBtn);
-        });
-
-        // ✅ Efface les erreurs quand on corrige
-        document.getElementById("name").addEventListener("input", () => {
-          document.getElementById("message").innerHTML = "";
-        });
-        document.getElementById("email").addEventListener("input", () => {
-          document.getElementById("message").innerHTML = "";
-        });
       };
     }
 
