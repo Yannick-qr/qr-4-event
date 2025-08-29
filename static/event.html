@@ -14,15 +14,47 @@
       align-items: flex-start;
       min-height: 100vh;
     }
-    /* ✅ Ajout du header image */
-    .event-header {
-      width: 100%;
-      height: 200px;
-      background-size: cover;
-      background-position: center;
-      border-radius: 0 0 10px 10px;
-      margin-bottom: 20px;
-    }
+.event-header {
+  position: relative;
+  height: auto;
+  max-height: 400px;
+  overflow: hidden;
+  border-radius: 0 0 10px 10px;
+  margin-bottom: 20px;
+}
+
+/* ✅ Image */
+.event-header img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+/* ✅ Overlay dégradé en bas */
+.event-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;  /* épaisseur du dégradé */
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  border-radius: 0 0 10px 10px; /* arrondi identique à l'image */
+  pointer-events: none; /* n'empêche pas de cliquer sur titre */
+}
+
+/* ✅ Titre superposé */
+.event-header h2 {
+  position: absolute;
+  bottom: 15px;
+  left: 20px;
+  margin: 0;
+  padding: 10px 15px;
+  color: #fff;
+  font-size: 1.6rem;
+  z-index: 2; /* passe au-dessus du dégradé */
+}
     .box {
       background: white;
       margin-top: 50px;
@@ -73,11 +105,13 @@
   </style>
 </head>
 <body>
-  <!-- ✅ Ajout du header avec image -->
-  <div class="event-header" id="event-header"></div>
+<!-- ✅ Header avec image en <img> -->
+<div class="event-header">
+  <img id="event-image" src="" alt="Image de l'événement">
+  <h2 id="event-title">Chargement...</h2>
+</div>
 
   <div class="box">
-    <h2 id="event-title">Chargement...</h2>
     <p id="event-description"></p>
     <p><b>Date :</b> <span id="event-date"></span></p>
     <p><b>Lieu :</b> <span id="event-location"></span></p>
@@ -168,8 +202,8 @@
 
 
      // ✅ Ajout image d’event si dispo
-     if (event.image_url) {
-     document.getElementById("event-header").style.backgroundImage = `url('${event.image_url}')`;
+if (event.image_url) {
+  document.getElementById("event-image").src = event.image_url;
 }
       const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
       const credits = await resCredits.json();
