@@ -162,7 +162,8 @@ input {
 
     <!-- ✅ Ton bouton bleu -->
     <button id="custom-paypal-btn">M’inscrire</button>
-    <div id="paypal-button-container"></div> <!-- nouveau -->
+    <div id="paypal-button-container"></div>
+    <div id="cancel-container" style="text-align:center; margin-top:10px;"></div> <!-- ✅ ICI -->
   </div>
 
 <script>
@@ -231,6 +232,14 @@ input {
     script.onload = () => {
       const customBtn = document.getElementById("custom-paypal-btn");
       const msg = document.getElementById("message");
+
+// ✅ Si l’utilisateur modifie ses infos → on reset PayPal
+document.getElementById("name").addEventListener("input", () => {
+  restoreBtn();
+});
+document.getElementById("email").addEventListener("input", () => {
+  restoreBtn();
+});
 
 customBtn.addEventListener("click", () => {
   const name = document.getElementById("name").value.trim();
@@ -322,6 +331,16 @@ customBtn.addEventListener("click", () => {
           }
         }).render("#paypal-button-container");
 
+// ✅ Ajoute la croix Annuler (juste après render)
+document.getElementById("cancel-container").innerHTML =
+  "<button id='cancel-btn' style='background:none; border:none; color:#ff4444; font-size:1.2rem; cursor:pointer;'>❌ Annuler</button>";
+
+document.getElementById("cancel-btn").addEventListener("click", () => {
+  msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé l’inscription.</p>";
+  restoreBtn();
+  document.getElementById("cancel-container").innerHTML = ""; // vide la croix
+});
+
   // ✅ On marque que PayPal est déjà affiché
   paypalRendered = true;
 
@@ -333,8 +352,10 @@ customBtn.addEventListener("click", () => {
         customBtn.classList.remove("loading");
         customBtn.disabled = false;
         customBtn.textContent = "M’inscrire";
-        customBtn.style.display = "block"; // ✅ ré-affiche le bouton bleu si besoin
-        paypalRendered = false;            // ✅ reset pour permettre un nouvel essai
+        customBtn.style.display = "block";
+        paypalRendered = false;
+        document.getElementById("paypal-button-container").innerHTML = "";
+        document.getElementById("cancel-container").innerHTML = ""; // ✅ supprime la croix
       }
     };
   }
