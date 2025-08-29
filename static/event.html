@@ -14,6 +14,15 @@
       align-items: flex-start;
       min-height: 100vh;
     }
+    /* ✅ Ajout du header image */
+    .event-header {
+      width: 100%;
+      height: 200px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 0 0 10px 10px;
+      margin-bottom: 20px;
+    }
     .box {
       background: white;
       margin-top: 50px;
@@ -22,8 +31,10 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       width: 400px;
     }
+
     h2 { margin-top: 0; color: #007bff; text-align: center; }
     p { margin: 8px 0; }
+
     input {
       width: 100%;
       padding: 10px;
@@ -31,11 +42,40 @@
       border: 1px solid #ccc;
       border-radius: 6px;
     }
+
     .success { color: green; margin-top: 10px; }
     .error { color: red; margin-top: 10px; }
+
+    /* 🎯 Responsive mobile */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+        align-items: stretch;
+      }
+
+      .box {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 8px;
+      }
+
+      input {
+        font-size: 16px;
+        padding: 12px;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- ✅ Ajout du header avec image -->
+  <div class="event-header" id="event-header"></div>
+
   <div class="box">
     <h2 id="event-title">Chargement...</h2>
     <p id="event-description"></p>
@@ -89,7 +129,6 @@
         });
     }
 
-    // === Vérification en direct (live) ===
     function validateInputsLive() {
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -98,7 +137,7 @@
       const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
       if (name !== "" && emailValid) {
-        messageDiv.innerHTML = ""; // ✅ efface le message si tout est bon
+        messageDiv.innerHTML = "";
       }
     }
 
@@ -109,12 +148,10 @@
       }
     });
 
-    // === Nouvelle logique : blocage prioritaire sur les crédits ===
     async function loadEvent() {
       const urlParams = new URLSearchParams(window.location.search);
       const eventId = urlParams.get("id");
 
-      // Charger infos event
       const resEvent = await fetch(`/api/event/${eventId}`);
       const dataEvent = await resEvent.json();
       if (!dataEvent.success) {
@@ -129,24 +166,25 @@
       document.getElementById("event-location").textContent = event.location;
       document.getElementById("event-price").textContent = event.price;
 
-      // Charger crédits restants pour cet event
+
+     // ✅ Ajout image d’event si dispo
+     if (event.image_url) {
+     document.getElementById("event-header").style.backgroundImage = `url('${event.image_url}')`;
+}
       const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
       const credits = await resCredits.json();
 
       let complet = false;
       if (credits.remaining_participant_credits <= 0) {
-        // 🔒 Priorité aux crédits épuisés
         complet = true;
         document.getElementById("paypal-button-container").innerHTML =
           "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes</p>";
       } else if (event.participants_count >= event.max_participants) {
-        // 🔒 Sinon, limite max participants atteinte
         complet = true;
         document.getElementById("paypal-button-container").innerHTML =
           "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
       }
 
-      // Charger PayPal seulement si pas complet
       if (!complet) {
         const res = await fetch(`/api/paypal-client-id?event_id=${eventId}`);
         const data = await res.json();
@@ -225,7 +263,6 @@
     }
 
     loadEvent();
-
   </script>
 </body>
 </html>

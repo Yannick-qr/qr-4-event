@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant, AdminLog
 from passlib.hash import bcrypt
 from datetime import datetime, timedelta
+from fastapi import UploadFile, File
+import shutil
 import uuid
 import os
 import smtplib
@@ -594,55 +596,66 @@ def delete_paypal_account(
 # EVENTS
 # ========================
 @app.post("/admin/events")
-def create_event(
-	title: str = Form(...), 
-	description: str = Form(""), 
-	date: str = Form(...),
-	location: str = Form(...),
-	price: float = Form(...),
-        checkin_login: str = Form(None),
-        checkin_password: str = Form(None),
-        max_participants: int = Form(100),
-	token: str = Form(...),
-	db: Session = Depends(get_db)
+async def create_event(
+    token: str = Form(...),
+    title: str = Form(...), 
+    description: str = Form(""), 
+    date: str = Form(...),
+    location: str = Form(...),
+    price: float = Form(...),
+    max_participants: int = Form(100),
+    checkin_login: str = Form(""),
+    checkin_password: str = Form(""),
+    image: UploadFile = File(None),   # ✅ nouveau
+    db: Session = Depends(get_db)
 ):
-
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
         return {"success": False, "error": "Non autorisé"}
 
+    # ✅ Sauvegarde image
+    image_url = None
+    if image:
+        os.makedirs("static/uploads", exist_ok=True)
+        file_path = os.path.join("static/uploads", f"{uuid.uuid4()}_{image.filename}")
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        image_url = "/" + file_path
+
     new_event = Event(
         title=title, 
-	description=description, 
-	date=date, 
-	location=location, 
-	price=price,
+        description=description, 
+        date=date, 
+        location=location, 
+        price=price,
         created_by=user.id,
         checkin_login=checkin_login,
         checkin_password=checkin_password,
-        max_participants=max_participants  # ✅ ajouté ici
+        max_participants=max_participants,
+        image_url=image_url  # ✅ enregistré
     )
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
 
-    return {"success": True, "event_id": new_event.id, "remaining_credits": user.participant_credits}
+    return {"success": True, "event_id": new_event.id, "image_url": image_url}
 
 
 @app.post("/admin/events/update")
-def update_event(
-	event_id: int = Form(...), 
-	title: str = Form(...), 
-	description: str = Form(""), 
-	date: str = Form(...), 
-	location: str = Form(...), 
-	price: float = Form(...), 
-        checkin_login: str = Form(None),
-        checkin_password: str = Form(None),
-        max_participants: int = Form(100),   # ✅ ajouté ici
-	token: str = Form(...), 
-	db: Session = Depends(get_db)):
-
+async def update_event(
+    event_id: int = Form(...), 
+    title: str = Form(...), 
+    description: str = Form(""), 
+    date: str = Form(...), 
+    location: str = Form(...), 
+    price: float = Form(...), 
+    checkin_login: str = Form(None),
+    checkin_password: str = Form(None),
+    max_participants: int = Form(100),
+    token: str = Form(...), 
+    image: UploadFile = File(None),   # ✅ nouveau
+    db: Session = Depends(get_db)
+):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
@@ -659,8 +672,17 @@ def update_event(
     event.checkin_password = checkin_password
     event.max_participants = max_participants
 
+    # ✅ Met à jour image si uploadée
+    if image:
+        os.makedirs("static/uploads", exist_ok=True)
+        file_path = os.path.join("static/uploads", f"{uuid.uuid4()}_{image.filename}")
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        event.image_url = "/" + file_path
+
     db.commit()
-    return {"success": True, "message": "Événement mis à jour"}
+    return {"success": True, "message": "Événement mis à jour", "image_url": event.image_url}
+
 
 
 @app.post("/admin/events/delete")
@@ -740,6 +762,8 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
             "max_participants": event.max_participants,   # ✅ ajouté
             "participants_count": participants_count,     # ✅ ajouté
             "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={event.id}"
+            # ✅ ajoute ça :
+            "image_url": event.image_url
         }
     }
 
@@ -836,6 +860,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
                 "is_active": e.is_active,
                 "is_locked": e.is_locked,
                 "max_participants": e.max_participants,
+                "image_url": e.image_url,   # ✅ ajout ici
                 "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={e.id}"
             }
             for e in events

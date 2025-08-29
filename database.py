@@ -74,6 +74,9 @@ class Event(Base):
     is_locked = Column(Boolean, default=False)   # devient True après 1er paiement public
     is_active = Column(Boolean, default=True)    # toggle activer/désactiver
 
+    # ✅ Nouveau champ pour stocker l’URL de la photo
+    image_url = Column(String, nullable=True)
+
     creator = relationship("AdminUser", back_populates="events")
     participants = relationship("Participant", back_populates="event")
 

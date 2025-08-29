@@ -195,7 +195,9 @@ iframe[src*="paypal.com"] {
   </div>
   <h2 data-i18n="manageEvents">Gestion des événements</h2>
 
-<form id="addEventForm" style="max-width:600px;margin:40px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+<form id="addEventForm" enctype="multipart/form-data" 
+      style="max-width:600px;margin:40px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+
 
   <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;color:#007bff;">
     🗓️ Ajouter un nouvel événement
@@ -231,6 +233,9 @@ iframe[src*="paypal.com"] {
 
   <label for="checkin_password">Password Check-in (ScanEvent)</label>
   <input type="password" id="checkin_password" class="input">
+
+<label for="image">Photo de l’événement</label>
+<input type="file" id="image" name="image" accept="image/*" class="input">
 
   <!-- Bouton -->
   <button type="submit" data-i18n="createEvent" 
@@ -380,7 +385,7 @@ iframe[src*="paypal.com"] {
 <div id="editModal">
   <div class="modal-content">
     <h3 data-i18n="editEvent">Éditer l'événement</h3>
-    <form id="editEventForm">
+    <form id="editEventForm" enctype="multipart/form-data">
       <input type="hidden" id="edit_id">
       <label data-i18n="title">Titre :</label><input type="text" id="edit_title" required>
       <label data-i18n="description">Description :</label><textarea id="edit_description" required></textarea>
@@ -396,6 +401,8 @@ iframe[src*="paypal.com"] {
       <input type="text" id="edit_checkin_login">
       <label>Mot de passe Check-in :</label>
       <input type="password" id="edit_checkin_password">
+      <label for="edit_image">Photo de l’événement</label>
+      <input type="file" id="edit_image" name="edit_image" accept="image/*">
       <button type="submit" id="saveEditBtn">💾 <span data-i18n="save">Enregistrer</span></button>
       <button type="button" id="cancelEditBtn">❌ <span data-i18n="cancel">Annuler</span></button>
     </form>
@@ -705,25 +712,31 @@ document.getElementById("paypalForm").addEventListener("submit", async (e) => {
 });
 
 
-// ✅ Sauvegarde modification
+// ✅ Sauvegarde modification (avec upload image)
 document.getElementById("editEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const form = new URLSearchParams();
-  form.append("event_id", document.getElementById("edit_id").value);
-  form.append("title", document.getElementById("edit_title").value);
-  form.append("description", document.getElementById("edit_description").value);
-  form.append("date", document.getElementById("edit_date").value);
-  form.append("location", document.getElementById("edit_location").value);
-  form.append("price", document.getElementById("edit_price").value);
-  form.append("max_participants", document.getElementById("edit_max_participants").value);
-  form.append("token", token);
-  form.append("checkin_login", document.getElementById("edit_checkin_login").value);
-  form.append("checkin_password", document.getElementById("edit_checkin_password").value);
+  const editForm = new FormData();
+  editForm.append("event_id", document.getElementById("edit_id").value);
+  editForm.append("title", document.getElementById("edit_title").value);
+  editForm.append("description", document.getElementById("edit_description").value);
+  editForm.append("date", document.getElementById("edit_date").value);
+  editForm.append("location", document.getElementById("edit_location").value);
+  editForm.append("price", document.getElementById("edit_price").value);
+  editForm.append("max_participants", document.getElementById("edit_max_participants").value);
+  editForm.append("token", token);
+  editForm.append("checkin_login", document.getElementById("edit_checkin_login").value);
+  editForm.append("checkin_password", document.getElementById("edit_checkin_password").value);
+
+  // ✅ Ajout de l’image si un nouveau fichier est choisi
+  const editImageFile = document.getElementById("edit_image").files[0];
+  if (editImageFile) {
+    editForm.append("image", editImageFile);
+  }
 
   const res = await fetch("/admin/events/update", {
     method: "POST",
-    body: form
+    body: editForm
   });
   const data = await res.json();
   if (data.success) {
@@ -731,7 +744,7 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
     document.getElementById("editModal").style.display = "none";
     loadEvents();
   } else {
-    alert("❌ Erreur modification : " + (data.error || ""));
+    alert("❌ Erreur modification : " + (data.error || "")); 
   }
 });
 
@@ -799,7 +812,7 @@ async function loadLogs() {
 document.getElementById("addEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const form = new URLSearchParams();
+  const form = new FormData();
   form.append("title", document.getElementById("title").value);
   form.append("description", document.getElementById("description").value);
   form.append("date", document.getElementById("date").value);
@@ -809,6 +822,12 @@ document.getElementById("addEventForm").addEventListener("submit", async (e) => 
   form.append("token", token);
   form.append("checkin_login", document.getElementById("checkin_login").value);
   form.append("checkin_password", document.getElementById("checkin_password").value);
+
+  // ✅ Ajout de l'image si un fichier est choisi
+  const imageFile = document.getElementById("image").files[0];
+  if (imageFile) {
+    form.append("image", imageFile);
+  }
 
   const res = await fetch("/admin/events", {
     method: "POST",
