@@ -210,42 +210,42 @@
           customBtn.disabled = true;
           customBtn.textContent = "Chargement...";
 
-          paypal.Buttons({
-            createOrder: function(data, actions) {
-              return fetch(`/event/${eventId}/pay`, { method: "POST" })
-                .then(r => r.json())
-                .then(order => order.id);
-            },
-            onApprove: function(data, actions) {
-              return actions.order.capture().then(function(details) {
-                const formData = new FormData();
-                formData.append("name", name);
-                formData.append("email", email);
-                formData.append("event_id", eventId);
-                formData.append("amount", event.price);
-                formData.append("transaction_id", details.id);
+paypal.Buttons({
+  createOrder: function(data, actions) {
+    return fetch(`/event/${eventId}/pay`, { method: "POST" })
+      .then(r => r.json())
+      .then(order => {
+        if (!order || !order.id) {
+          // ⚠️ Important : on interrompt proprement
+          throw new Error("Impossible de créer la commande PayPal : " + (order.error || "Erreur inconnue"));
+        }
+        return order.id;
+      });
+  },
+  onApprove: function(data, actions) {
+    return actions.order.capture().then(function(details) {
+      // ton traitement actuel (inscription + email)
+    });
+  },
+  onError: function(err) {
+    console.error("Erreur PayPal:", err);
+    msg.innerHTML = "<p class='error'>❌ Erreur avec PayPal : " + err.message + "</p>";
 
-                fetch("/register_participant", { method: "POST", body: formData })
-                  .then(r => r.json())
-                  .then(data => {
-                    if (data.success) {
-                      msg.innerHTML = `<p class='success'>Merci ${name} ! Paiement validé ✅<br>
-                        Confirmation envoyée à ${email}.</p>`;
-                      document.getElementById("registerForm").reset();
-                    } else {
-                      msg.innerHTML = `<p class='error'>⚠️ Erreur d'enregistrement : ${data.error}</p>`;
-                    }
-                  });
-              });
-            },
-            onError: function(err) {
-              console.error("Erreur PayPal:", err);
-              msg.innerHTML = "<p class='error'>❌ Erreur avec PayPal</p>";
-            },
-            onCancel: function() {
-              msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement. Aucune transaction n’a été effectuée.</p>";
-            }
-          }).render("#paypal-hidden-btn");
+    // ✅ Restaure le bouton bleu
+    customBtn.classList.remove("loading");
+    customBtn.disabled = false;
+    customBtn.textContent = "M’inscrire";
+  },
+  onCancel: function() {
+    msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement. Aucune transaction n’a été effectuée.</p>";
+
+    // ✅ Restaure le bouton
+    customBtn.classList.remove("loading");
+    customBtn.disabled = false;
+    customBtn.textContent = "M’inscrire";
+  }
+}).render("#paypal-hidden-btn");
+
 
           // ✅ Restaurer bouton quand on revient
           const restoreBtn = () => {
