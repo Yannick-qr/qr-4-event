@@ -161,7 +161,7 @@
 const img = document.getElementById("event-image");
 
 // Image par défaut (placeholder)
-img.src = "/static/img/placeholder.jpg";
+img.src = "/static/img/placeholder.png";
 
 // Si une image est définie pour l’événement
 if (event.image_url) {
@@ -170,7 +170,7 @@ if (event.image_url) {
   };
   img.onerror = () => {
     console.warn("⚠️ Erreur image, retour au placeholder.");
-    img.src = "/static/img/placeholder.jpg";
+    img.src = "/static/img/placeholder.png";
   };
   img.src = event.image_url;
 }
