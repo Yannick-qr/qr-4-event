@@ -660,8 +660,6 @@ async def update_event(
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
         return {"success": False, "error": "Événement introuvable"}
-    if event.is_locked:
-        return {"success": False, "error": "Événement verrouillé, impossible de modifier."}
 
     event.title = title
     event.description = description
