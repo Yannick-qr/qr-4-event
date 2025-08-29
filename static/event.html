@@ -10,67 +10,73 @@
       margin: 0;
       padding: 0;
       display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      flex-direction: column;
+      align-items: center;
       min-height: 100vh;
     }
-.event-header {
-  position: relative;
-  height: auto;
-  max-height: 400px;
-  overflow: hidden;
-  border-radius: 0 0 10px 10px;
-  margin-bottom: 20px;
-}
 
-/* ✅ Image */
-.event-header img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-}
-
-/* ✅ Overlay dégradé en bas */
-.event-header::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 120px;  /* épaisseur du dégradé */
-  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  border-radius: 0 0 10px 10px; /* arrondi identique à l'image */
-  pointer-events: none; /* n'empêche pas de cliquer sur titre */
-}
-
-/* ✅ Titre superposé */
-.event-header h2 {
-  position: absolute;
-  bottom: 15px;
-  left: 20px;
-  margin: 0;
-  padding: 10px 15px;
-  color: #fff;
-  font-size: 1.6rem;
-  z-index: 2; /* passe au-dessus du dégradé */
-}
-    .box {
-      background: white;
-      margin-top: 50px;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 400px;
+    /* ✅ Header image façon bannière */
+    .event-header {
+      position: relative;
+      width: 100%;
+      max-width: 1000px;
+      max-height: 400px;
+      overflow: hidden;
+      border-radius: 12px;
+      margin: 20px auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
-    h2 { margin-top: 0; color: #007bff; text-align: center; }
+    .event-header img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+
+    /* ✅ Overlay dégradé */
+    .event-header::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 140px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+      border-radius: 0 0 12px 12px;
+    }
+
+    /* ✅ Titre superposé */
+    .event-header h2 {
+      position: absolute;
+      bottom: 20px;
+      left: 25px;
+      margin: 0;
+      padding: 10px 15px;
+      color: #fff;
+      font-size: 2rem;
+      z-index: 2;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    /* ✅ Box infos */
+    .box {
+      background: white;
+      margin: 20px auto 40px auto;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h3 { margin-top: 0; color: #007bff; text-align: center; }
     p { margin: 8px 0; }
 
     input {
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
+      padding: 12px;
+      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 6px;
     }
@@ -78,39 +84,32 @@
     .success { color: green; margin-top: 10px; }
     .error { color: red; margin-top: 10px; }
 
-    /* 🎯 Responsive mobile */
-    @media (max-width: 600px) {
-      body {
-        padding: 15px;
-        align-items: stretch;
-      }
-
-      .box {
-        width: 100%;
+    /* 🎯 Responsive */
+    @media (max-width: 768px) {
+      .event-header {
         max-width: 100%;
-        margin-top: 20px;
+        border-radius: 0;
+      }
+      .box {
+        width: 95%;
         padding: 20px;
-        border-radius: 8px;
       }
-
-      input {
-        font-size: 16px;
-        padding: 12px;
-      }
-
-      h2 {
+      .event-header h2 {
         font-size: 1.4rem;
+        left: 15px;
+        bottom: 10px;
       }
     }
   </style>
 </head>
 <body>
-<!-- ✅ Header avec image en <img> -->
-<div class="event-header">
-  <img id="event-image" src="" alt="Image de l'événement">
-  <h2 id="event-title">Chargement...</h2>
-</div>
+  <!-- ✅ Header avec image -->
+  <div class="event-header">
+    <img id="event-image" src="" alt="Image de l'événement">
+    <h2 id="event-title">Chargement...</h2>
+  </div>
 
+  <!-- ✅ Box infos + inscription -->
   <div class="box">
     <p id="event-description"></p>
     <p><b>Date :</b> <span id="event-date"></span></p>
@@ -125,7 +124,7 @@
       <input type="email" id="email" placeholder="Votre email" required>
     </form>
 
-    <div id="paypal-button-container" style="margin-top:20px;"></div>
+    <div id="paypal-button-container" style="margin-top:20px; text-align:center;"></div>
   </div>
 
   <script>
@@ -138,54 +137,9 @@
 
     if (!eventId) {
       document.body.innerHTML = "<h2>⚠️ Aucun événement sélectionné.</h2>";
-    } else {
-      fetch(`/api/event/${eventId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            const event = data.event;
-            console.log("Événement chargé :", event);
-
-            eventTitle = event.title;
-            eventPrice = event.price;
-
-            document.getElementById("event-title").textContent = event.title;
-            document.getElementById("event-description").textContent = event.description || "Pas de description disponible.";
-            document.getElementById("event-date").textContent = event.date;
-            document.getElementById("event-location").textContent = event.location;
-            document.getElementById("event-price").textContent = event.price;
-          } else {
-            document.querySelector(".box").innerHTML = "<h2>❌ Événement introuvable</h2>";
-          }
-        })
-        .catch(() => {
-          document.querySelector(".box").innerHTML = "<h2>❌ Erreur de chargement</h2>";
-        });
     }
-
-    function validateInputsLive() {
-      const name = document.getElementById("name").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const messageDiv = document.getElementById("message");
-
-      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-      if (name !== "" && emailValid) {
-        messageDiv.innerHTML = "";
-      }
-    }
-
-    ["name", "email"].forEach(id => {
-      const input = document.getElementById(id);
-      if (input) {
-        input.addEventListener("input", validateInputsLive);
-      }
-    });
 
     async function loadEvent() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const eventId = urlParams.get("id");
-
       const resEvent = await fetch(`/api/event/${eventId}`);
       const dataEvent = await resEvent.json();
       if (!dataEvent.success) {
@@ -194,17 +148,20 @@
       }
       const event = dataEvent.event;
 
+      eventTitle = event.title;
+      eventPrice = event.price;
+
       document.getElementById("event-title").textContent = event.title;
       document.getElementById("event-description").textContent = event.description || "Pas de description disponible.";
       document.getElementById("event-date").textContent = event.date;
       document.getElementById("event-location").textContent = event.location;
       document.getElementById("event-price").textContent = event.price;
 
+      if (event.image_url) {
+        document.getElementById("event-image").src = event.image_url;
+      }
 
-     // ✅ Ajout image d’event si dispo
-if (event.image_url) {
-  document.getElementById("event-image").src = event.image_url;
-}
+      // Vérif crédits
       const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
       const credits = await resCredits.json();
 
@@ -219,6 +176,7 @@ if (event.image_url) {
           "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
       }
 
+      // PayPal
       if (!complet) {
         const res = await fetch(`/api/paypal-client-id?event_id=${eventId}`);
         const data = await res.json();
@@ -232,7 +190,7 @@ if (event.image_url) {
                 const email = document.getElementById("email").value.trim();
                 const messageDiv = document.getElementById("message");
 
-                const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                const emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
 
                 if (name === "" || email === "") {
                   messageDiv.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
