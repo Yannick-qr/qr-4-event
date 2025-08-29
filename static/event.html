@@ -169,6 +169,7 @@ input {
   let eventId = null;
   let eventPrice = 0;
   let eventTitle = "";
+  let paypalRendered = false; // ✅ empêche de recréer le bouton à chaque clic
 
   // ✅ Ajoute la fonction ici
   function isValidEmail(email) {
@@ -231,17 +232,31 @@ input {
       const customBtn = document.getElementById("custom-paypal-btn");
       const msg = document.getElementById("message");
 
-      customBtn.addEventListener("click", () => {
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        if (!name || !email) {
-          msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner vos infos.</p>";
-          return;
-        }
+customBtn.addEventListener("click", () => {
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
 
-        customBtn.classList.add("loading");
-        customBtn.disabled = true;
-        customBtn.textContent = "Chargement...";
+  if (!name || !email) {
+    msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner vos infos.</p>";
+    return;
+  }
+  if (!isValidEmail(email)) {
+    msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
+    return;
+  }
+
+  // ✅ Si PayPal déjà affiché → ne rien faire
+  if (paypalRendered) {
+    msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
+    return;
+  }
+
+  customBtn.classList.add("loading");
+  customBtn.disabled = true;
+  customBtn.textContent = "Chargement...";
+
+  // ✅ Vider le conteneur avant de créer un nouveau bouton
+  document.getElementById("paypal-button-container").innerHTML = "";
 
         // ✅ Ouvre directement le pop-up PayPal
         paypal.Buttons({
@@ -306,12 +321,20 @@ input {
             restoreBtn();
           }
         }).render("#paypal-button-container");
-      });
+
+  // ✅ On marque que PayPal est déjà affiché
+  paypalRendered = true;
+
+  // ✅ Cacher le bouton bleu (facultatif)
+  customBtn.style.display = "none";
+});
 
       function restoreBtn() {
         customBtn.classList.remove("loading");
         customBtn.disabled = false;
         customBtn.textContent = "M’inscrire";
+        customBtn.style.display = "block"; // ✅ ré-affiche le bouton bleu si besoin
+        paypalRendered = false;            // ✅ reset pour permettre un nouvel essai
       }
     };
   }
