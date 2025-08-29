@@ -18,21 +18,22 @@
     /* ✅ Header image façon bannière */
 .event-header {
   position: relative;
-  width: 100%;
-  height: 250px;          /* ✅ hauteur fixe (tu peux mettre 300px si tu veux plus grand) */
+  max-width: 900px;   /* ✅ largeur max */
+  margin: 20px auto;  /* ✅ centrer */
+  height: auto;
+  max-height: 400px;
   overflow: hidden;
-  border-radius: 0 0 10px 10px;
-  background: #ddd;       /* ✅ couleur placeholder tant que l’image n’est pas là */
+  border-radius: 12px;
 }
 
+/* Image */
 .event-header img {
   width: 100%;
-  height: 100%;           /* ✅ occupe toute la zone */
-  object-fit: cover;      /* ✅ recadrage sans déformation */
+  height: auto;
   display: block;
+  object-fit: cover;
+  border-radius: 12px;
 }
-
-
     /* ✅ Overlay dégradé */
     .event-header::after {
       content: "";
