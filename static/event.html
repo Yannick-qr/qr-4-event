@@ -171,7 +171,7 @@
           const email = document.getElementById("email").value.trim();
           const msg = document.getElementById("message");
 
-          const emailValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);
+          const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 if (!name || !email) {
   msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner votre nom et votre email.</p>";
   return;
