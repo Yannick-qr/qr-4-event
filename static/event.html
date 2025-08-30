@@ -193,6 +193,13 @@ input {
 /* ✅ Messages succès/erreur */
 .success { color: green; margin-top: 10px; font-weight: bold; }
 .error { color: red; margin-top: 10px; font-weight: bold; }
+.about-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #444;
+  text-align: left;
+}
 
   </style>
 </head>
@@ -206,6 +213,7 @@ input {
 
 <!-- ✅ Box infos améliorée -->
 <div class="box">
+<h3 class="about-title">À propos de l’événement</h3> <!-- ✅ Nouveau titre -->
 <p id="event-description" class="description"></p> <!-- ✅ description restaurée -->
   <div class="event-details">
     <p><span class="icon">📅</span> <b>Date :</b> <span id="event-date"></span></p>
