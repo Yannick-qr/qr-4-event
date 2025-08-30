@@ -221,27 +221,37 @@ def send_confirmation_email(recipient_email, subject, participant, event, qr_dat
         return False
 
 
-def send_admin_email(recipient_email, subject, body):
+def send_admin_email(recipient_email, subject, body_html):
     """
-    Envoi d'un email HTML simple (pour admin, sans QR code)
+    Envoi d'un email HTML + plain/text (fallback) pour admin (sans QR code)
     """
     try:
+        # ✅ Création du message multipart (plain + HTML)
         msg = MIMEMultipart("alternative")
         msg["From"] = SMTP_USER
         msg["To"] = recipient_email
         msg["Subject"] = subject
 
-        msg.attach(MIMEText(body, "html"))
+        # Version texte brut (fallback)
+        body_text = "Bonjour,\n\nTon compte QR Event a bien été créé.\n\nConnecte-toi pour définir ton mot de passe."
 
+        # Attacher la version texte + version HTML
+        msg.attach(MIMEText(body_text, "plain", "utf-8"))
+        msg.attach(MIMEText(body_html, "html", "utf-8"))
+
+        # ✅ Envoi SMTP
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
         server.sendmail(SMTP_USER, recipient_email, msg.as_string())
         server.quit()
+
         return True
     except Exception as e:
         print("❌ Erreur envoi mail admin:", e)
+        traceback.print_exc()
         return False
+
 
 
 def check_token_valid(user: AdminUser, db: Session):
@@ -372,15 +382,28 @@ def register(
     """
 
     try:
-        send_admin_email(email, "Définir ton mot de passe - QR Event", body)
+        ok = send_admin_email(email, "Définir ton mot de passe - QR Event", body)
+        if not ok:
+            print(f"⚠️ Envoi d’email échoué pour {email} (send_admin_email=False)")
+            return {
+                "success": True,
+                "message": "Compte créé ✅ mais l’email n’a pas pu être envoyé. Contacte l’admin."
+            }
+        else:
+            print(f"✅ Email d’activation envoyé à {email}")
     except Exception as e:
-        print("❌ Erreur lors de l’envoi du mail d’activation :", e)
+        print("❌ Exception lors de l’envoi du mail d’activation :", e)
         traceback.print_exc()
+        return {
+            "success": True,
+            "message": "Compte créé ✅ mais erreur lors de l’envoi du mail. Contacte l’admin."
+        }
 
     return {
         "success": True,
-        "message": "Paiement confirmé, email envoyé avec lien pour définir le mot de passe."
+        "message": "Paiement confirmé ✅, email envoyé avec lien pour définir le mot de passe."
     }
+
 
 
 # ========================
