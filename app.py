@@ -318,8 +318,8 @@ def register(
     db: Session = Depends(get_db)
 ):
     # 🧹 Nettoyage des entrées
-    prenom = html.escape(prenom.strip())
-    nom = html.escape(nom.strip())
+    firstName = html.escape(firstName.strip())
+    lastName = html.escape(lastName.strip())
     email = email.strip().lower()
 
     # Regex email basique
@@ -361,7 +361,7 @@ def register(
       <table align="center" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
         <tr>
           <td style="padding:25px; text-align:center;">
-            <h2 style="color:#007bff;">🎉 {prenom}, bienvenue sur QR Event</h2>
+            <h2 style="color:#007bff;">🎉 {firstName}, bienvenue sur QR Event</h2>
             <p style="font-size:16px; color:#333;">
               Ton paiement est confirmé ✅
             </p>
