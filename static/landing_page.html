@@ -172,31 +172,59 @@ header p {
   font-size: 0.95em;
   font-weight: 500;
 }
+/* --------- FEATURES --------- */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
+  padding: 0px 20px;
+  max-width: 1100px;
+  margin: auto;
+}
 
-    /* Features */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      padding: 50px 20px;
-      max-width: 1100px;
-      margin: auto;
-    }
-    .feature-card {
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      text-align: center;
-    }
-    .feature-card h3 {
-      margin-top: 10px;
-      color: #007bff;
-    }
-    .feature-card p {
-      font-size: 0.95em;
-      color: #555;
-    }
+.feature-card {
+  background: #fff;
+  padding: 35px 25px;
+  border-radius: 18px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+
+.feature-card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: #111;
+}
+
+.feature-card h3::first-line {
+  color: #007bff; /* accent Apple-like bleu */
+}
+
+.feature-card p {
+  font-size: 0.95em;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Emoji/Icon style */
+.feature-card h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.feature-card h3::before {
+  font-size: 1.4em;
+}
 
     /* Pricing */
     .pricing-container {
@@ -350,25 +378,29 @@ header p {
   </div>
 </section>
     
-
-  </section>
-
+</section>
+  <!-- Intro -->
+  <section class="hero">
+    <div class="hero-text">
+      <h2>Les principales fonctionalités</h2>
+    </div>
+    
   <!-- Features -->
   <section class="features">
     <div class="feature-card">
-      <h3>📅 Événements illimités</h3>
+      <h3>Événements illimités</h3>
       <p>Créez autant d’événements que nécessaire, sans frais supplémentaires.</p>
     </div>
     <div class="feature-card">
-      <h3>👥 Paiement par participants</h3>
+      <h3>Paiement par participants</h3>
       <p>Vous achetez des crédits participants, jamais par événement.</p>
     </div>
     <div class="feature-card">
-      <h3>🎟️ QR Codes uniques</h3>
+      <h3>QR Codes uniques</h3>
       <p>Chaque participant reçoit un QR code sécurisé à présenter à l’entrée.</p>
     </div>
     <div class="feature-card">
-      <h3>📊 Suivi en temps réel</h3>
+      <h3>Suivi en temps réel</h3>
       <p>Un tableau de bord centralisé pour gérer vos inscriptions et présences.</p>
     </div>
   </section>
