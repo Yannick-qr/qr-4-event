@@ -240,7 +240,8 @@ input {
     <h3>Inscription</h3>
     <div id="message"></div>
     <form id="registerForm">
-      <input type="text" id="name" placeholder="Votre nom" required>
+      <input type="text" id="first_name" placeholder="Votre prénom" required>
+      <input type="text" id="last_name" placeholder="Votre nom" required>
       <input type="email" id="email" placeholder="Votre email" required>
     </form>
 
@@ -326,7 +327,8 @@ document.getElementById("email").addEventListener("input", () => {
 });
 
 customBtn.addEventListener("click", () => {
-  const name = document.getElementById("name").value.trim();
+  const firstName = document.getElementById("first_name").value.trim();
+  const lastName = document.getElementById("last_name").value.trim();
   const email = document.getElementById("email").value.trim();
 
   if (!name || !email) {
@@ -357,7 +359,7 @@ customBtn.addEventListener("click", () => {
             return fetch(`/event/${eventId}/pay`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, email })
+              body: JSON.stringify({ firstName, lastName, email })
             })
             .then(r => r.json())
             .then(order => {
@@ -384,7 +386,8 @@ customBtn.addEventListener("click", () => {
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" },
                 body: new URLSearchParams({
-                  name: name,
+                  first_name: firstName,
+                  last_name: lastName,
                   email: email,
                   event_id: eventId,
                   amount: amount,

@@ -450,7 +450,8 @@ def add_credits(payload: dict = Body(...), db: Session = Depends(get_db)):
 # ========================
 @app.post("/register_participant")
 def register_participant(
-    name: str = Form(...),
+    first_name: str = Form(...),
+    last_name: str = Form(...),
     email: str = Form(...),
     event_id: int = Form(...),
     amount: float = Form(...),
@@ -459,7 +460,9 @@ def register_participant(
 ):
     try:
         # 🔒 Nettoyage des entrées
-        safe_name = html.escape(re.sub(r"[<>]", "", name.strip()))
+        safe_first = html.escape(re.sub(r"[<>]", "", first_name.strip()))
+        safe_last = html.escape(re.sub(r"[<>]", "", last_name.strip()))
+        safe_name = f"{safe_first} {safe_last}"  # ✅ concatène prénom + nom
         safe_email = html.escape(email.strip().lower())
 
         # Validation email simple
