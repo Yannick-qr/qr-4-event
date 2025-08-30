@@ -143,28 +143,6 @@ def get_config():
 
 
 # ========================
-# 🟦 TEST UPLOAD IMAGE (Supabase)
-# ========================
-@app.post("/upload_image")
-async def upload_image(file: UploadFile = File(...)):
-    try:
-        filename = f"{uuid.uuid4()}_{file.filename}"
-        file_content = await file.read()
-
-        res = supabase.storage.from_(SUPABASE_BUCKET).upload(
-            filename, file_content, {"content-type": file.content_type}
-        )
-        if hasattr(res, "error") and res.error is not None:
-            raise HTTPException(status_code=400, detail=str(res.error))
-
-
-        public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
-        return {"success": True, "url": public_url}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ========================
 # UTILS
 # ========================
 def send_email_with_qr(to_email: str, subject: str, html_content: str, qr_data: str):
@@ -635,27 +613,26 @@ async def create_event(
     max_participants: int = Form(100),
     checkin_login: str = Form(""),
     checkin_password: str = Form(""),
-    image: UploadFile = File(None),   # ✅ nouveau
+    image: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not check_token_valid(user, db):
         return {"success": False, "message": "Non autorisé"}
 
-    # ✅ Sauvegarde image
     image_url = None
     if image:
         filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
+
         res = supabase.storage.from_(SUPABASE_BUCKET).upload(
             filename, file_content, {"content-type": image.content_type}
         )
-        if hasattr(res, "error") and res.error is not None:
-            return {"success": False, "message": f"❌ Erreur upload image Supabase: {res.error}"}
 
-        image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
-
-
+        if res and res.data:
+            image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+        else:
+            return {"success": False, "message": "❌ Erreur upload image Supabase"}
 
     new_event = Event(
         title=title, 
@@ -667,13 +644,14 @@ async def create_event(
         checkin_login=checkin_login,
         checkin_password=checkin_password,
         max_participants=max_participants,
-        image_url=image_url  # ✅ enregistré
+        image_url=image_url
     )
     db.add(new_event)
     db.commit()
     db.refresh(new_event)
 
     return {"success": True, "event_id": new_event.id, "image_url": image_url}
+
 
 
 @app.post("/admin/events/update")
@@ -712,10 +690,11 @@ async def update_event(
         res = supabase.storage.from_(SUPABASE_BUCKET).upload(
             filename, file_content, {"content-type": image.content_type}
         )
-        if hasattr(res, "error") and res.error is None:
+        if res and res.data:
             event.image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
         else:
-            return {"success": False, "message": f"❌ Erreur upload image Supabase: {res.error}"}
+            return {"success": False, "message": "❌ Erreur upload image Supabase"}
+
 
 
 
