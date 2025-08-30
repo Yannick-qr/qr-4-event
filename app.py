@@ -650,9 +650,12 @@ async def create_event(
     db.commit()
     db.refresh(new_event)
 
-    return {"success": True, "event_id": new_event.id, "image_url": image_url}
-
-
+    return {
+        "success": True,
+        "message": "✅ Événement créé avec succès",
+        "event_id": new_event.id,
+        "image_url": image_url
+    }
 
 @app.post("/admin/events/update")
 async def update_event(
@@ -672,7 +675,7 @@ async def update_event(
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
-        return {"success": False, "message": "Événement introuvable"}
+        return {"success": False, "message": "❌ Événement introuvable"}
 
     event.title = title
     event.description = description
@@ -683,7 +686,7 @@ async def update_event(
     event.checkin_password = checkin_password
     event.max_participants = max_participants
 
-    # ✅ Met à jour image si uploadée
+    # ✅ Met à jour l'image si uploadée
     if image:
         filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
@@ -695,39 +698,63 @@ async def update_event(
         else:
             return {"success": False, "message": "❌ Erreur upload image Supabase"}
 
-
-
-
     db.commit()
-    return {"success": True, "message": "Événement mis à jour", "image_url": event.image_url}
+    db.refresh(event)
+
+    return {
+        "success": True,
+        "message": "✅ Événement mis à jour avec succès",
+        "event_id": event.id,
+        "image_url": event.image_url
+    }
 
 
 
 @app.post("/admin/events/delete")
-def delete_event(event_id: int = Form(...), token: str = Form(...), db: Session = Depends(get_db)):
+def delete_event(
+    event_id: int = Form(...),
+    token: str = Form(...),
+    db: Session = Depends(get_db)
+):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
-        return {"success": False, "message": "Événement introuvable"}
+        return {"success": False, "message": "❌ Événement introuvable"}
 
     db.delete(event)
     db.commit()
-    return {"success": True, "message": "Événement supprimé"}
+    return {
+        "success": True,
+        "message": "🗑️ Événement supprimé avec succès",
+        "event_id": event_id
+    }
 
 
 @app.post("/admin/events/toggle")
-def toggle_event(event_id: int = Form(...), token: str = Form(...), db: Session = Depends(get_db)):
+def toggle_event(
+    event_id: int = Form(...),
+    token: str = Form(...),
+    db: Session = Depends(get_db)
+):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "message": "Non autorisé"}
+
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
-        return {"success": False, "message": "Événement introuvable"}
+        return {"success": False, "message": "❌ Événement introuvable"}
 
+    # ✅ on inverse l’état actif/inactif
     event.is_active = not event.is_active
     db.commit()
-    return {"success": True, "is_active": event.is_active}
 
+    return {
+        "success": True,
+        "message": f"{'✅ Événement activé' if event.is_active else '⏸️ Événement désactivé'}",
+        "event_id": event.id,
+        "is_active": event.is_active
+    }
 
-from fastapi.responses import HTMLResponse
 
 @app.get("/event/{event_id}", response_class=HTMLResponse)
 def public_event(event_id: int, db: Session = Depends(get_db)):
