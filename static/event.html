@@ -331,15 +331,14 @@ customBtn.addEventListener("click", () => {
   const lastName = document.getElementById("last_name").value.trim();
   const email = document.getElementById("email").value.trim();
 
-  if (!name || !email) {
-    msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner vos infos.</p>";
+  if (!firstName || !lastName || !email) {
+    msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>";
     return;
   }
   if (!isValidEmail(email)) {
     msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
     return;
   }
-
   // ✅ Si PayPal déjà affiché → ne rien faire
   if (paypalRendered) {
     msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
