@@ -322,9 +322,13 @@ input {
 ["first_name", "last_name", "email"].forEach(id => {
   const input = document.getElementById(id);
   if (input) {
-    input.addEventListener("input", () => restoreBtn());
+    input.addEventListener("input", () => {
+      restoreBtn();          // ✅ réactive ton bouton bleu
+      msg.innerHTML = "";    // ✅ efface TOUS les messages (erreur, succès, info…)
+    });
   }
 });
+
 
 
 
