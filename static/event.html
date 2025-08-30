@@ -135,6 +135,65 @@ input {
     bottom: 10px;
   }
 }
+/* 📦 Carte principale */
+.box {
+  background: white;
+  margin: 20px auto 40px auto;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  width: 100%;
+  max-width: 600px;
+  transition: transform 0.2s;
+}
+.box:hover {
+  transform: translateY(-3px);
+}
+
+/* 📅 Infos événement */
+.event-details p {
+  font-size: 16px;
+  margin: 10px 0;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+.event-details .icon {
+  margin-right: 8px;
+  font-size: 1.2rem;
+}
+
+/* 📝 Description */
+.description {
+  margin-top: 10px;
+  font-style: italic;
+  color: #666;
+}
+
+/* 🎯 Bouton inscription */
+#custom-paypal-btn {
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  padding: 14px 25px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s, transform 0.2s;
+  display: block;
+  margin: 20px auto 0;
+  position: relative;
+}
+#custom-paypal-btn:hover {
+  background: linear-gradient(90deg, #0056b3, #003f80);
+  transform: scale(1.05);
+}
+
+/* ✅ Messages succès/erreur */
+.success { color: green; margin-top: 10px; font-weight: bold; }
+.error { color: red; margin-top: 10px; font-weight: bold; }
+
   </style>
 </head>
 <body>
@@ -145,13 +204,15 @@ input {
     <h2 id="event-title">Chargement...</h2>
   </div>
 
-  <!-- ✅ Box infos -->
-  <div class="box">
-    <p id="event-description"></p>
-    <p><b>Date :</b> <span id="event-date"></span></p>
-    <p><b>Lieu :</b> <span id="event-location"></span></p>
-    <p><b>Prix :</b> <span id="event-price"></span> €</p>
-    <hr>
+<!-- ✅ Box infos améliorée -->
+<div class="box">
+  <div class="event-details">
+    <p><span class="icon">📅</span> <b>Date :</b> <span id="event-date"></span></p>
+    <p><span class="icon">📍</span> <b>Lieu :</b> <span id="event-location"></span></p>
+    <p><span class="icon">💶</span> <b>Prix :</b> <span id="event-price"></span> €</p>
+  </div>
+
+  <hr>
 
     <h3>Inscription</h3>
     <div id="message"></div>
