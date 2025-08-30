@@ -6,7 +6,7 @@ from database import Base, engine, get_db, AdminUser, Event, EventRegistration, 
 from passlib.hash import bcrypt
 from datetime import datetime, timedelta
 from fastapi import UploadFile, File
-import shutil
+from supabase import create_client, Client
 import uuid
 import os
 import smtplib
@@ -77,6 +77,12 @@ CREDIT_PACKS = {
     }
 }
 
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "event-images")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
 # ========================
 # APP INIT
 # ========================
@@ -135,6 +141,27 @@ def get_config():
         "packs": CREDIT_PACKS
     }
 
+
+# ========================
+# 🟦 TEST UPLOAD IMAGE (Supabase)
+# ========================
+@app.post("/upload_image")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        filename = f"{uuid.uuid4()}_{file.filename}"
+        file_content = await file.read()
+
+        res = supabase.storage.from_(SUPABASE_BUCKET).upload(
+            filename, file_content, {"content-type": file.content_type}
+        )
+        if res.get("error"):
+            raise HTTPException(status_code=400, detail=res["error"]["message"])
+
+        public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+        return {"success": True, "url": public_url}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ========================
 # UTILS
@@ -617,11 +644,15 @@ async def create_event(
     # ✅ Sauvegarde image
     image_url = None
     if image:
-        os.makedirs("static/uploads", exist_ok=True)
-        file_path = os.path.join("static/uploads", f"{uuid.uuid4()}_{image.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        image_url = "/" + file_path
+        filename = f"{uuid.uuid4()}_{image.filename}"
+        file_content = await image.read()
+        res = supabase.storage.from_(SUPABASE_BUCKET).upload(
+        filename, file_content, {"content-type": image.content_type}
+        )
+        if res.get("error"):
+            return {"success": False, "message": "❌ Erreur upload image Supabase"}
+        image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+
 
     new_event = Event(
         title=title, 
@@ -673,11 +704,14 @@ async def update_event(
 
     # ✅ Met à jour image si uploadée
     if image:
-        os.makedirs("static/uploads", exist_ok=True)
-        file_path = os.path.join("static/uploads", f"{uuid.uuid4()}_{image.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
-        event.image_url = "/" + file_path
+        filename = f"{uuid.uuid4()}_{image.filename}"
+        file_content = await image.read()
+        res = supabase.storage.from_(SUPABASE_BUCKET).upload(
+            filename, file_content, {"content-type": image.content_type}
+        )
+        if not res.get("error"):
+            event.image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+
 
     db.commit()
     return {"success": True, "message": "Événement mis à jour", "image_url": event.image_url}
@@ -723,6 +757,10 @@ def public_event(event_id: int, db: Session = Depends(get_db)):
     </head>
     <body style="font-family: Arial, sans-serif; background: #f5f6fa; padding:20px;">
         <h1>{event.title}</h1>
+{('<div style="margin:20px 0;"><img src="' + event.image_url +
+   '" alt="Affiche" style="max-width:400px; border-radius:8px;"></div>'
+   if event.image_url else "")}
+
         <p><b>Description :</b> {event.description}</p>
         <p><b>Date :</b> {event.date}</p>
         <p><b>Lieu :</b> {event.location}</p>
