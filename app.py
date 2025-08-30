@@ -312,8 +312,8 @@ def check_email(email: str = Form(...), db: Session = Depends(get_db)):
 # ========================
 @app.post("/register")
 def register(
-    prenom: str = Form(""),
-    nom: str = Form(""),
+    firstName: str = Form(""),
+    lastName: str = Form(""),
     email: str = Form(...),
     db: Session = Depends(get_db)
 ):
