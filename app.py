@@ -625,14 +625,14 @@ async def create_event(
         filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
 
-        res = supabase.storage.from_(SUPABASE_BUCKET).upload(
-            filename, file_content, {"content-type": image.content_type}
-        )
-
-        if res and res.data:
-            image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
-        else:
-            return {"success": False, "message": "❌ Erreur upload image Supabase"}
+        try:
+            res = supabase.storage.from_(SUPABASE_BUCKET).upload(
+                filename, file_content, {"content-type": image.content_type}
+            )
+            if res:  # ✅ si pas d’exception → upload OK
+                image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+        except Exception as e:
+            return {"success": False, "message": f"❌ Erreur upload image Supabase: {str(e)}"}
 
     new_event = Event(
         title=title, 
@@ -656,6 +656,9 @@ async def create_event(
         "event_id": new_event.id,
         "image_url": image_url
     }
+
+
+
 
 @app.post("/admin/events/update")
 async def update_event(
@@ -690,13 +693,14 @@ async def update_event(
     if image:
         filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
-        res = supabase.storage.from_(SUPABASE_BUCKET).upload(
-            filename, file_content, {"content-type": image.content_type}
-        )
-        if res and res.data:
-            event.image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
-        else:
-            return {"success": False, "message": "❌ Erreur upload image Supabase"}
+        try:
+            res = supabase.storage.from_(SUPABASE_BUCKET).upload(
+                filename, file_content, {"content-type": image.content_type}
+            )
+            if res:
+                event.image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+        except Exception as e:
+            return {"success": False, "message": f"❌ Erreur upload image Supabase: {str(e)}"}
 
     db.commit()
     db.refresh(event)
@@ -707,6 +711,7 @@ async def update_event(
         "event_id": event.id,
         "image_url": event.image_url
     }
+
 
 
 
