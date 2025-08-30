@@ -41,3 +41,4 @@ watchfiles==1.1.0
 websockets==15.0.1
 psycopg2-binary
 bcrypt==4.3.0
+supabase==2.18.1
