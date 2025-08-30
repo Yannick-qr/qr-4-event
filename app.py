@@ -757,9 +757,9 @@ def public_event(event_id: int, db: Session = Depends(get_db)):
     </head>
     <body style="font-family: Arial, sans-serif; background: #f5f6fa; padding:20px;">
         <h1>{event.title}</h1>
-{('<div style="margin:20px 0;"><img src="' + event.image_url +
-   '" alt="Affiche" style="max-width:400px; border-radius:8px;"></div>'
-   if event.image_url else "")}
+        {('<div style="margin:20px 0;"><img src="' + event.image_url +
+           '" alt="Affiche" style="max-width:400px; border-radius:8px;"></div>'
+        if event.image_url else "")}
 
         <p><b>Description :</b> {event.description}</p>
         <p><b>Date :</b> {event.date}</p>
