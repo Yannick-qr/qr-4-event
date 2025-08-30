@@ -353,33 +353,33 @@ def register(
     # ✅ Prépare le lien de validation
     verify_link = f"{BASE_PUBLIC_URL}/static/set-password.html?token={validation_token}"
 
-# ✅ Corps HTML de l’email admin
-body = f"""
-<html lang="fr">
-<head><meta charset="UTF-8"><title>Bienvenue sur QR Event</title></head>
-<body style="font-family: Arial, sans-serif; background:#f5f6fa; padding:20px; margin:0;">
-  <table align="center" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-    <tr>
-      <td style="padding:25px; text-align:center;">
-        <h2 style="color:#007bff;">🎉 {prenom}, bienvenue sur QR Event</h2>
-        <p style="font-size:16px; color:#333;">
-          Ton paiement est confirmé ✅
-        </p>
-        <p style="font-size:15px; color:#555;">
-          Voici ton lien pour définir ton mot de passe (valable <b>48h</b>) :
-        </p>
-        <p style="margin:30px 0;">
-          <a href="{verify_link}" style="background:#007bff; color:#ffffff; padding:12px 24px; text-decoration:none; border-radius:6px; font-weight:bold;">
-            🔑 Définir mon mot de passe
-          </a>
-        </p>
-        <p style="font-size:13px; color:#888;">Si le bouton ne fonctionne pas, copie-colle ce lien dans ton navigateur :<br>{verify_link}</p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-"""
+    # ✅ Corps HTML de l’email admin
+    body = f"""
+    <html lang="fr">
+    <head><meta charset="UTF-8"><title>Bienvenue sur QR Event</title></head>
+    <body style="font-family: Arial, sans-serif; background:#f5f6fa; padding:20px; margin:0;">
+      <table align="center" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+        <tr>
+          <td style="padding:25px; text-align:center;">
+            <h2 style="color:#007bff;">🎉 {prenom}, bienvenue sur QR Event</h2>
+            <p style="font-size:16px; color:#333;">
+              Ton paiement est confirmé ✅
+            </p>
+            <p style="font-size:15px; color:#555;">
+              Voici ton lien pour définir ton mot de passe (valable <b>48h</b>) :
+            </p>
+            <p style="margin:30px 0;">
+              <a href="{verify_link}" style="background:#007bff; color:#ffffff; padding:12px 24px; text-decoration:none; border-radius:6px; font-weight:bold;">
+                🔑 Définir mon mot de passe
+              </a>
+            </p>
+            <p style="font-size:13px; color:#888;">Si le bouton ne fonctionne pas, copie-colle ce lien dans ton navigateur :<br>{verify_link}</p>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
 
 
     try:
