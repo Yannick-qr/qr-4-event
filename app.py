@@ -924,16 +924,26 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
 async def event_pay(event_id: int, request: Request, db: Session = Depends(get_db)):
     """Créer une commande PayPal pour un participant à un événement"""
     try:
+        # Vérifie que l'événement existe et est actif
         event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
         if not event:
-            # ⚠️ Toujours renvoyer un id, même si None
             return {"id": None, "message": "❌ Événement introuvable ou inactif"}
-
 
         # Récupère l'admin créateur
         admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
+        if not admin:
+            return {"id": None, "message": "❌ Admin introuvable"}
 
-        # Choisit les credentials PayPal
+        # ✅ Vérifie crédits disponibles avant même de créer la commande PayPal
+        if admin.participant_credits <= 0:
+            return {"id": None, "message": "⚠️ Pas assez de crédits participants"}
+
+        # ✅ Vérifie quota participants (si max_participants défini)
+        participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
+        if event.max_participants and participants_count >= event.max_participants:
+            return {"id": None, "message": "⚠️ Événement complet"}
+
+        # Sélectionne les credentials PayPal
         client_id = admin.paypal_client_id if admin and admin.paypal_client_id else PAYPAL_CLIENT_ID
         secret = admin.paypal_secret if admin and admin.paypal_secret else PAYPAL_SECRET
 
@@ -944,10 +954,8 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
             data={"grant_type": "client_credentials"},
             auth=(client_id, secret)
         )
-
         if auth_req.status_code != 200:
             return {"id": None, "message": "❌ OAuth PayPal échoué", "paypal_response": auth_req.text}
-
 
         access_token = auth_req.json().get("access_token")
         if not access_token:
@@ -973,7 +981,6 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         )
 
         order_data = order_req.json()
-
         if "id" not in order_data:
             return {"id": None, "message": "PayPal n’a pas renvoyé d’ID", "paypal_response": order_data}
 
@@ -985,6 +992,7 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         print("❌ Exception event_pay:", e)
         traceback.print_exc()
         return {"id": None, "message": str(e)}
+
 
 
 
@@ -1254,13 +1262,18 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         if not event_db:
             return {"success": False, "message": "Événement introuvable"}
 
+        # ✅ Vérifie quota participants (sécurité)
         participants_count = db.query(Participant).filter(Participant.event_id == event_db.id).count()
         if event_db.max_participants and participants_count >= event_db.max_participants:
-            return {"success": False, "message": "Événement complet"}
+            return {"success": False, "message": "⚠️ Événement complet (après capture PayPal)"}
 
+        # ✅ Vérifie crédits admin (sécurité)
         admin = db.query(AdminUser).filter(AdminUser.id == event_db.created_by).first()
-        if not admin or admin.participant_credits <= 0:
-            return {"success": False, "message": "Pas assez de crédits"}
+        if not admin:
+            return {"success": False, "message": "Admin introuvable"}
+        if admin.participant_credits <= 0:
+            return {"success": False, "message": "⚠️ Pas assez de crédits (après capture PayPal)"}
+
 
         # ---------------------------
         # CRÉATION EN DB

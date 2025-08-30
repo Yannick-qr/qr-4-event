@@ -862,11 +862,31 @@ async function loadLogs() {
       return;
     }
 
-    data.logs.forEach(log => {
-      const row = document.createElement("tr");
-      row.innerHTML = `<td>${log.action}</td><td>${log.details}</td><td>${log.date}</td>`;
-      tbody.appendChild(row);
-    });
+data.logs.forEach(log => {
+  const row = document.createElement("tr");
+
+  let color = "#333"; // par défaut noir
+  let icon = "ℹ️";
+
+  // 🚫 Si c’est un refus webhook → rouge
+  if (log.action.includes("WEBHOOK_REFUSED")) {
+    color = "red";
+    icon = "🚫";
+  }
+  // ⚠️ Si c’est une suppression sensible (PayPal par ex.)
+  else if (log.action.includes("DELETE_PAYPAL")) {
+    color = "orange";
+    icon = "⚠️";
+  }
+
+  row.innerHTML = `
+    <td><b style="color:${color}">${icon} ${log.action}</b></td>
+    <td>${log.details || ""}</td>
+    <td>${log.date}</td>
+  `;
+  tbody.appendChild(row);
+});
+
   } else {
     alert("❌ Erreur chargement logs : " + (data.error || ""));
   }
