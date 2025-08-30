@@ -299,7 +299,9 @@ iframe[src*="paypal.com"] {
         <th>Max participants</th>
         <th data-i18n="status">Identifiant Scanner</th>
         <th>Login Check-in</th>
-        <th data-i18n="publicLink">Lien public</th><th data-i18n="actions">Actions</th>
+        <th>Image</th>
+        <th data-i18n="publicLink">Lien public</th>
+        <th data-i18n="actions">Actions</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -546,6 +548,13 @@ async function loadEvents() {
         ${ev.checkin_password ? "<b>Password : </b>" + ev.checkin_password : ""}
       </td>
       <td>${ev.is_active ? "✅ Actif" : "❌ Inactif"}</td>
+
+              <!-- ✅ Nouvelle colonne image -->
+              <td>
+                    ${ev.image_url 
+                          ? `<img src="${ev.image_url}" style="max-height:50px; border-radius:6px;">`
+                          : "—"}
+              </td>
 
       <td><a href="${ev.public_url}" target="_blank"><button class="action-btn link-btn">🔗 Voir</button></a></td>
       <td>
