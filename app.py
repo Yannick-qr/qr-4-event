@@ -154,8 +154,9 @@ async def upload_image(file: UploadFile = File(...)):
         res = supabase.storage.from_(SUPABASE_BUCKET).upload(
             filename, file_content, {"content-type": file.content_type}
         )
-        if res.get("error"):
-            raise HTTPException(status_code=400, detail=res["error"]["message"])
+        if hasattr(res, "error") and res.error is not None:
+            raise HTTPException(status_code=400, detail=str(res.error))
+
 
         public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
         return {"success": True, "url": public_url}
@@ -647,11 +648,13 @@ async def create_event(
         filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
         res = supabase.storage.from_(SUPABASE_BUCKET).upload(
-        filename, file_content, {"content-type": image.content_type}
+            filename, file_content, {"content-type": image.content_type}
         )
-        if res.get("error"):
-            return {"success": False, "message": "❌ Erreur upload image Supabase"}
+        if hasattr(res, "error") and res.error is not None:
+            return {"success": False, "message": f"❌ Erreur upload image Supabase: {res.error}"}
+
         image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+
 
 
     new_event = Event(
@@ -709,8 +712,11 @@ async def update_event(
         res = supabase.storage.from_(SUPABASE_BUCKET).upload(
             filename, file_content, {"content-type": image.content_type}
         )
-        if not res.get("error"):
+        if hasattr(res, "error") and res.error is None:
             event.image_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(filename)
+        else:
+            return {"success": False, "message": f"❌ Erreur upload image Supabase: {res.error}"}
+
 
 
     db.commit()
