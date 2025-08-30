@@ -145,15 +145,58 @@ def get_config():
 # ========================
 # UTILS
 # ========================
-def send_email_with_qr(to_email: str, subject: str, html_content: str, qr_data: str):
+
+def send_confirmation_email(recipient_email, subject, participant, event, qr_data):
+    """
+    Envoie un email designé avec image de l'événement + QR code en PJ
+    """
     try:
         msg = MIMEMultipart("mixed")
         msg["From"] = SMTP_USER
-        msg["To"] = to_email
+        msg["To"] = recipient_email
         msg["Subject"] = subject
 
-        msg.attach(MIMEText(html_content, "html"))
+        # Corps HTML
+        body = f"""
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Inscription confirmée</title></head>
+<body style="font-family: Arial, sans-serif; background:#f5f6fa; padding:20px; margin:0;">
+  <table align="center" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
 
+    <!-- Image de l’événement -->
+    {"<tr><td><img src='" + event.image_url + "' alt='Image de l’événement' style='width:100%; border-radius:8px 8px 0 0;'></td></tr>" if event.image_url else ""}
+
+    <tr>
+      <td style="padding:25px; text-align:center;">
+        <h2 style="color:#007bff;">🎉 Inscription confirmée</h2>
+        <p style="font-size:16px; color:#333;">
+          Merci <b>{participant.name}</b>, ton paiement de <b>{participant.amount:.2f} €</b> 
+          pour <b>{event.title}</b> a bien été enregistré ✅
+        </p>
+        <p style="font-size:15px; color:#555;">
+          📅 <b>Date :</b> {event.date}<br>
+          📍 <b>Lieu :</b> {event.location}
+        </p>
+
+        <p style="margin:30px 0; font-size:14px; color:#888;">
+          Ton QR code est joint à ce mail en pièce jointe.<br>
+          Garde-le précieusement, il sera demandé à l’entrée.
+        </p>
+      </td>
+    </tr>
+
+    <tr>
+      <td style="background:#f5f6fa; padding:15px; text-align:center; font-size:12px; color:#777;">
+        © 2025 QR Event – Merci de ta confiance 🚀
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        """
+        msg.attach(MIMEText(body, "html"))
+
+        # ✅ Génération du QR code en mémoire
         qr = qrcode.make(qr_data)
         img_bytes = io.BytesIO()
         qr.save(img_bytes, format="PNG")
@@ -165,15 +208,41 @@ def send_email_with_qr(to_email: str, subject: str, html_content: str, qr_data: 
         part.add_header("Content-Disposition", 'attachment; filename="qrcode.png"')
         msg.attach(part)
 
+        # Envoi SMTP
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(SMTP_USER, to_email, msg.as_string())
+        server.sendmail(SMTP_USER, recipient_email, msg.as_string())
         server.quit()
+
+        return True
     except Exception as e:
-        import traceback
-        print("❌ Erreur SMTP (QR):", e)
-        traceback.print_exc()   # 👈 ça affichera la stack complète dans la console
+        print("❌ Erreur envoi mail confirmation :", e)
+        return False
+
+
+def send_admin_email(recipient_email, subject, body):
+    """
+    Envoi d'un email HTML simple (pour admin, sans QR code)
+    """
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["From"] = SMTP_USER
+        msg["To"] = recipient_email
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(body, "html"))
+
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASS)
+        server.sendmail(SMTP_USER, recipient_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print("❌ Erreur envoi mail admin:", e)
+        return False
+
 
 def check_token_valid(user: AdminUser, db: Session):
     if not user or not user.token:
@@ -185,10 +254,12 @@ def check_token_valid(user: AdminUser, db: Session):
         return False
     return True
 
+
 def log_admin_action(db: Session, admin_id: int, action: str, details: str = None):
     new_log = AdminLog(admin_id=admin_id, action=action, details=details)
     db.add(new_log)
     db.commit()
+
 
 
 # ========================
@@ -272,15 +343,36 @@ def register(
     # ✅ Prépare le lien de validation
     verify_link = f"{BASE_PUBLIC_URL}/static/set-password.html?token={validation_token}"
 
+    # ✅ Corps HTML de l’email admin
     body = f"""
-    <h2>Bienvenue sur QR Event 🎉</h2>
-    <p>Ton paiement est confirmé ✅</p>
-    <p>Voici ton lien pour définir ton mot de passe (valable 48h) :</p>
-    <p><a href="{verify_link}">Définir mon mot de passe</a></p>
+    <html lang="fr">
+    <head><meta charset="UTF-8"><title>Bienvenue sur QR Event</title></head>
+    <body style="font-family: Arial, sans-serif; background:#f5f6fa; padding:20px; margin:0;">
+      <table align="center" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+        <tr>
+          <td style="padding:25px; text-align:center;">
+            <h2 style="color:#007bff;">🎉 Bienvenue sur QR Event</h2>
+            <p style="font-size:16px; color:#333;">
+              Ton paiement est confirmé ✅
+            </p>
+            <p style="font-size:15px; color:#555;">
+              Voici ton lien pour définir ton mot de passe (valable <b>48h</b>) :
+            </p>
+            <p style="margin:30px 0;">
+              <a href="{verify_link}" style="background:#007bff; color:#ffffff; padding:12px 24px; text-decoration:none; border-radius:6px; font-weight:bold;">
+                🔑 Définir mon mot de passe
+              </a>
+            </p>
+            <p style="font-size:13px; color:#888;">Si le bouton ne fonctionne pas, copie-colle ce lien dans ton navigateur :<br>{verify_link}</p>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
     """
 
     try:
-        send_email_with_qr(email, "Définir ton mot de passe - QR Event", body, qr_data=verify_link)
+        send_admin_email(email, "Définir ton mot de passe - QR Event", body)
     except Exception as e:
         print("❌ Erreur lors de l’envoi du mail d’activation :", e)
         traceback.print_exc()
@@ -289,6 +381,7 @@ def register(
         "success": True,
         "message": "Paiement confirmé, email envoyé avec lien pour définir le mot de passe."
     }
+
 
 # ========================
 # SET PASSWORD
@@ -462,32 +555,31 @@ def register_participant(
         # 🔒 Nettoyage des entrées
         safe_first = html.escape(re.sub(r"[<>]", "", first_name.strip()))
         safe_last = html.escape(re.sub(r"[<>]", "", last_name.strip()))
-        safe_name = f"{safe_first} {safe_last}"  # ✅ concatène prénom + nom
+        safe_name = f"{safe_first} {safe_last}".strip() or "Participant"
         safe_email = html.escape(email.strip().lower())
 
-        # Validation email simple
+        # Vérif email format
         if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", safe_email):
             return {"success": False, "message": "❌ Email invalide."}
 
-        # Vérifie si l'événement existe
+        # Vérif event
         event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
         if not event:
             return {"success": False, "message": "❌ Événement introuvable ou inactif."}
 
-        # Vérifie si l'événement a atteint sa limite de participants
+        # Vérifie quota participants
         participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
         if event.max_participants and participants_count >= event.max_participants:
             return {"success": False, "message": "⚠️ Événement complet."}
 
-        # Vérifie si déjà inscrit avec cette transaction
-        existing = db.query(Participant).filter(Participant.transaction_id == transaction_id).first()
-        if existing:
+        # Vérifie doublon transaction
+        if db.query(Participant).filter(Participant.transaction_id == transaction_id).first():
             return {"success": True, "message": "ℹ️ Déjà enregistré."}
 
-        # Vérifie si l'admin a encore des crédits
+        # Vérifie crédits admin
         admin = db.query(AdminUser).filter(AdminUser.id == event.created_by).first()
         if not admin:
-            return {"success": False, "message": "❌ Admin introuvable pour cet événement."}
+            return {"success": False, "message": "⚠️ Admin introuvable."}
         if admin.participant_credits <= 0:
             return {"success": False, "message": "⚠️ Pas assez de crédits participants."}
 
@@ -496,38 +588,41 @@ def register_participant(
             name=safe_name,
             email=safe_email,
             event_id=event_id,
-            amount=amount,
+            amount=float(amount) if amount else event.price,
             transaction_id=transaction_id,
             created_at=datetime.utcnow()
         )
         db.add(participant)
 
-        # 🔑 Décrémentation des crédits participants
+        # Décrémente crédits
         admin.participant_credits -= 1
         db.commit()
         db.refresh(participant)
 
-        # ✅ Génère QR code et envoie email
+        # ✅ Génère le QR data (sera encodé dans la PJ)
         qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
-        body = f"""
-        <h2>Inscription confirmée 🎉</h2>
-        <p>Merci {safe_name}, ton paiement de {amount} € pour l’événement <b>{event.title}</b> a bien été enregistré.</p>
-        <p>Date : {event.date} – Lieu : {event.location}</p>
-        <p>Ton QR code est en pièce jointe, il te sera demandé à l’entrée ✅</p>
-        """
 
+        # Envoi email de confirmation
         try:
-            send_email_with_qr(safe_email, f"Confirmation inscription - {event.title}", body, qr_data=qr_data)
+            send_confirmation_email(
+                recipient_email=safe_email,
+                subject=f"Confirmation inscription - {event.title}",
+                participant=participant,
+                event=event,
+                qr_data=qr_data
+            )
         except Exception as e:
             print("❌ Erreur lors de l’envoi du mail participant :", e)
 
         return {"success": True, "message": "🎉 Inscription enregistrée avec succès, email envoyé."}
 
     except Exception as e:
-        import traceback
         print("❌ Exception dans /register_participant:", e)
         traceback.print_exc()
         return {"success": False, "message": f"❌ Erreur serveur : {str(e)}"}
+
+
+
 
 # ========================
 # USER INFO (profil connecté)
@@ -1080,7 +1175,6 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
 
         # 🔒 Vérification de la signature PayPal
         verify_url = f"{PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature"
-        auth = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
         payload = {
             "transmission_id": headers.get("Paypal-Transmission-Id"),
             "transmission_time": headers.get("Paypal-Transmission-Time"),
@@ -1090,7 +1184,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             "webhook_id": PAYPAL_WEBHOOK_ID,
             "webhook_event": event
         }
-        r = requests.post(verify_url, auth=auth, json=payload)
+        r = requests.post(verify_url, auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET), json=payload)
         verification = r.json()
         print("🔎 Vérification PayPal:", verification)
 
@@ -1101,11 +1195,10 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         event_type = event.get("event_type")
         resource = event.get("resource", {})
         print(f"📩 Webhook reçu: {event_type}")
-        print(f"Payload: {event}")
+        print(f"Payload: {json.dumps(event, indent=2)}")
 
         # 👉 On ne traite que les CAPTURES validées
         if event_type != "PAYMENT.CAPTURE.COMPLETED":
-            print(f"ℹ️ Ignoré: {event_type}")
             return {"success": True, "message": f"Ignoré {event_type}"}
 
         # ---------------------------
@@ -1116,8 +1209,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         order_id = resource.get("supplementary_data", {}).get("related_ids", {}).get("order_id")
 
         if not order_id:
-            print("⚠️ Pas de order_id dans CAPTURE")
-            return {"success": False, "message": "order_id manquant"}
+            return {"success": False, "message": "order_id manquant dans la capture"}
 
         # 🔹 Authentification PayPal
         auth_req = requests.post(
@@ -1126,17 +1218,20 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             data={"grant_type": "client_credentials"},
             auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
         )
+        if auth_req.status_code != 200:
+            return {"success": False, "message": "OAuth PayPal échoué", "paypal_response": auth_req.text}
+
         access_token = auth_req.json().get("access_token")
         if not access_token:
-            return {"success": False, "message": "OAuth PayPal échoué"}
+            return {"success": False, "message": "Impossible d’obtenir access_token"}
 
-        # 🔹 Récupérer l’Order pour obtenir payer_email + event_id
+        # 🔹 Récupérer l’Order complet
         order_req = requests.get(
             f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
             headers={"Authorization": f"Bearer {access_token}"}
         )
         order_data = order_req.json()
-        print("🔎 Order récupéré:", order_data)
+        print("🔎 Order récupéré:", json.dumps(order_data, indent=2))
 
         payer = order_data.get("payer", {})
         payer_email = payer.get("email_address")
@@ -1145,7 +1240,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         try:
             event_id = int(order_data["purchase_units"][0]["reference_id"])
         except Exception:
-            return {"success": False, "message": "event_id manquant"}
+            return {"success": False, "message": "event_id manquant dans l’order"}
 
         # ---------------------------
         # VÉRIFS DB
@@ -1174,7 +1269,7 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         db.add(new_reg)
 
         participant = Participant(
-            name=payer_name or payer_email.split("@")[0],
+            name=payer_name or (payer_email.split("@")[0] if payer_email else "Participant"),
             email=payer_email,
             amount=float(amount) if amount else event_db.price,
             transaction_id=transaction_id,
@@ -1187,20 +1282,20 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(participant)
 
-        # ---------------------------
-        # ENVOI EMAIL
-        # ---------------------------
+        # ✅ Génère le QR data
         qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
-        body = f"""
-        <h2>Inscription confirmée 🎉</h2>
-        <p>Merci {participant.name}, ton paiement de {participant.amount} € pour <b>{event_db.title}</b> a bien été enregistré.</p>
-        <p>Date : {event_db.date} – Lieu : {event_db.location}</p>
-        <p>Ton QR code est en pièce jointe ✅</p>
-        """
+
+        # ✅ Envoi email confirmation
         try:
-            send_email_with_qr(payer_email, f"Confirmation inscription - {event_db.title}", body, qr_data=qr_data)
+            send_confirmation_email(
+                recipient_email=payer_email,
+                subject=f"Confirmation inscription - {event_db.title}",
+                participant=participant,
+                event=event_db,
+                qr_data=qr_data
+            )
         except Exception as e:
-            print("❌ Erreur envoi email:", e)
+            print("❌ Erreur envoi email participant webhook:", e)
 
         return {"success": True, "message": "Inscription validée et email envoyé"}
 
@@ -1321,6 +1416,7 @@ def get_logs(token: str = Form(...), db: Session = Depends(get_db)):
             for l in logs
         ]
     }
+
 # ==============================
 # API - CREDITS DISPONIBLES
 # ==============================
