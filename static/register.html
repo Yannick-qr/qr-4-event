@@ -208,6 +208,18 @@ input:focus {
     const customBtn = document.getElementById("custom-paypal-btn");
     const msg = document.getElementById("message");
 
+// ✅ Si l’utilisateur modifie un champ → on reset PayPal
+["firstName", "lastName", "email"].forEach(id => {
+  const input = document.getElementById(id);
+  if (input) {
+    input.addEventListener("input", () => {
+      restoreBtn();          // réactive le bouton "Créer mon compte"
+      msg.innerHTML = "";    // efface les messages
+      document.getElementById("emailError").innerText = "";
+    });
+  }
+});
+
 // ✅ Efface les messages d'erreur quand l'utilisateur modifie un champ
 ["firstName", "lastName", "email"].forEach(id => {
   const input = document.getElementById(id);
@@ -323,14 +335,22 @@ input:focus {
       customBtn.style.display = "none";
     });
 
-    function restoreBtn() {
-      customBtn.disabled = false;
-      customBtn.textContent = "Créer mon compte";
-      customBtn.style.display = "block";
-      paypalRendered = false;
-      document.getElementById("paypal-button-container").innerHTML = "";
-      document.getElementById("cancel-container").innerHTML = "";
-    }
+function restoreBtn() {
+  customBtn.classList.remove("loading");   // ✅ enlève l'état "chargement"
+  customBtn.disabled = false;
+  customBtn.textContent = "Créer mon compte";
+  customBtn.style.display = "block";
+  paypalRendered = false;
+
+  // ✅ nettoie les conteneurs PayPal
+  document.getElementById("paypal-button-container").innerHTML = "";
+  document.getElementById("cancel-container").innerHTML = "";
+
+  // ✅ efface les éventuels messages d'erreur/succès
+  msg.innerHTML = "";
+  document.getElementById("emailError").innerText = "";
+}
+
   </script>
 </body>
 </html>
