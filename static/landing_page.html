@@ -569,108 +569,135 @@ Tout est prêt… sauf la partie la plus compliquée : <strong>les inscriptions 
 
 
 
-<style>/* ---------- Commennt ---------- */
+<style>
+/* ---------- Section HIW (How It Works) ---------- */
+.hiw{
+  /* Palette */
+  --hiw-accent: #0a2540;   /* bleu nuit / titres & badges */
+  --hiw-text:   #111827;   /* texte principal */
+  --hiw-muted:  #6b7280;   /* texte secondaire */
+  --hiw-line:   #e5e7eb;   /* lignes / séparateurs */
+  --hiw-badge:  44px;      /* diamètre des ronds numérotés */
 
-    
-.hiw-wrap {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 10px 20px 28px; /* ✅ réduit le padding-top (avant 48px) */
+  background:#fff;
+  color:var(--hiw-text);
 }
-  .hiw h2{
-    font-size: clamp(22px, 3.2vw, 34px);
-    line-height: 1.2;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    color: var(--hiw-accent);
-    margin: 0 0 26px;
-    text-align: left;
-  }
 
+/* Conteneur */
+.hiw-wrap{
+  max-width:1100px;
+  margin:0 auto;
+  padding:10px 20px 28px; /* padding-top réduit */
+}
+
+/* Titre */
+.hiw h2{
+  font-size:clamp(22px, 3.2vw, 34px);
+  line-height:1.2;
+  font-weight:800;
+  letter-spacing:-0.02em;
+  color:var(--hiw-accent);
+  margin:0 0 26px;
+  text-align:left;
+}
+
+/* Liste d'étapes */
+.hiw-steps{
+  position:relative;
+  list-style:none;
+  display:grid;
+  grid-template-columns:repeat(5, minmax(120px,1fr));
+  gap:18px 28px;
+  padding:24px 0 0;
+  margin:0;
+}
+
+/* Ligne décorative (desktop) */
+.hiw-steps::before{
+  content:"";
+  position:absolute;
+  top:calc(var(--hiw-badge)/2 + 10px);
+  left:0;
+  right:0;
+  height:1px;
+  background:var(--hiw-line);
+  z-index:0;
+}
+
+/* Carte étape */
+.hiw-step{
+  position:relative;
+  text-align:center;
+  padding-top:6px;
+}
+
+/* Badge numéroté */
+.hiw-badge{
+  width:var(--hiw-badge);
+  height:var(--hiw-badge);
+  margin:0 auto 14px;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  font-weight:700;
+  color:var(--hiw-accent);
+  background:#fff;
+  border:1px solid var(--hiw-line);
+  box-shadow:0 1px 0 rgba(0,0,0,0.03);
+  position:relative;
+  z-index:1;      /* au-dessus de la ligne */
+  user-select:none;
+}
+
+/* Titres + textes */
+.hiw-step h3{
+  font-size:16px;
+  font-weight:700;
+  margin:0 0 6px;
+  letter-spacing:-0.01em;
+  color:var(--hiw-accent);
+}
+
+.hiw-step p{
+  margin:0 auto;
+  max-width:260px;
+  font-size:14px;
+  line-height:1.45;
+  color:var(--hiw-muted);
+}
+
+.hiw-step em{ font-style:normal; font-weight:600; }
+
+/* ---------- Responsive ---------- */
+/* Tablet & mobile : 2 colonnes + layout carte */
+@media (max-width: 900px){
   .hiw-steps{
-    position: relative;
-    list-style: none;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(120px,1fr));
-    gap: 18px 28px;
-    padding: 24px 0 0;
-    margin: 0;
+    grid-template-columns:1fr 1fr;   /* ✅ 2 colonnes */
+    gap:18px 20px;
   }
-
-  /* ligne douce qui relie les étapes (desktop) */
-  .hiw-steps::before{
-    content:"";
-    position: absolute;
-    top: calc(var(--hiw-badge)/2 + 10px);
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--hiw-line);
-    z-index: 0;
-  }
-
+  .hiw-steps::before{ display:none; } /* on supprime la ligne décorative */
   .hiw-step{
-    position: relative;
-    text-align: center;
-    padding-top: 6px;
+    text-align:left;
+    display:grid;
+    grid-template-columns: var(--hiw-badge) 1fr;
+    column-gap:12px;
+    align-items:center;
   }
+  .hiw-badge{ margin:0; }
+}
 
-  .hiw-badge{
-    width: var(--hiw-badge);
-    height: var(--hiw-badge);
-    margin: 0 auto 14px;
-    border-radius: 999px;
-    display: grid;
-    place-items: center;
-    font-weight: 700;
-    color: var(--hiw-accent);
-    background: #fff;
-    border: 1px solid var(--hiw-line);
-    box-shadow: 0 1px 0 rgba(0,0,0,0.03);
-    position: relative;
-    z-index: 1; /* au-dessus de la ligne */
-    user-select: none;
-  }
+/* Petits mobiles : on reste en 2 colonnes (pas 1) */
+@media (max-width: 560px){
+  .hiw-steps{ grid-template-columns:1fr 1fr; } /* ✅ 2 colonnes conservées */
+}
 
-  .hiw-step h3{
-    font-size: 16px;
-    font-weight: 700;
-    margin: 0 0 6px;
-    letter-spacing: -0.01em;
-    color: var(--hiw-accent);
-  }
+/* Confort / micro-interaction */
+@media (prefers-reduced-motion:no-preference){
+  .hiw-step{ transition:transform .2s ease; }
+  .hiw-step:hover{ transform:translateY(-2px); }
+}
+</style>
 
-  .hiw-step p{
-    margin: 0 auto;
-    max-width: 260px;
-    font-size: 14px;
-    line-height: 1.45;
-    color: var(--hiw-muted);
-  }
-
-  .hiw-step em{ font-style: normal; font-weight: 600; }
-
-  /* ---------- Responsive ---------- */
-  @media (max-width: 900px){
-    .hiw-steps{
-      grid-template-columns: 1fr 1fr;
-      gap: 18px 20px;
-    }
-    .hiw-steps::before{ display: none; }
-    .hiw-step{ text-align: left; display:grid; grid-template-columns: var(--hiw-badge) 1fr; column-gap: 12px; align-items: center; }
-    .hiw-badge{ margin: 0; }
-  }
-
-  @media (max-width: 560px){
-    .hiw-steps{ grid-template-columns: 1fr; }
-  }
-
-  /* ---------- Respect accessibilité / confort ---------- */
-  @media (prefers-reduced-motion:no-preference){
-    .hiw-step{ transition: transform .2s ease; }
-    .hiw-step:hover{ transform: translateY(-2px); }
-  }
-  </style>
   
  <!-- Features -->
 <section class="features">
@@ -839,7 +866,7 @@ Tout est prêt… sauf la partie la plus compliquée : <strong>les inscriptions 
 
 
   <!-- Tarifs -->
-  <h2 class="section-title">Nos Tarifs</h2>
+  <h2 class="section-title">Nos Tarifs</h2><br>
   <p style="text-align:center;">Organisez <strong>autant d’événements que vous voulez</strong>.<br>
   Vous ne payez que pour le <strong>nombre de participants inscrits</strong>.</p>
 
