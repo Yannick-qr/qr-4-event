@@ -313,21 +313,21 @@ input:focus {
             }
           });
         },
-onCancel: function() {
-  msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
-  restoreBtn();
-},
-onError: function(err) {
-  // Certains cas de fermeture de la popup arrivent ici
-  if (err && (err === "USER_CANCELLED" || err.message?.includes("User cancelled"))) {
+  onCancel: function() {
     msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
-  } else {
-    msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + (err.message || err) + "</p>";
-  }
-  restoreBtn();
-}
+    restoreBtn();
+  },
 
-      }).render("#paypal-button-container");
+  onError: function(err) {
+    // ✅ PayPal renvoie parfois une erreur USER_CANCELLED quand tu fermes la popup
+    if (err && err.message && err.message.includes("USER_CANCELLED")) {
+      msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
+    } else {
+      msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>";
+    }
+    restoreBtn();
+  }
+}).render("#paypal-button-container");
 
       document.getElementById("cancel-container").innerHTML =
         "<button id='cancel-btn' style='background:none; border:none; color:#ff4444; font-size:1.2rem; cursor:pointer;'>❌ Annuler</button>";
