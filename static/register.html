@@ -16,74 +16,76 @@ body {
   padding: 20px;
 }
 
-    .container {
-      background: rgba(255,255,255,0.95);
-      padding: 35px 30px;
-      border-radius: 16px;
-      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-      width: 100%; 
-      max-width: 420px;
-      text-align: center;
-      animation: fadeIn 0.6s ease-in-out;
-    }
+.container {
+  background: rgba(255,255,255,0.95);
+  padding: 35px 30px;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  width: 100%; 
+  max-width: 420px;
+  text-align: center;
+  animation: fadeIn 0.6s ease-in-out;
+}
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-    h1 {
-      margin-bottom: 20px; 
-      color: #2c3e50;
-      font-size: 1.6em;
-    }
+h1 {
+  margin-bottom: 20px; 
+  color: #2c3e50;
+  font-size: 1.6em;
+}
 
-    label {
-      display: block; 
-      text-align: left; 
-      margin: 12px 0 6px; 
-      font-weight: 600; 
-      color: #34495e;
-      font-size: 0.95em;
-    }
+label {
+  display: block; 
+  text-align: left; 
+  margin: 12px 0 6px; 
+  font-weight: 600; 
+  color: #34495e;
+  font-size: 0.95em;
+}
 
-    input {
-      width: 100%; 
-      padding: 12px; 
-      margin-bottom: 15px;
-      border: 1px solid #ccc; 
-      border-radius: 10px;
-      font-size: 0.95em;
-      transition: all 0.3s ease;
-    }
+input {
+  width: 90%;              /* un peu plus petit pour donner de l'air */
+  padding: 12px;
+  margin: 10px auto;       /* ✅ auto = centre horizontalement */
+  display: block;          /* ✅ bloque pour que margin auto fonctionne */
+  border: 1px solid #ccc; 
+  border-radius: 10px;
+  font-size: 0.95em;
+  transition: all 0.3s ease;
+}
 
-    input:focus {
-      border-color: #3498db;
-      box-shadow: 0 0 0 3px rgba(52,152,219,0.25);
-      outline: none;
-    }
+input:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52,152,219,0.25);
+  outline: none;
+}
 
-    .error-box, .success-box {
-      padding: 12px; 
-      border-radius: 10px; 
-      margin-bottom: 15px; 
-      display: none;
-      font-size: 0.95em;
-    }
+.error-box, .success-box {
+  padding: 12px; 
+  border-radius: 10px; 
+  margin-bottom: 15px; 
+  display: none;
+  font-size: 0.95em;
+}
 
-    .error-box { 
-      background: #f8d7da; 
-      color: #721c24; 
-      border: 1px solid #f5c6cb; 
-    }
+.error-box { 
+  background: #f8d7da; 
+  color: #721c24; 
+  border: 1px solid #f5c6cb; 
+}
 
-    .success-box { 
-      background: #d4edda; 
-      color: #155724; 
-      border: 1px solid #c3e6cb; 
-    }
+.success-box { 
+  background: #d4edda; 
+  color: #155724; 
+  border: 1px solid #c3e6cb; 
+}
 
-.btn-link {
+/* Bouton gradient animé (Créer mon compte + Se connecter) */
+.btn-link, #custom-paypal-btn {
   display: inline-block; 
   margin-top: 12px;
   background: linear-gradient(135deg, #8e44ad, #3498db, #e91e63);
@@ -98,19 +100,21 @@ body {
   transition: all 0.4s ease;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   animation: gradientMove 5s ease infinite;
+  border: none;
+  cursor: pointer;
 }
 
-.btn-link:hover { 
+.btn-link:hover, #custom-paypal-btn:hover { 
   transform: translateY(-3px) scale(1.03);
   box-shadow: 0 6px 14px rgba(0,0,0,0.4);
 }
 
-/* Animation dégradé dynamique */
 @keyframes gradientMove {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
 #paypal-button-container {
   margin-top: 20px;
   background: rgba(255,255,255,0.85);
@@ -118,20 +122,51 @@ body {
   border-radius: 12px;
   display: inline-block;
 }
+/* Bouton gradient animé centré */
+#custom-paypal-btn {
+  display: block;                 /* ✅ occupe toute la ligne */
+  margin: 20px auto;              /* ✅ centre horizontalement */
+  background: linear-gradient(135deg, #8e44ad, #3498db, #e91e63);
+  background-size: 200% 200%;
+  color: white;
+  border: none;
+  padding: 14px 35px;
+  border-radius: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  animation: gradientMove 5s ease infinite;
+}
+
+#custom-paypal-btn:hover {
+  transform: scale(1.07);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+/* Animation du dégradé qui bouge */
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.success { color: #2ecc71; font-weight: bold; margin-top: 10px; }
+.error { color: #ff4444; font-weight: bold; margin-top: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
-
-    <!-- 🔹 Logo ajouté -->
+    <!-- Logo -->
     <div style="text-align:center; margin-bottom:15px;">
       <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
     </div>
 
     <h1>Créer un compte QR Event<br>
-      <span style="font-weight:20;">et commencez à organiser vos événements</span></h1>
+      <span style="font-weight:300;">et commencez à organiser vos événements</span></h1>
 
     <a class="btn-link" href="/static/login.html">Déjà un compte ? Se connecter</a>
+    <div id="message"></div>
     <div id="errorBox" class="error-box"></div>
     <div id="successBox" class="success-box"></div>
 
@@ -142,129 +177,124 @@ body {
       <input type="text" id="lastName" required>
       <label>Email</label>
       <input type="email" id="email" required>
-<div id="emailError" style="color:red; font-size: 0.9em; margin-top: 4px;"></div>
+      <div id="emailError" style="color:red; font-size: 0.9em; margin-top: 4px;"></div>
     </form>
 
-    <!-- Conteneur du bouton PayPal -->
-    <div id="paypal-button-container" style="margin-top:20px;"></div>
+    <!-- ✅ Bouton custom -->
+    <button id="custom-paypal-btn">Créer mon compte</button>
+    <div id="paypal-button-container"></div>
+    <div id="cancel-container" style="margin-top:10px;"></div>
   </div>
 
-  <!-- SDK PayPal chargé dynamiquement -->
   <script>
-    localStorage.removeItem("token");
+    let paypalRendered = false;
 
-    async function loadPayPalSdk() {
-      try {
-        const res = await fetch("/api/paypal-client-id");
-        const data = await res.json();
-        if (data.client_id) {
-          const script = document.createElement("script");
-          script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
-          script.async = true;
-          script.onload = function () {
-            paypal.Buttons({
-       createOrder: async function(data, actions) {
-  const email = document.getElementById("email").value.trim();
-  const firstName = document.getElementById("firstName").value.trim();
-  const lastName = document.getElementById("lastName").value.trim();
-
-  if (!email || !firstName || !lastName) {
-    document.getElementById("errorBox").innerText = "⚠️ Merci de remplir tous les champs.";
-    document.getElementById("errorBox").style.display = "block";
-    return; // ⛔ stoppe proprement
-  }
-
-  // 🔎 Vérifie si l'email existe déjà
-  const checkRes = await fetch("/check-email", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `email=${encodeURIComponent(email)}`
-  });
-
-if (!checkRes.ok) {
-  const data = await checkRes.json();
-  document.getElementById("emailError").innerText =
-    data.detail || "⚠️ Cet email est déjà utilisé, merci d’en choisir un autre.";
-
-  // 🚀 stoppe le flux proprement
-  return Promise.reject('EMAIL_EXISTS');
-} else {
-  document.getElementById("emailError").innerText = "";
-}
-
-  // ✅ Email libre → on demande au backend de créer la commande PayPal
-  const orderRes = await fetch("/paypal/create-order", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ type: "license" })
-  });
-  const orderData = await orderRes.json();
-
-if (!orderData.success) {
-  document.getElementById("errorBox").innerText =
-    "❌ Erreur PayPal : " + (orderData.error || "Impossible de créer la commande.") +
-    (orderData.paypal_response ? " → " + JSON.stringify(orderData.paypal_response) : "");
-  document.getElementById("errorBox").style.display = "block";
-  return;
-}
-
-
-  return orderData.id; // 👈 retourne bien l’orderID si tout est ok
-},
-
-       
-              onApprove: function(data, actions) {
-                return actions.order.capture().then(async function(details) {
-                  // Paiement validé → appel API backend
-                  const email = document.getElementById("email").value.trim();
-                  const firstName = document.getElementById("firstName").value.trim();
-                  const lastName = document.getElementById("lastName").value.trim();
-
-                  try {
-                    const res = await fetch("/register", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                      body: `email=${encodeURIComponent(email)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                      document.getElementById("successBox").innerHTML =
-                        "✅ Paiement confirmé !<br>Un email vous a été envoyé pour définir votre mot de passe.";
-                      document.getElementById("successBox").style.display = "block";
-                      document.getElementById("errorBox").style.display = "none";
-                      document.getElementById("registerForm").style.display = "none";
-                      document.getElementById("paypal-button-container").style.display = "none";
-                    } else {
-                      document.getElementById("errorBox").innerText = "❌ " + (data.error || "Erreur lors de la création du compte.");
-                      document.getElementById("errorBox").style.display = "block";
-                    }
-                  } catch (err) {
-                    document.getElementById("errorBox").innerText = "❌ Erreur serveur : " + err.message;
-                    document.getElementById("errorBox").style.display = "block";
-                  }
-                });
-              },
-              onError: function(err) {
-  if (err === 'EMAIL_EXISTS') {
-    // 🔕 Ne rien afficher, c’est géré sous l’input
-    return;
-  }
-                document.getElementById("errorBox").innerText = "❌ Erreur PayPal : " + err;
-                document.getElementById("errorBox").style.display = "block";
-              }
-            }).render("#paypal-button-container");
-          };
-          document.head.appendChild(script);
-        } else {
-          console.error("Erreur PayPal:", data.error || "client_id manquant");
-        }
-      } catch (err) {
-        console.error("Impossible de charger le client_id PayPal", err);
-      }
+    function isValidEmail(email) {
+      const re = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+      return re.test(email);
     }
 
+    async function loadPayPalSdk() {
+      const res = await fetch("/api/paypal-client-id");
+      const data = await res.json();
+      if (!data.client_id) return;
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
+      document.head.appendChild(script);
+    }
     loadPayPalSdk();
+
+    const customBtn = document.getElementById("custom-paypal-btn");
+    const msg = document.getElementById("message");
+
+    customBtn.addEventListener("click", () => {
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const email = document.getElementById("email").value.trim();
+
+      if (!firstName || !lastName || !email) {
+        msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>";
+        return;
+      }
+      if (!isValidEmail(email)) {
+        msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
+        return;
+      }
+      if (paypalRendered) {
+        msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
+        return;
+      }
+
+      customBtn.disabled = true;
+      customBtn.textContent = "Chargement...";
+
+      document.getElementById("paypal-button-container").innerHTML = "";
+
+      paypal.Buttons({
+        createOrder: function(data, actions) {
+          return fetch("/paypal/create-order", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "license" })
+          })
+          .then(r => r.json())
+          .then(order => {
+            if (!order || !order.id) {
+              msg.innerHTML = "<p class='error'>❌ Impossible de créer la commande PayPal</p>";
+              restoreBtn();
+              throw new Error("Impossible de créer la commande");
+            }
+            return order.id;
+          });
+        },
+        onApprove: function(data, actions) {
+          return actions.order.capture().then(async function(details) {
+            try {
+              const res = await fetch("/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `email=${encodeURIComponent(email)}&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`
+              });
+              const dataRes = await res.json();
+              msg.innerHTML = "<p class='" + (dataRes.success ? "success" : "error") + "'>" + (dataRes.message || dataRes.error || "Erreur") + "</p>";
+              restoreBtn();
+              if (dataRes.success) document.getElementById("registerForm").reset();
+            } catch (err) {
+              msg.innerHTML = "<p class='error'>❌ Erreur serveur : " + err.message + "</p>";
+              restoreBtn();
+            }
+          });
+        },
+        onCancel: function() {
+          msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
+          restoreBtn();
+        },
+        onError: function(err) {
+          msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>";
+          restoreBtn();
+        }
+      }).render("#paypal-button-container");
+
+      document.getElementById("cancel-container").innerHTML =
+        "<button id='cancel-btn' style='background:none; border:none; color:#ff4444; font-size:1.2rem; cursor:pointer;'>❌ Annuler</button>";
+
+      document.getElementById("cancel-btn").addEventListener("click", () => {
+        msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé l’inscription.</p>";
+        restoreBtn();
+      });
+
+      paypalRendered = true;
+      customBtn.style.display = "none";
+    });
+
+    function restoreBtn() {
+      customBtn.disabled = false;
+      customBtn.textContent = "Créer mon compte";
+      customBtn.style.display = "block";
+      paypalRendered = false;
+      document.getElementById("paypal-button-container").innerHTML = "";
+      document.getElementById("cancel-container").innerHTML = "";
+    }
   </script>
 </body>
 </html>
