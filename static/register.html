@@ -341,20 +341,17 @@ input:focus {
     });
 
 function restoreBtn() {
-  customBtn.classList.remove("loading");   // ✅ enlève l'état "chargement"
+  customBtn.classList.remove("loading");   // enlève l'état "chargement"
   customBtn.disabled = false;
   customBtn.textContent = "Créer mon compte";
   customBtn.style.display = "block";
   paypalRendered = false;
 
-  // ✅ nettoie les conteneurs PayPal
+  // nettoie seulement les conteneurs PayPal
   document.getElementById("paypal-button-container").innerHTML = "";
   document.getElementById("cancel-container").innerHTML = "";
-
-  // ✅ efface les éventuels messages d'erreur/succès
-  msg.innerHTML = "";
-  document.getElementById("emailError").innerText = "";
 }
+
 
   </script>
 </body>
