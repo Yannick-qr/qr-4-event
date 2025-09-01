@@ -317,7 +317,6 @@ input:focus {
     msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
     restoreBtn();
   },
-
   onError: function(err) {
     // ✅ PayPal renvoie parfois une erreur USER_CANCELLED quand tu fermes la popup
     if (err && err.message && err.message.includes("USER_CANCELLED")) {
