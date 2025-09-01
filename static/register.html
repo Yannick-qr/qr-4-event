@@ -220,6 +220,31 @@ input:focus {
         msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
         return;
       }
+  // 🔎 Vérifie si l'email existe déjà
+  try {
+    const checkRes = await fetch("/check-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `email=${encodeURIComponent(email)}`
+    });
+
+    if (!checkRes.ok) {
+      const data = await checkRes.json();
+      document.getElementById("emailError").innerText =
+        data.detail || "⚠️ Cet email est déjà utilisé, merci d’en choisir un autre.";
+      return; // ⛔ Stoppe le flux
+    } else {
+      document.getElementById("emailError").innerText = "";
+    }
+  } catch (err) {
+    msg.innerHTML = "<p class='error'>❌ Erreur lors de la vérification de l'email.</p>";
+    return;
+  }
+
+  if (paypalRendered) {
+    msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
+    return;
+  }
       if (paypalRendered) {
         msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
         return;
