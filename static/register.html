@@ -207,6 +207,17 @@ input:focus {
     const customBtn = document.getElementById("custom-paypal-btn");
     const msg = document.getElementById("message");
 
+// ✅ Efface les messages d'erreur quand l'utilisateur modifie un champ
+["firstName", "lastName", "email"].forEach(id => {
+  const input = document.getElementById(id);
+  if (input) {
+    input.addEventListener("input", () => {
+      msg.innerHTML = "";
+      document.getElementById("emailError").innerText = "";
+    });
+  }
+});
+
     customBtn.addEventListener("click", async () => {
   const firstName = document.getElementById("firstName").value.trim();
   const lastName = document.getElementById("lastName").value.trim();
