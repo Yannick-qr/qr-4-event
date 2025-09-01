@@ -114,133 +114,6 @@ header p {
   background: #f0f0f0;
 }
 
-    /* Hero */
-    .hero {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-      padding: 10px 20px;
-      max-width: 1200px;
-      margin: auto;
-      gap: 60px;
-    }
-    .hero-text h2 {
-  font-size: 2.2em;
-  font-weight: 600;
-  margin-bottom: 0px;
-  color: #111;
-}
-    .hero-text p {
-      font-size: 1.1em;
-      color: #555;
-    }
-    .hero-images {
-      display: flex;
-      gap: 20px;
-      flex: 1;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .hero-images img {
-      border-radius: 15px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-    }
-    .hero-images .desktop {
-      max-width: 450px;
-    }
-    .hero-images .mobile {
-      max-width: 200px;
-    }
-
-/* --------- EVENT INSERTS (ATELIER, CONFÉRENCE, CONCERT) --------- */
-.event-showcase {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 30px;
-  max-width: 1200px;
-  margin: 1px auto;
-  padding: 0px 0px;
-}
-.event-card {
-  position: relative;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-}
-.event-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: 0.4s;
-}
-.event-card:hover img {
-  transform: scale(1.05);
-}
-.event-card span {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 12px;
-  font-size: 0.95em;
-  font-weight: 500;
-}
-/* --------- FEATURES --------- */
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 25px;
-  max-width: 1100px;
-  margin: 50px auto;
-  padding: 0 20px;
-}
-
-.feature-card {
-  position: relative;
-  border-radius: 18px;
-  overflow: hidden;
-  height: 220px;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 20px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  background-size: cover;
-  background-position: center;
-}
-
-.feature-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.45); /* voile sombre pour lisibilité */
-}
-
-.feature-card h3,
-.feature-card p {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-}
-
-.feature-card h3 {
-  font-size: 1.3em;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.feature-card p {
-  font-size: 0.95em;
-  line-height: 1.4;
-  color: #eee;
-}
-
-
     /* Pricing */
     .pricing-container {
       display: grid;
@@ -363,11 +236,21 @@ header p {
     padding: 8px 14px;
   }
 }
+  /* ---------- Palette ajustable ---------- */
+  .hiw {
+    --hiw-accent: #0a2540;      /* titre & badges (bleu nuit/chic) */
+    --hiw-text:   #111827;      /* texte principal */
+    --hiw-muted:  #6b7280;      /* texte secondaire */
+    --hiw-line:   #e5e7eb;      /* lignes / séparateurs très légers */
+    --hiw-badge:  44px;         /* diamètre du badge */
+    background: #fff;
+    color: var(--hiw-text);
+  }
+
+  
   </style>
-
-
-
 </head>
+
 <body>
 
   <!-- Navbar -->
@@ -376,7 +259,7 @@ header p {
     <a href="/static/register.html" class="nav-btn">Connexion / Inscription</a>
   </div>
 
-  <!-- Hero -->
+<!-- SECTION : Bandeau -->
   <header>
     <h1>QR Event</h1>
     <p>Créez <strong>autant d’événements que vous voulez</strong><br>
@@ -384,36 +267,412 @@ header p {
     <a href="/static/register.html" class="cta-btn">Démarrer</a>
   </header>
 
-  <!-- Intro -->
-  <section class="hero">
-    <div class="hero-text">
-      <h2>Un outil complet pour vos événements</h2>
+<style>    
+  /* ---------- Section Bandeau ---------- */
+    .hero {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 20px;
+      max-width: 1200px;
+      margin: auto;
+      gap: 60px;
+    }
+    .hero-text h2 {
+  font-size: 2.2em;
+  font-weight: 600;
+  margin-bottom: 0px;
+  color: #111;
+}
+    .hero-text p {
+      font-size: 1.1em;
+      color: #555;
+    }
+    .hero-images {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .hero-images img {
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .hero-images .desktop {
+      max-width: 450px;
+    }
+    .hero-images .mobile {
+      max-width: 200px;
+    }</style>
+
+
+<!-- SECTION : Pourquoi QR Event -->
+<div class="hero-pourquoi-text">
+      <h2>Pourquoi nous vous proposons QR Event&nbsp;?</h2>
     </div>
     
-    <!-- Event Showcase -->
-<section class="event-showcase">
-  <div class="event-card">
-    <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Atelier.jpg" alt="Atelier">
-    <span>Atelier</span>
-  </div>
-  <div class="event-card">
-    <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Conference.jpg" alt="Conférence">
-    <span>Conférence</span>
-  </div>
-  <div class="event-card">
-    <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Concert.jpg">
-    <span>Concert</span>
+<section class="why" aria-labelledby="why-title">
+      <div class="why-wrap">
+        <p class="why-intro">
+     Vous préparez un concert, une conférence ou même un mariage.<br>
+Tout est prêt… sauf la partie la plus compliquée : <strong>les inscriptions et la gestion des participants.</strong><br>
+      La plupart des plateformes imposent des <strong>abonnements coûteux</strong> ou des 
+      <strong>commissions cachées</strong> qui explosent le budget.
+    </p>
+
+    <p class="why-intro">
+      C’est là que <strong>QR Event</strong> change la donne. 
+      Nous avons voulu créer un outil&nbsp;:
+    </p>
+
+    <ul class="why-list">
+      <li><strong>Simple</strong> à utiliser (même sans compétences techniques)</li>
+      <li><strong>Flexible</strong> : autant d’événements que vous voulez</li>
+      <li><strong>Économique</strong> : vous ne payez que pour vos participants inscrits</li>
+    </ul>
   </div>
 </section>
+
+<style>
+  /* ---------- Section Pourquoi ---------- */
+    .hero-pourquoi-text {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 20px;
+      max-width: 1200px;
+      margin: auto;
+      gap: 20px;
+    }
+    .hero-pourquoi-text h2 {
+  font-size: 2.2em;
+  font-weight: 600;
+  margin-bottom: 0px;
+  color: #111;
+}
+    .hero-pourquoi-text p {
+      font-size: 1.1em;
+      color: #555;
+    }
+/* ---------- Section Pourquoi (version chic) ---------- */
+.why{
+  --accent:#0a2540;   /* bleu nuit chic */
+  --text:#111827;
+  --muted:#6b7280;
+  --line:#e8ecf3;
+  --ok:#10b981;       /* vert validation */
+  background: linear-gradient(180deg,#fafbff 0%, #ffffff 60%);
+  padding: 10px 20px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.why-wrap{
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Titre (si utilisé dans ce bloc) */
+.why h2{
+  font-size: clamp(24px,3.2vw,36px);
+  font-weight: 800;
+  letter-spacing:-0.02em;
+  color: var(--accent);
+  margin: 0 0 18px;
+}
+.why h2::after{
+  content:"";
+  display:block;
+  width:64px; height:2px;
+  background: var(--accent);
+  opacity:.18;
+  margin:12px auto 0;
+}
+
+/* Paragraphes d’intro */
+.why-intro{
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--muted);
+  margin: 0 auto 16px;
+  max-width: 720px;
+  text-align: center;
+}
+.why strong{ color: var(--accent); font-weight: 700; }
+
+/* Liste des bénéfices */
+.why-list{
+  list-style:none;
+  padding:0;
+  margin: 28px auto 0;
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  text-align: left;
+}
+
+.why-list li{
+  position: relative;
+  padding: 14px 16px 14px 54px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+/* Pastille + check */
+.why-list li::before{
+  content:"";
+  position:absolute;
+  left:16px; top:50%;
+  transform: translateY(-50%);
+  width:24px; height:24px;
+  border-radius:999px;
+  background: #f0fdf4;
+  border: 2px solid var(--ok);
+  box-shadow: inset 0 0 0 2px rgba(16,185,129,.08);
+}
+.why-list li::after{
+  content:"";
+  position:absolute;
+  left:25px; top:50%;
+  width:7px; height:12px;
+  border-right:2px solid var(--ok);
+  border-bottom:2px solid var(--ok);
+  transform: translateY(-58%) rotate(45deg);
+}
+
+/* Texte dans la ligne */
+.why-list li b,
+.why-list li strong{ color: var(--accent); }
+
+/* Hover chic */
+@media (prefers-reduced-motion: no-preference){
+  .why-list li:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(2,6,23,.06);
+    border-color: #dfe6f1;
+  }
+}
+
+/* Responsive : 2 colonnes quand on a de la place */
+@media (min-width: 760px){
+  .why-list{
+    grid-template-columns: 1fr 1fr;
+  }
+}
+</style>
     
-</section>
-  <!-- Intro -->
-  <section class="hero">
-    <div class="hero-text">
-      <h2>Les principales fonctionalités</h2>
+         <!-- SECTION : Comment ça marche (épuré & chic) -->
+    <section class="hero-comment">
+    <div class="hero-comment-text">
+      <h2>Comment ça marche&nbsp;?</h2>
     </div>
+    </section>
     
-  <!-- Features -->
+    <style>    .hero-comment {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 10px;
+      max-width: 1200px;
+      margin: auto;
+      gap: 0px;
+    }
+    .hero-comment-text h2 {
+  font-size: 2.2em;
+  font-weight: 600;
+  margin-bottom: 0px;
+  color: #111;
+}
+    .hero-comment-text p {
+      font-size: 1.1em;
+      color: #555;
+    }
+    .hero-comment-images {
+      display: flex;
+      gap: 20px;
+      flex: 1;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .hero-comment-images img {
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .hero-comment-images .desktop {
+      max-width: 450px;
+    }
+    .hero-comment-images .mobile {
+      max-width: 200px;
+    }
+    </style>
+    
+    
+    
+<section class="hiw" aria-labelledby="hiw-title">
+  <div class="hiw-wrap">
+    <ol class="hiw-steps">
+      <!-- 1) Compte & crédits -->
+      <li class="hiw-step">
+        <div class="hiw-badge" aria-hidden="true">1</div>
+        <h3>Activation</h3>
+        <p>Créez votre <strong>compte admin</strong> et achetez vos <strong>crédits participants</strong>.</p>
+      </li>
+
+      <!-- 2) Création événement -->
+      <li class="hiw-step">
+        <div class="hiw-badge" aria-hidden="true">2</div>
+        <h3>Création</h3>
+        <p>Créez votre événement en quelques clics.</p>
+      </li>
+
+      <!-- 3) Diffusion -->
+      <li class="hiw-step">
+        <div class="hiw-badge" aria-hidden="true">3</div>
+        <h3>Diffusion</h3>
+        <p>Partagez le lien (réseaux sociaux, flyers, email, site web…).</p>
+      </li>
+
+      <!-- 4) Inscription & Paiement -->
+      <li class="hiw-step">
+        <div class="hiw-badge" aria-hidden="true">4</div>
+        <h3>Inscription & Paiement</h3>
+        <p>Les participants s’inscrivent et paient en ligne.</p>
+      </li>
+
+      <!-- 5) Émission du billet -->
+      <li class="hiw-step">
+        <div class="hiw-badge" aria-hidden="true">5</div>
+        <h3>Émission du billet</h3>
+        <p>Après paiement, un <strong>QR Code personnel</strong> est envoyé par mail.</p>
+      </li>
+
+      <!-- 6) Validation des entrées -->
+      <li class="hiw-step">
+        <div class="hiw-badge" aria-hidden="true">6</div>
+        <h3>Validation des entrées</h3>
+        <p>Scannez avec <strong>ScanEvent</strong> et suivez tout en temps réel.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+
+
+<style>/* ---------- Commennt ---------- */
+
+    
+.hiw-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 20px 28px; /* ✅ réduit le padding-top (avant 48px) */
+}
+  .hiw h2{
+    font-size: clamp(22px, 3.2vw, 34px);
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--hiw-accent);
+    margin: 0 0 26px;
+    text-align: left;
+  }
+
+  .hiw-steps{
+    position: relative;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px,1fr));
+    gap: 18px 28px;
+    padding: 24px 0 0;
+    margin: 0;
+  }
+
+  /* ligne douce qui relie les étapes (desktop) */
+  .hiw-steps::before{
+    content:"";
+    position: absolute;
+    top: calc(var(--hiw-badge)/2 + 10px);
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--hiw-line);
+    z-index: 0;
+  }
+
+  .hiw-step{
+    position: relative;
+    text-align: center;
+    padding-top: 6px;
+  }
+
+  .hiw-badge{
+    width: var(--hiw-badge);
+    height: var(--hiw-badge);
+    margin: 0 auto 14px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: var(--hiw-accent);
+    background: #fff;
+    border: 1px solid var(--hiw-line);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+    position: relative;
+    z-index: 1; /* au-dessus de la ligne */
+    user-select: none;
+  }
+
+  .hiw-step h3{
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+    color: var(--hiw-accent);
+  }
+
+  .hiw-step p{
+    margin: 0 auto;
+    max-width: 260px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--hiw-muted);
+  }
+
+  .hiw-step em{ font-style: normal; font-weight: 600; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px){
+    .hiw-steps{
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 20px;
+    }
+    .hiw-steps::before{ display: none; }
+    .hiw-step{ text-align: left; display:grid; grid-template-columns: var(--hiw-badge) 1fr; column-gap: 12px; align-items: center; }
+    .hiw-badge{ margin: 0; }
+  }
+
+  @media (max-width: 560px){
+    .hiw-steps{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Respect accessibilité / confort ---------- */
+  @media (prefers-reduced-motion:no-preference){
+    .hiw-step{ transition: transform .2s ease; }
+    .hiw-step:hover{ transform: translateY(-2px); }
+  }
+  </style>
+  
+ <!-- Features -->
 <section class="features">
   <div class="feature-card" style="background-image:url('https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/ilimite.jpg');">
     <h3>Événements illimités</h3>
@@ -433,6 +692,150 @@ header p {
   </div>
 </section>
 
+
+<style>
+/* --------- FEATURES --------- */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  max-width: 1100px;
+  margin: 50px auto;
+  padding: 0 20px;
+}
+
+.feature-card {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  height: 220px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  background-size: cover;
+  background-position: center;
+}
+
+.feature-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45); /* voile sombre pour lisibilité */
+}
+
+.feature-card h3,
+.feature-card p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+.feature-card h3 {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.feature-card p {
+  font-size: 0.95em;
+  line-height: 1.4;
+  color: #eee;
+}
+/* ✅ Effet zoom au survol */
+.feature-card:hover {
+  transform: scale(1.04); /* zoom léger et chic */
+  box-shadow: 0 12px 28px rgba(0,0,0,0.25); /* ombre plus marquée */
+}
+</style>
+
+    
+      <!-- Intro -->
+  <section class="hero">
+    <div class="hero-text">
+      <h2>QR Event est-il adapté à mon besoin&nbsp;?</h2>
+    </div>
+    
+    <!-- SECTION : EVENT INSERTS (ATELIER, CONFÉRENCE, CONCERT) -->
+    
+<p class="event-intro">
+  QR Event s’adapte à tous les formats et toutes les tailles d’événements.<br>
+  Que vous ayez <strong>20 ou 2000 participants</strong>, vous profitez de la même simplicité… et du même avantage économique.
+</p>
+
+<section class="event-showcase"> 
+  <div class="event-card">
+    <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Atelier.jpg" alt="Atelier">
+    <span>Atelier</span>
+  </div>
+  <div class="event-card">
+    <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Conference.jpg" alt="Conférence">
+    <span>Conférence</span>
+  </div>
+  <div class="event-card">
+    <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Concert.jpg" alt="Concert">
+    <span>Concert</span>
+  </div>
+</section>
+
+<style>
+/* --------- TEXTE INTRO AVANT LA GRILLE --------- */
+.event-intro {
+  text-align: center;
+  font-size: 1.15em;
+  line-height: 1.6;
+  max-width: 780px;
+  margin: 40px auto 30px;
+  color: #374151; /* gris chic */
+}
+.event-intro strong {
+  color: #0a2540; /* accent QR Event */
+}
+
+/* --------- EVENT INSERTS (ATELIER, CONFÉRENCE, CONCERT) --------- */
+.event-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto 50px;
+  padding: 0 20px;
+}
+.event-card {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease;
+}
+.event-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+.event-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 14px 38px rgba(0,0,0,0.12);
+}
+.event-card:hover img {
+  transform: scale(1.05);
+}
+.event-card span {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 0.95em;
+  font-weight: 500;
+  backdrop-filter: blur(4px);
+}
+</style>
 
 
   <!-- Tarifs -->
