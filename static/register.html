@@ -207,19 +207,24 @@ input:focus {
     const customBtn = document.getElementById("custom-paypal-btn");
     const msg = document.getElementById("message");
 
-    customBtn.addEventListener("click", () => {
-      const firstName = document.getElementById("firstName").value.trim();
-      const lastName = document.getElementById("lastName").value.trim();
-      const email = document.getElementById("email").value.trim();
+    customBtn.addEventListener("click", async () => {
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+  const email = document.getElementById("email").value.trim();
 
-      if (!firstName || !lastName || !email) {
-        msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>";
-        return;
-      }
-      if (!isValidEmail(email)) {
-        msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
-        return;
-      }
+  // ⚠️ Reset messages
+  msg.innerHTML = "";
+  document.getElementById("emailError").innerText = "";
+
+  if (!firstName || !lastName || !email) {
+    msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>";
+    return;
+  }
+  if (!isValidEmail(email)) {
+    msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
+    return;
+  }
+
   // 🔎 Vérifie si l'email existe déjà
   try {
     const checkRes = await fetch("/check-email", {
@@ -233,8 +238,6 @@ input:focus {
       document.getElementById("emailError").innerText =
         data.detail || "⚠️ Cet email est déjà utilisé, merci d’en choisir un autre.";
       return; // ⛔ Stoppe le flux
-    } else {
-      document.getElementById("emailError").innerText = "";
     }
   } catch (err) {
     msg.innerHTML = "<p class='error'>❌ Erreur lors de la vérification de l'email.</p>";
@@ -245,10 +248,6 @@ input:focus {
     msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
     return;
   }
-      if (paypalRendered) {
-        msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
-        return;
-      }
 
       customBtn.disabled = true;
       customBtn.textContent = "Chargement...";
