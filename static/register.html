@@ -190,9 +190,10 @@ input:focus {
     let paypalRendered = false;
 
     function isValidEmail(email) {
-      const re = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-      return re.test(email);
-    }
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
 
     async function loadPayPalSdk() {
       const res = await fetch("/api/paypal-client-id");
