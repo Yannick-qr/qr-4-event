@@ -1,152 +1,290 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Connexion - QR Event</title>
   <style>
+    /* ====== Base & Background (aligné avec la page register) ====== */
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f6fa;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: url("https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/login.webp")
+                 center/cover no-repeat fixed;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh; 
       margin: 0;
+      padding: 20px;
     }
-.container {
-  background: white;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-  width: 90%;          /* ✅ largeur flexible */
-  max-width: 350px;    /* ✅ limite sur PC */
-  text-align: center;
-  box-sizing: border-box;
-}
-    h2 {
-      margin-bottom: 20px;
-      color: #007bff;
-    }
-input {
-  width: 100%;          /* occupe toute la largeur dispo */
-  max-width: 100%;      /* ne dépasse jamais */
-  padding: 10px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box; /* important pour que padding ne casse pas la largeur */
-}
 
-button {
-  width: 100%;          /* au lieu de 95%, plus propre */
-  max-width: 100%;
-  padding: 10px;
-  margin-top: 15px;
-  border: none;
-  background: #007bff;
-  color: white;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-    button:hover {
-      background: #0056b3;
+    /* ====== Card ====== */
+    .container {
+      background: rgba(255,255,255,0.95);
+      padding: 35px 30px;
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      animation: fadeIn 0.6s ease-in-out;
     }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      margin: 10px 0 6px;
+      color: #2c3e50;
+      font-size: 1.6em;
+    }
+    .subtitle {
+      color: #566573;
+      font-weight: 400;
+      font-size: 0.95em;
+      margin-bottom: 14px;
+    }
+
+    /* ====== Alerts / Messages ====== */
+    .info, .error-box, .success-box {
+      padding: 12px;
+      border-radius: 10px;
+      margin: 12px 0 16px;
+      font-size: 0.95em;
+      display: none; /* par défaut masqués */
+      text-align: left;
+    }
+    .info {
+      background: #fff8e5;
+      color: #8a6d3b;
+      border: 1px solid #ffecb5;
+    }
+    .error-box {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .success-box {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    /* ====== Form ====== */
+    label {
+      display: block;
+      text-align: left;
+      margin: 12px 0 6px;
+      font-weight: 600;
+      color: #34495e;
+      font-size: 0.95em;
+    }
+    input {
+      width: 90%;
+      padding: 12px;
+      margin: 8px auto 12px;
+      display: block;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 0.95em;
+      transition: all 0.3s ease;
+      background: #fff;
+    }
+    input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52,152,219,0.25);
+      outline: none;
+    }
+
+    /* ====== Button (dégradé animé) ====== */
+    .btn-primary {
+      display: block;
+      width: 94%;
+      margin: 14px auto 6px;
+      background: linear-gradient(135deg, #007bff, #3498db, #e91e63);
+      background-size: 200% 200%;
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: gradientMove 5s ease infinite;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ====== Links ====== */
     .links {
-      margin-top: 15px;
+      margin-top: 16px;
       text-align: center;
     }
     .links a {
-      display: block;
-      margin-top: 5px;
-      color: #007bff;
+      display: inline-block;
+      margin: 4px 6px;
+      color: #2c3e50;
       text-decoration: none;
-      font-weight: bold;
+      font-weight: 600;
     }
     .links a:hover {
       text-decoration: underline;
     }
-    .message {
-      margin-top: 15px;
-      font-size: 14px;
-    }
-    .error {
-      color: red;
-    }
-    .success {
-      color: green;
-    }
-.info {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: #fff8e5;
-  color: #8a6d3b;
-  border: 1px solid #ffecb5;
-  border-radius: 8px;
-  padding: 10px 12px;
-  margin-bottom: 15px;
-  font-size: 14px;
-  font-weight: 500;
-}
-.icon {
-  font-size: 18px;
-}
 
+    /* Message inline sous le formulaire (optionnel) */
+    .message-inline {
+      margin-top: 10px;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-
-<!-- 🔹 Logo ajouté -->
-    <div style="text-align:center; margin-bottom:15px;">
+    <!-- Logo -->
+    <div style="text-align:center; margin-bottom: 8px;">
       <img src="/static/img/qrevent-logo.png" alt="Logo QR EVENT" style="width:120px; height:auto;">
     </div>
 
     <h2>Connexion</h2>
+    <div class="subtitle">Accédez à votre tableau de bord sécurisé</div>
 
-    <!-- 🔹 Message logout inactivité -->
-    <div id="logoutMessage" class="info" style="display:none;">
+    <!-- Message logout inactivité (info) -->
+    <div id="logoutInfo" class="info"></div>
 
-      <span id="logoutText"></span>
-    </div>
+    <!-- Zones de messages -->
+    <div id="errorBox" class="error-box"></div>
+    <div id="successBox" class="success-box"></div>
 
-    <form id="loginForm">
-      <input type="email" id="email" placeholder="Email" required><br>
-      <input type="password" id="password" placeholder="Mot de passe" required><br>
-      <button type="submit">Se connecter</button>
+    <form id="loginForm" novalidate>
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="ex. nom@domaine.com" autocomplete="username" required />
+
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+
+      <button id="loginBtn" type="submit" class="btn-primary">Se connecter</button>
     </form>
 
-    <!-- Liens supplémentaires -->
     <div class="links">
-      <a href="reset_password.html">🔑 Mot de passe oublié ?</a>
-      <a href="register.html">➕ Créer un compte</a>
+      <a href="/static/reset_password.html">🔑 Mot de passe oublié ?</a>
+      <a href="/static/register.html">➕ Créer un compte</a>
     </div>
 
-    <div id="message" class="message"></div>
+    <div id="messageInline" class="message-inline"></div>
   </div>
 
-
   <script>
-    // 🔹 Vérifier si une raison de déconnexion est stockée
-    const msg = sessionStorage.getItem("logoutReason");
-    if (msg) {
-      document.getElementById("logoutText").textContent = msg;
-      document.getElementById("logoutMessage").style.display = "flex";
-      sessionStorage.removeItem("logoutReason"); // nettoyer après affichage
+    // ===== Helpers messages =====
+    const errorBox   = document.getElementById("errorBox");
+    const successBox = document.getElementById("successBox");
+    const infoBox    = document.getElementById("logoutInfo");
+    const messageInline = document.getElementById("messageInline");
+    const loginBtn = document.getElementById("loginBtn");
+
+    function clearMessages() {
+      errorBox.style.display   = "none";
+      successBox.style.display = "none";
+      infoBox.style.display    = infoBox.textContent ? "block" : "none";
+      errorBox.textContent     = "";
+      successBox.textContent   = "";
+      messageInline.textContent= "";
+    }
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = "block";
+      successBox.style.display = "none";
+    }
+    function showSuccess(msg) {
+      successBox.textContent = msg;
+      successBox.style.display = "block";
+      errorBox.style.display = "none";
     }
 
+    // ===== Affiche la raison de déconnexion si présente =====
+    (function handleLogoutReason(){
+      const msg = sessionStorage.getItem("logoutReason");
+      if (msg) {
+        infoBox.textContent = msg;
+        infoBox.style.display = "block";
+        sessionStorage.removeItem("logoutReason");
+      }
+    })();
+
+    // ===== Validation =====
+    function isValidEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    // Efface automatiquement les erreurs quand l'utilisateur tape
+    ["email", "password"].forEach(id => {
+      const input = document.getElementById(id);
+      input.addEventListener("input", () => {
+        clearMessages();
+      });
+    });
+
+    // ===== Submit =====
     document.getElementById("loginForm").addEventListener("submit", async function(e) {
       e.preventDefault();
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const messageDiv = document.getElementById("message");
-      messageDiv.textContent = "Connexion en cours...";
+      clearMessages();
 
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      // 1) Champs requis
+      if (!email || !password) {
+        showError("⚠️ Veuillez renseigner tous les champs.");
+        return;
+      }
+      // 2) Email valide
+      if (!isValidEmail(email)) {
+        showError("⚠️ Email invalide.");
+        return;
+      }
+
+      // 3) Vérifie si l'email existe déjà (même logique que sur la page register)
+      //    Sur ta page register: si /check-email renvoie OK => email libre => pas de compte existant
+      //    Ici, pour se connecter, on veut l'inverse: si OK => afficher "Aucun compte associé à cet email"
       try {
+        const checkRes = await fetch("/check-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `email=${encodeURIComponent(email)}`
+        });
+
+        if (checkRes.ok) {
+          // OK == email libre dans ta logique actuelle -> donc pas de compte
+          showError("⚠️ Aucun compte associé à cet email.");
+          return;
+        }
+      } catch (err) {
+        // on ne bloque pas la connexion sur une erreur réseau ici; on continue vers /login
+        // mais on peut informer l'utilisateur
+        messageInline.textContent = "ℹ️ Impossible de vérifier l'existence du compte, tentative de connexion…";
+      }
+
+      // 4) Connexion
+      try {
+        loginBtn.disabled = true;
+        loginBtn.textContent = "Connexion…";
+
         const response = await fetch("/login", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -155,20 +293,20 @@ button {
 
         const data = await response.json();
 
-        if (data.success) {
-          messageDiv.textContent = "Connexion réussie ✅";
-          messageDiv.className = "message success";
+        if (data && data.success) {
+          showSuccess("Connexion réussie ✅");
           localStorage.setItem("token", data.token);
           setTimeout(() => {
             window.location.href = "/static/dashboard_secure.html";
-          }, 1200);
+          }, 900);
         } else {
-          messageDiv.textContent = data.error || "Erreur lors de la connexion.";
-          messageDiv.className = "message error";
+          showError(data.error || "❌ Erreur lors de la connexion.");
         }
       } catch (err) {
-        messageDiv.textContent = "Erreur serveur : " + err;
-        messageDiv.className = "message error";
+        showError("❌ Erreur serveur : " + (err?.message || err));
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Se connecter";
       }
     });
   </script>
