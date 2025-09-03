@@ -541,6 +541,37 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
 
     return {"valid": True}
 
+# ========================
+# ACTIVATION CONFIRM
+# ========================
+from fastapi import status
+
+@app.post("/activation/confirm")
+def activation_confirm(token: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not user:
+        return JSONResponse(status_code=404, content={"success": False, "error": "invalid", "message": "Lien invalide."})
+
+    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+        user.token = None
+        user.token_expiry = None
+        db.commit()
+        return JSONResponse(status_code=status.HTTP_410_GONE, content={"success": False, "error": "expired", "message": "Lien expiré."})
+
+    # ✅ Si mdp déjà défini mais compte pas encore actif → on active
+    if (user.password_hash and user.password_hash.strip() != "") and not user.is_active:
+        user.is_active = True
+        user.token = None
+        user.token_expiry = None
+        db.commit()
+        return {"success": True, "message": "Compte activé. Vous pouvez vous connecter."}
+
+    # Déjà actif
+    if user.is_active:
+        return {"success": True, "message": "Compte déjà actif."}
+
+    # Sinon, il n’a pas encore posé de mot de passe → passer par /set-password
+    return JSONResponse(status_code=400, content={"success": False, "error": "need_password", "message": "Veuillez d'abord définir un mot de passe."})
 
 
 # ========================
