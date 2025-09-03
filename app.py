@@ -452,6 +452,14 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
             content={"success": False, "error": "Mot de passe déjà utilisé. Choisissez-en un différent."}
         )
 
+    # ✅ Validation force minimale du mot de passe
+    pwd = new_password.strip()
+    if len(pwd) < 8:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": "Mot de passe trop court (min. 8 caractères)."}
+        )
+
     # 5) OK : on active le compte et on invalide définitivement le lien
     user.password_hash = bcrypt.hash(new_password)
     user.is_active = True
@@ -512,16 +520,16 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
     if not user:
         return {"valid": False, "reason": "invalid"}
 
-    # 🔑 Seul un compte actif est considéré comme "utilisé"
-    if user.is_active:
+    # "used" = compte déjà activé OU (mdp déjà défini ET le lien n'est plus présent)
+    already_has_pwd = bool(user.password_hash and user.password_hash.strip() != "")
+    if user.is_active or (already_has_pwd and user.token is None):
         return {"valid": False, "reason": "used"}
 
-    # ⚠️ Vérifie l’expiration
+    # expiré ?
     if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
         return {"valid": False, "reason": "expired"}
 
     return {"valid": True}
-
 
 
 # ========================
@@ -1532,6 +1540,14 @@ def reset_password_confirm(token: str = Form(...), new_password: str = Form(...)
         return JSONResponse(
             status_code=409,
             content={"success": False, "error": "Mot de passe déjà utilisé. Choisissez-en un différent."}
+        )
+
+    # ✅ Validation force minimale du mot de passe
+    pwd = new_password.strip()
+    if len(pwd) < 8:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "error": "Mot de passe trop court (min. 8 caractères)."}
         )
 
     user.password_hash = bcrypt.hash(new_password)
