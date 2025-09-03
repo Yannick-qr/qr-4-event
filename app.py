@@ -253,7 +253,6 @@ def send_admin_email(recipient_email, subject, body_html):
         return False
 
 
-
 def check_token_valid(user: AdminUser, db: Session):
     if not user or not user.token:
         return False
@@ -269,6 +268,19 @@ def log_admin_action(db: Session, admin_id: int, action: str, details: str = Non
     new_log = AdminLog(admin_id=admin_id, action=action, details=details)
     db.add(new_log)
     db.commit()
+
+def is_password_reused(user: AdminUser, new_password: str) -> bool:
+    """
+    True si new_password correspond déjà au mot de passe courant de l'utilisateur.
+    """
+    try:
+        # password_hash peut être vide ("") tant que l'utilisateur n'a jamais défini de mot de passe
+        if not user or not getattr(user, "password_hash", ""):
+            return False
+        return bcrypt.verify(new_password, user.password_hash)
+    except Exception:
+        # En cas de hash invalide/ancien format, on considère "pas réutilisé"
+        return False
 
 
 
@@ -415,6 +427,13 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user or datetime.utcnow() > user.token_expiry:
         return {"success": False, "message": "Token invalide ou expiré"}
+
+    # 🚫 Empêche de réutiliser le mot de passe actuel (au cas où il existe déjà)
+    if is_password_reused(user, new_password):
+        return JSONResponse(
+            status_code=409,
+            content={"success": False, "error": "Mot de passe déjà utilisé. Choisissez-en un différent."}
+        )
 
     user.password_hash = bcrypt.hash(new_password)
     user.is_active = True
@@ -1427,6 +1446,13 @@ def reset_password_confirm(token: str = Form(...), new_password: str = Form(...)
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user or not user.token_expiry or datetime.utcnow() > user.token_expiry:
         return {"success": False, "message": "Lien invalide ou expiré."}
+
+    # 🚫 Empêche de réutiliser le mot de passe actuel
+    if is_password_reused(user, new_password):
+        return JSONResponse(
+            status_code=409,
+            content={"success": False, "error": "Mot de passe déjà utilisé. Choisissez-en un différent."}
+        )
 
     user.password_hash = bcrypt.hash(new_password)
     user.token = None
