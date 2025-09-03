@@ -418,30 +418,63 @@ def register(
     }
 
 
-
 # ========================
 # SET PASSWORD
 # ========================
 @app.post("/set-password")
 def set_password(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
+    # 1) Token connu ?
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
-    if not user or datetime.utcnow() > user.token_expiry:
-        return {"success": False, "message": "Token invalide ou expiré"}
+    if not user:
+        return {"success": False, "message": "Lien invalide ou déjà utilisé."}
 
-    # 🚫 Empêche de réutiliser le mot de passe actuel (au cas où il existe déjà)
+    # 2) Lien déjà utilisé ? (compte activé / mot de passe défini)
+    #    -> empêche toute réutilisation si l’admin a déjà créé son mot de passe
+    if user.is_active or (user.password_hash and user.password_hash.strip() != ""):
+        # on invalide au cas où et on refuse
+        user.token = None
+        user.token_expiry = None
+        db.commit()
+        return {"success": False, "message": "Ce lien a déjà été utilisé."}
+
+    # 3) Lien expiré ?
+    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+        # on invalide le token expiré pour éviter toute ré-utilisation
+        user.token = None
+        user.token_expiry = None
+        db.commit()
+        return {"success": False, "message": "Lien expiré. Demande un nouveau lien."}
+
+    # 4) Empêche de réutiliser le mot de passe actuel (au cas où il existe déjà)
     if is_password_reused(user, new_password):
         return JSONResponse(
             status_code=409,
             content={"success": False, "error": "Mot de passe déjà utilisé. Choisissez-en un différent."}
         )
 
+    # 5) OK : on active le compte et on invalide définitivement le lien
     user.password_hash = bcrypt.hash(new_password)
     user.is_active = True
     user.token = None
     user.token_expiry = None
     db.commit()
 
-    return {"success": True, "message": "Mot de passe défini, vous pouvez maintenant vous connecter."}
+    return {"success": True, "message": "Mot de passe défini. Vous pouvez vous connecter."}
+
+
+# ========================
+# SET PASSWORD CHECK
+# ========================
+@app.get("/set-password/check")
+def check_activation_token(token: str, db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not user:
+        return {"valid": False, "reason": "invalid"}
+    if user.is_active or (user.password_hash and user.password_hash.strip() != ""):
+        return {"valid": False, "reason": "used"}
+    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+        return {"valid": False, "reason": "expired"}
+    return {"valid": True}
 
 
 # ========================
