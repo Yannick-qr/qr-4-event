@@ -511,11 +511,17 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user:
         return {"valid": False, "reason": "invalid"}
-    if user.is_active or (user.password_hash and user.password_hash.strip() != ""):
+
+    # 🔑 Seul un compte actif est considéré comme "utilisé"
+    if user.is_active:
         return {"valid": False, "reason": "used"}
+
+    # ⚠️ Vérifie l’expiration
     if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
         return {"valid": False, "reason": "expired"}
+
     return {"valid": True}
+
 
 
 # ========================
