@@ -753,14 +753,14 @@ def add_credits(payload: dict = Body(...), db: Session = Depends(get_db)):
 # ========================
 @app.post("/register_participant")
 def register_participant(
+    background_tasks: BackgroundTasks,
     first_name: str = Form(...),
     last_name: str = Form(...),
     email: str = Form(...),
     event_id: int = Form(...),
     amount: float = Form(...),
     transaction_id: str = Form(...),
-    db: Session = Depends(get_db),
-    background_tasks: BackgroundTasks = Depends()
+    db: Session = Depends(get_db)
 ):
     try:
         # 🔒 Nettoyage des entrées
