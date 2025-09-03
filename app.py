@@ -533,6 +533,27 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
 
 
 # ========================
+# TEST
+# ========================
+@app.get("/_debug/activation")
+def debug_activation(token: str, db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not user:
+        return {"found": False}
+
+    return {
+        "found": True,
+        "user_id": user.id,
+        "email": user.email,
+        "is_active": user.is_active,
+        "has_password_hash": bool(user.password_hash and user.password_hash.strip() != ""),
+        "token_equals": (user.token == token),
+        "token_db": user.token,
+        "token_expiry_utc": user.token_expiry.isoformat() if user.token_expiry else None,
+    }
+
+
+# ========================
 # BUY EVENT CREDITS (ajout après paiement validé)
 # ========================
 @app.post("/buy-credits")
