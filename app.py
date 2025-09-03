@@ -437,6 +437,15 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
         db.commit()
         return {"success": False, "message": "Ce lien a déjà été utilisé."}
 
+    # 🔔 Si expiré → 410 Gone + invalidation du token
+    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+        user.token = None
+        user.token_expiry = None
+        db.commit()
+        return JSONResponse(
+            status_code=status.HTTP_410_GONE,
+            content={"success": False, "error": "expired", "message": "Lien expiré. Renvoyez un nouveau lien d’activation."}
+        )
     # 3) Lien expiré ?
     if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
         # on invalide le token expiré pour éviter toute ré-utilisation
@@ -520,16 +529,18 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
     if not user:
         return {"valid": False, "reason": "invalid"}
 
-    # "used" = compte déjà activé OU (mdp déjà défini ET le lien n'est plus présent)
     already_has_pwd = bool(user.password_hash and user.password_hash.strip() != "")
-    if user.is_active or (already_has_pwd and user.token is None):
+
+    # ✅ Considérer "utilisé" si déjà actif OU déjà un mdp défini
+    if user.is_active or already_has_pwd:
         return {"valid": False, "reason": "used"}
 
-    # expiré ?
+    # ⏳ expiré ?
     if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
         return {"valid": False, "reason": "expired"}
 
     return {"valid": True}
+
 
 
 # ========================
