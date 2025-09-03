@@ -1522,6 +1522,17 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
     if not user:
         return {"success": False, "message": "Aucun compte associé à cet email."}
 
+    # 🚫 NE PAS autoriser le reset si le compte n'est pas activé
+    if not user.is_active:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "error": "inactive_account",
+                "message": "Compte non activé. Demandez un nouveau lien d’activation.",
+            },
+        )
+
     # Générer un token de reset valable 1h
     token = str(uuid.uuid4())
     user.token = token
@@ -1597,6 +1608,17 @@ def reset_password_confirm(token: str = Form(...), new_password: str = Form(...)
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user or not user.token_expiry or datetime.utcnow() > user.token_expiry:
         return {"success": False, "message": "Lien invalide ou expiré."}
+
+    # 🚫 NE PAS autoriser la confirmation si le compte n'est pas activé
+    if not user.is_active:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "error": "inactive_account",
+                "message": "Compte non activé. Utilisez le lien d’activation.",
+            },
+        )
 
     # 🚫 Empêche de réutiliser le mot de passe actuel
     if is_password_reused(user, new_password):
