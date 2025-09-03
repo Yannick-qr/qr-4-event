@@ -761,6 +761,7 @@ def register_participant(
     amount: float = Form(...),
     transaction_id: str = Form(...),
     db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks    # <-- pas de Depends(), et placé AVANT tout param avec valeur par défaut
 ):
     try:
         # 🔒 Nettoyage des entrées

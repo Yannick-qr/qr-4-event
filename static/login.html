@@ -260,8 +260,6 @@
       }
 
       // 3) Vérifie si l'email existe déjà (même logique que sur la page register)
-      //    Sur ta page register: si /check-email renvoie OK => email libre => pas de compte existant
-      //    Ici, pour se connecter, on veut l'inverse: si OK => afficher "Aucun compte associé à cet email"
       try {
         const checkRes = await fetch("/check-email", {
           method: "POST",
@@ -276,7 +274,6 @@
         }
       } catch (err) {
         // on ne bloque pas la connexion sur une erreur réseau ici; on continue vers /login
-        // mais on peut informer l'utilisateur
         messageInline.textContent = "ℹ️ Impossible de vérifier l'existence du compte, tentative de connexion…";
       }
 
@@ -300,7 +297,41 @@
             window.location.href = "/static/dashboard_secure.html";
           }, 900);
         } else {
-          showError(data.error || "❌ Erreur lors de la connexion.");
+          // ⚠️ UTILISER data.message (ton backend renvoie {success:false, message:"..."})
+          const msg = data?.message || data?.detail || data?.error || "❌ Erreur lors de la connexion.";
+          showError(msg);
+
+          // Proposer de renvoyer un lien d'activation si le compte est inactif
+          if (/inactif/i.test(msg)) {
+            messageInline.innerHTML = `
+              📧 Votre compte n'est pas activé.
+              <button id="resendBtn" style="margin-left:6px;border:none;background:#007bff;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;">
+                Renvoyer le lien d’activation
+              </button>`;
+            const btn = document.getElementById("resendBtn");
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              btn.textContent = "Envoi…";
+              try {
+                const r = await fetch("/activation/resend", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                  body: `email=${encodeURIComponent(email)}`
+                });
+                if (r.ok) {
+                  showSuccess("📨 Lien d’activation renvoyé (si un compte existe).");
+                  messageInline.textContent = "";
+                } else {
+                  showError("❌ Impossible de renvoyer le lien d’activation pour le moment.");
+                }
+              } catch (e2) {
+                showError("❌ Erreur réseau pendant l’envoi.");
+              } finally {
+                btn.disabled = false;
+                btn.textContent = "Renvoyer le lien d’activation";
+              }
+            });
+          }
         }
       } catch (err) {
         showError("❌ Erreur serveur : " + (err?.message || err));
