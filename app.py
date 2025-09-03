@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Depends, HTTPException, Form, Request, Body
+from fastapi import FastAPI, Depends, HTTPException, Form, Request, Body, UploadFile, File, status, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant, AdminLog
 from passlib.hash import bcrypt
-from datetime import datetime, timedelta, timezone
-from fastapi import UploadFile, File
+from datetime import timedelta
+from database import utcnow
 from supabase import create_client, Client
 import uuid
 import os
@@ -18,7 +18,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
-import requests
+import httpx
+import requests  # gardé pour /paypal/test-auth (sync) si tu veux
 import json
 import csv
 import html
@@ -164,18 +165,18 @@ def send_confirmation_email(recipient_email, subject, participant, event, qr_dat
   <table align="center" width="100%" style="max-width:600px; background:#ffffff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
 
     <!-- Image de l’événement -->
-    {"<tr><td><img src='" + event.image_url + "' alt='Image de l’événement' style='width:100%; border-radius:8px 8px 0 0;'></td></tr>" if event.image_url else ""}
+    {"<tr><td><img src='" + (event.image_url or "") + "' alt='Image de l’événement' style='width:100%; border-radius:8px 8px 0 0;'></td></tr>" if getattr(event, "image_url", None) else ""}
 
     <tr>
       <td style="padding:25px; text-align:center;">
         <h2 style="color:#007bff;">🎉 Inscription confirmée</h2>
         <p style="font-size:16px; color:#333;">
-          Merci <b>{participant.name}</b>, ton paiement de <b>{participant.amount:.2f} €</b> 
-          pour <b>{event.title}</b> a bien été enregistré ✅
+          Merci <b>{html.escape(participant.name or '')}</b>, ton paiement de <b>{float(participant.amount):.2f} €</b> 
+          pour <b>{html.escape(event.title or '')}</b> a bien été enregistré ✅
         </p>
         <p style="font-size:15px; color:#555;">
-          📅 <b>Date :</b> {event.date}<br>
-          📍 <b>Lieu :</b> {event.location}
+          📅 <b>Date :</b> {html.escape(event.date or '')}<br>
+          📍 <b>Lieu :</b> {html.escape(event.location or '')}
         </p>
 
         <p style="margin:30px 0; font-size:14px; color:#888;">
@@ -256,7 +257,7 @@ def send_admin_email(recipient_email, subject, body_html):
 def check_token_valid(user: AdminUser, db: Session):
     if not user or not user.token:
         return False
-    if not user.token_expiry or datetime.utcnow() > user.token_expiry:
+    if not user.token_expiry or utcnow() > user.token_expiry:
         user.token = None
         user.token_expiry = None
         db.commit()
@@ -274,14 +275,11 @@ def is_password_reused(user: AdminUser, new_password: str) -> bool:
     True si new_password correspond déjà au mot de passe courant de l'utilisateur.
     """
     try:
-        # password_hash peut être vide ("") tant que l'utilisateur n'a jamais défini de mot de passe
         if not user or not getattr(user, "password_hash", ""):
             return False
         return bcrypt.verify(new_password, user.password_hash)
     except Exception:
-        # En cas de hash invalide/ancien format, on considère "pas réutilisé"
         return False
-
 
 
 # ========================
@@ -302,7 +300,7 @@ def login(email: str = Form(...), password: str = Form(...), db: Session = Depen
 
     # Génère un nouveau token valable 24h
     token = str(uuid.uuid4())
-    expiry = datetime.utcnow() + timedelta(hours=24)
+    expiry = utcnow() + timedelta(hours=24)
     user.token = token
     user.token_expiry = expiry
     db.commit()
@@ -348,7 +346,7 @@ def register(
 
     # ✅ Crée un nouveau compte admin
     validation_token = str(uuid.uuid4())
-    expiry = datetime.utcnow() + timedelta(hours=48)
+    expiry = utcnow() + timedelta(hours=48)
 
     new_user = AdminUser(
         email=email,
@@ -393,7 +391,6 @@ def register(
     </html>
     """
 
-
     try:
         ok = send_admin_email(email, "Définir ton mot de passe - QR Event", body)
         if not ok:
@@ -427,7 +424,7 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
     if not user:
         return {"success": False, "message": "Lien invalide."}
 
-    now = datetime.now(timezone.utc)
+    now = utcnow()
 
     # Déjà activé / déjà un mot de passe -> used
     if user.is_active or (user.password_hash and user.password_hash.strip() != ""):
@@ -472,7 +469,6 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
     return {"success": True, "message": "Mot de passe défini. Vous pouvez vous connecter."}
 
 
-
 # ========================
 # ACTIVATION RESEND
 # ========================
@@ -491,7 +487,7 @@ def resend_activation(email: str = Form(...), db: Session = Depends(get_db)):
 
     # Regénère un token 48h
     validation_token = str(uuid.uuid4())
-    expiry = datetime.utcnow() + timedelta(hours=48)
+    expiry = utcnow() + timedelta(hours=48)
     user.token = validation_token
     user.token_expiry = expiry
     db.commit()
@@ -529,7 +525,7 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
     if not user:
         return {"valid": False, "reason": "invalid"}
 
-    now = datetime.now(timezone.utc)
+    now = utcnow()
 
     # 3) déjà activé OU déjà un mot de passe -> used
     already_has_pwd = bool(user.password_hash and user.password_hash.strip() != "")
@@ -547,15 +543,13 @@ def check_activation_token(token: str, db: Session = Depends(get_db)):
 # ========================
 # ACTIVATION CONFIRM
 # ========================
-from fastapi import status
-
 @app.post("/activation/confirm")
 def activation_confirm(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user:
         return JSONResponse(status_code=404, content={"success": False, "error": "invalid", "message": "Lien invalide."})
 
-    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+    if not user.token_expiry or utcnow() >= user.token_expiry:
         user.token = None
         user.token_expiry = None
         db.commit()
@@ -607,6 +601,11 @@ def buy_credits(token: str = Form(...), quantity: int = Form(...), db: Session =
     if not check_token_valid(user, db):
         return {"success": False, "message": "Session invalide"}
 
+    try:
+        quantity = int(quantity)
+    except (TypeError, ValueError):
+        return {"success": False, "message": "Quantité de crédits invalide"}
+
     if quantity <= 0:
         return {"success": False, "message": "Quantité de crédits invalide"}
 
@@ -629,7 +628,7 @@ async def create_order(request: Request):
 
         # 💰 Définir les prix côté backend (depuis .env)
         if order_type == "license":
-            amount = LICENSE_PRICE   # 👈 pris du .env
+            amount = LICENSE_PRICE
 
         elif order_type == "credits":
             credits = int(data.get("credits", 1))
@@ -649,14 +648,15 @@ async def create_order(request: Request):
         else:
             return {"success": False, "message": "❌ Type d'achat invalide"}
 
-
-        # 🔹 Étape 1 : Authentification OAuth PayPal
-        auth_req = requests.post(
-            f"{PAYPAL_API_BASE}/v1/oauth2/token",
-            headers={"Accept": "application/json", "Accept-Language": "en_US"},
-            data={"grant_type": "client_credentials"},
-            auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
-        )
+        # 🔹 Étape 1 : Authentification OAuth PayPal (httpx)
+        async with httpx.AsyncClient() as client:
+            auth_req = await client.post(
+                f"{PAYPAL_API_BASE}/v1/oauth2/token",
+                headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                data={"grant_type": "client_credentials"},
+                auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET),
+                timeout=30
+            )
 
         if auth_req.status_code != 200:
             return {"success": False, "message": "OAuth failed", "paypal_response": auth_req.text}
@@ -666,22 +666,24 @@ async def create_order(request: Request):
             return {"success": False, "message": "Pas de access_token", "paypal_response": auth_req.json()}
 
         # 🔹 Étape 2 : Créer la commande PayPal
-        order_req = requests.post(
-            f"{PAYPAL_API_BASE}/v2/checkout/orders",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {access_token}"
-            },
-            json={
-                "intent": "CAPTURE",
-                "purchase_units": [{
-                    "amount": {
-                        "currency_code": "EUR",
-                        "value": str(amount)
-                    }
-                }]
-            }
-        )
+        async with httpx.AsyncClient() as client:
+            order_req = await client.post(
+                f"{PAYPAL_API_BASE}/v2/checkout/orders",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {access_token}"
+                },
+                json={
+                    "intent": "CAPTURE",
+                    "purchase_units": [{
+                        "amount": {
+                            "currency_code": "EUR",
+                            "value": str(amount)
+                        }
+                    }]
+                },
+                timeout=30
+            )
 
         order_data = order_req.json()
 
@@ -691,7 +693,6 @@ async def create_order(request: Request):
         return {"success": True, "id": order_data["id"], "paypal_response": order_data}
 
     except Exception as e:
-        import traceback
         print("❌ Exception dans create_order:", e)
         traceback.print_exc()
         return {"success": False, "message": str(e)}
@@ -722,10 +723,16 @@ def add_credits(payload: dict = Body(...), db: Session = Depends(get_db)):
     credits = payload.get("credits", 0)
     payment_id = payload.get("payment_id")
 
+    # Vérifier le token
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
-    if not user:
-        return {"success": False, "message": "Utilisateur non trouvé ou session expirée"}
+    if not check_token_valid(user, db):
+        return {"success": False, "message": "Non autorisé"}
 
+    # Vérifier le format des crédits
+    try:
+        credits = int(credits)
+    except (TypeError, ValueError):
+        return {"success": False, "message": "Crédits invalides"}
     if credits <= 0:
         return {"success": False, "message": "Crédits invalides"}
 
@@ -733,7 +740,13 @@ def add_credits(payload: dict = Body(...), db: Session = Depends(get_db)):
     user.participant_credits += credits
     db.commit()
 
-    return {"success": True, "new_credits": user.participant_credits}
+    # Log l'action pour le suivi (optionnel mais recommandé)
+    log_admin_action(db, user.id, "ADD_CREDITS", f"+{credits} crédits ajoutés (payment_id={payment_id})")
+
+    return {
+        "success": True,
+        "new_credits": user.participant_credits
+    }
 
 # ========================
 # REGISTER PARTICIPANT (après paiement réussi)
@@ -746,7 +759,8 @@ def register_participant(
     event_id: int = Form(...),
     amount: float = Form(...),
     transaction_id: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = Depends()
 ):
     try:
         # 🔒 Nettoyage des entrées
@@ -780,15 +794,21 @@ def register_participant(
         if admin.participant_credits <= 0:
             return {"success": False, "message": "⚠️ Pas assez de crédits participants."}
 
-        # ✅ Crée le participant
-        participant = Participant(
-            name=safe_name,
-            email=safe_email,
-            event_id=event_id,
-            amount=float(amount) if amount else event.price,
-            transaction_id=transaction_id,
-            created_at=datetime.utcnow()
-        )
+        # ✅ Crée le participant (QR code aléatoire si colonne présente)
+        qr_code_value = str(uuid.uuid4())
+        participant_kwargs = {
+            "name": safe_name,
+            "email": safe_email,
+            "event_id": event_id,
+            "amount": float(amount) if amount else event.price,
+            "transaction_id": transaction_id,
+            "created_at": utcnow()
+        }
+        # compat: n'ajoute qr_code que si l'ORM a la colonne
+        if hasattr(Participant, "qr_code"):
+            participant_kwargs["qr_code"] = qr_code_value
+
+        participant = Participant(**participant_kwargs)
         db.add(participant)
 
         # Décrémente crédits
@@ -796,20 +816,19 @@ def register_participant(
         db.commit()
         db.refresh(participant)
 
-        # ✅ Génère le QR data (sera encodé dans la PJ)
-        qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
+        # ✅ Génère le QR data (prend qr_code si dispo, sinon id)
+        qr_token = getattr(participant, "qr_code", None) or str(participant.id)
+        qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={qr_token}"
 
-        # Envoi email de confirmation
-        try:
-            send_confirmation_email(
-                recipient_email=safe_email,
-                subject=f"Confirmation inscription - {event.title}",
-                participant=participant,
-                event=event,
-                qr_data=qr_data
-            )
-        except Exception as e:
-            print("❌ Erreur lors de l’envoi du mail participant :", e)
+        # Envoi email de confirmation (background)
+        background_tasks.add_task(
+            send_confirmation_email,
+            recipient_email=safe_email,
+            subject=f"Confirmation inscription - {event.title}",
+            participant=participant,
+            event=event,
+            qr_data=qr_data
+        )
 
         return {"success": True, "message": "🎉 Inscription enregistrée avec succès, email envoyé."}
 
@@ -817,8 +836,6 @@ def register_participant(
         print("❌ Exception dans /register_participant:", e)
         traceback.print_exc()
         return {"success": False, "message": f"❌ Erreur serveur : {str(e)}"}
-
-
 
 
 # ========================
@@ -897,11 +914,20 @@ def delete_paypal_account(
 # ========================
 # EVENTS
 # ========================
+ALLOWED_IMAGE_CT = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
+MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5MB
+
+def _validate_image_upload(image: UploadFile, file_content: bytes):
+    if image.content_type not in ALLOWED_IMAGE_CT:
+        raise HTTPException(status_code=400, detail="Type d'image non autorisé.")
+    if len(file_content) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=400, detail="Image trop lourde (max 5MB).")
+
 @app.post("/admin/events")
 async def create_event(
     token: str = Form(...),
-    title: str = Form(...), 
-    description: str = Form(""), 
+    title: str = Form(...),
+    description: str = Form(""),
     date: str = Form(...),
     location: str = Form(...),
     price: float = Form(...),
@@ -917,8 +943,10 @@ async def create_event(
 
     image_url = None
     if image:
-        filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
+        _validate_image_upload(image, file_content)
+
+        filename = f"{uuid.uuid4()}_{re.sub(r'[^A-Za-z0-9._-]', '_', image.filename)}"
 
         try:
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(
@@ -930,10 +958,10 @@ async def create_event(
             return {"success": False, "message": f"❌ Erreur upload image Supabase: {str(e)}"}
 
     new_event = Event(
-        title=title, 
-        description=description, 
-        date=date, 
-        location=location, 
+        title=title,
+        description=description,
+        date=date,
+        location=location,
         price=price,
         created_by=user.id,
         checkin_login=checkin_login,
@@ -953,24 +981,26 @@ async def create_event(
     }
 
 
-
-
 @app.post("/admin/events/update")
 async def update_event(
-    event_id: int = Form(...), 
-    title: str = Form(...), 
-    description: str = Form(""), 
-    date: str = Form(...), 
-    location: str = Form(...), 
-    price: float = Form(...), 
+    event_id: int = Form(...),
+    title: str = Form(...),
+    description: str = Form(""),
+    date: str = Form(...),
+    location: str = Form(...),
+    price: float = Form(...),
     checkin_login: str = Form(None),
     checkin_password: str = Form(None),
     max_participants: int = Form(100),
-    token: str = Form(...), 
+    token: str = Form(...),
     image: UploadFile = File(None),   # ✅ nouveau
     db: Session = Depends(get_db)
 ):
+
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "message": "Non autorisé"}
+
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
         return {"success": False, "message": "❌ Événement introuvable"}
@@ -980,14 +1010,18 @@ async def update_event(
     event.date = date
     event.location = location
     event.price = price
-    event.checkin_login = checkin_login
-    event.checkin_password = checkin_password
     event.max_participants = max_participants
+    if checkin_login is not None:
+        event.checkin_login = checkin_login
+    if checkin_password is not None:
+        event.checkin_password = checkin_password
 
     # ✅ Met à jour l'image si uploadée
     if image:
-        filename = f"{uuid.uuid4()}_{image.filename}"
         file_content = await image.read()
+        _validate_image_upload(image, file_content)
+
+        filename = f"{uuid.uuid4()}_{re.sub(r'[^A-Za-z0-9._-]', '_', image.filename)}"
         try:
             res = supabase.storage.from_(SUPABASE_BUCKET).upload(
                 filename, file_content, {"content-type": image.content_type}
@@ -1008,15 +1042,17 @@ async def update_event(
     }
 
 
-
-
 @app.post("/admin/events/delete")
 def delete_event(
     event_id: int = Form(...),
     token: str = Form(...),
     db: Session = Depends(get_db)
 ):
+
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "message": "Non autorisé"}
+
     event = db.query(Event).filter(Event.id == event_id, Event.created_by == user.id).first()
     if not event:
         return {"success": False, "message": "❌ Événement introuvable"}
@@ -1062,21 +1098,30 @@ def public_event(event_id: int, db: Session = Depends(get_db)):
     if not event:
         return HTMLResponse("<h2>Événement introuvable ou inactif ❌</h2>", status_code=404)
 
+    # 🔒 échappes pour éviter XSS
+    title = html.escape(event.title or "")
+    desc = html.escape(event.description or "")
+    loc = html.escape(event.location or "")
+    date = html.escape(event.date or "")
+    price = html.escape(str(event.price) if event.price is not None else "")
+
+    image_block = ""
+    if getattr(event, "image_url", None):
+        img_src = html.escape(event.image_url)
+        image_block = f'<div style="margin:20px 0;"><img src="{img_src}" alt="Affiche" style="max-width:400px; border-radius:8px;"></div>'
+
     return f"""
     <html>
     <head>
-        <title>{event.title} - QR Event</title>
+        <title>{title} - QR Event</title>
     </head>
     <body style="font-family: Arial, sans-serif; background: #f5f6fa; padding:20px;">
-        <h1>{event.title}</h1>
-        {('<div style="margin:20px 0;"><img src="' + event.image_url +
-           '" alt="Affiche" style="max-width:400px; border-radius:8px;"></div>'
-        if event.image_url else "")}
-
-        <p><b>Description :</b> {event.description}</p>
-        <p><b>Date :</b> {event.date}</p>
-        <p><b>Lieu :</b> {event.location}</p>
-        <p><b>Prix :</b> {event.price} €</p>
+        <h1>{title}</h1>
+        {image_block}
+        <p><b>Description :</b> {desc}</p>
+        <p><b>Date :</b> {date}</p>
+        <p><b>Lieu :</b> {loc}</p>
+        <p><b>Prix :</b> {price} €</p>
         <hr>
         <button style="padding:10px 20px; background:#007bff; color:white; border:none; border-radius:5px;">
             S'inscrire / Payer
@@ -1106,10 +1151,9 @@ def api_event(event_id: int, db: Session = Depends(get_db)):
             "location": event.location,
             "price": event.price,
             "is_active": event.is_active,
-            "max_participants": event.max_participants,   # ✅ ajouté
-            "participants_count": participants_count,     # ✅ ajouté
+            "max_participants": event.max_participants,
+            "participants_count": participants_count,
             "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={event.id}",
-            # ✅ ajoute ça :
             "image_url": event.image_url
         }
     }
@@ -1145,12 +1189,14 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         secret = admin.paypal_secret if admin and admin.paypal_secret else PAYPAL_SECRET
 
         # 🔹 Authentification PayPal
-        auth_req = requests.post(
-            f"{PAYPAL_API_BASE}/v1/oauth2/token",
-            headers={"Accept": "application/json", "Accept-Language": "en_US"},
-            data={"grant_type": "client_credentials"},
-            auth=(client_id, secret)
-        )
+        async with httpx.AsyncClient() as client:
+            auth_req = await client.post(
+                f"{PAYPAL_API_BASE}/v1/oauth2/token",
+                headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                data={"grant_type": "client_credentials"},
+                auth=(client_id, secret),
+                timeout=30
+            )
         if auth_req.status_code != 200:
             return {"id": None, "message": "❌ OAuth PayPal échoué", "paypal_response": auth_req.text}
 
@@ -1159,23 +1205,22 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
             return {"id": None, "message": "Pas de access_token", "paypal_response": auth_req.json()}
 
         # 🔹 Crée la commande PayPal (montant = prix de l’événement)
-        order_req = requests.post(
-            f"{PAYPAL_API_BASE}/v2/checkout/orders",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {access_token}"
-            },
-            json={
-                "intent": "CAPTURE",
-                "purchase_units": [{
-                    "reference_id": str(event.id),  # utile dans webhook
-                    "amount": {
-                        "currency_code": "EUR",
-                        "value": str(event.price)
-                    }
-                }]
-            }
-        )
+        async with httpx.AsyncClient() as client:
+            order_req = await client.post(
+                f"{PAYPAL_API_BASE}/v2/checkout/orders",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {access_token}"
+                },
+                json={
+                    "intent": "CAPTURE",
+                    "purchase_units": [{
+                        "reference_id": str(event.id),  # utile dans webhook
+                        "amount": {"currency_code": "EUR", "value": str(event.price)}
+                    }]
+                },
+                timeout=30
+            )
 
         order_data = order_req.json()
         if "id" not in order_data:
@@ -1185,12 +1230,9 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         return {"id": order_data["id"]}
 
     except Exception as e:
-        import traceback
         print("❌ Exception event_pay:", e)
         traceback.print_exc()
         return {"id": None, "message": str(e)}
-
-
 
 
 # ========================
@@ -1206,7 +1248,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
 
     return {
         "success": True,
-	"participant_credits": user.participant_credits,
+        "participant_credits": user.participant_credits,
         "events": [
             {
                 "id": e.id,
@@ -1215,12 +1257,10 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
                 "date": e.date,
                 "location": e.location,
                 "price": e.price,
-                "checkin_login": e.checkin_login,          # ✅ ajouté
-                "checkin_password": e.checkin_password,    # ✅ ajouté
                 "is_active": e.is_active,
                 "is_locked": e.is_locked,
                 "max_participants": e.max_participants,
-                "image_url": e.image_url,   # ✅ ajout ici
+                "image_url": e.image_url,
                 "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={e.id}"
             }
             for e in events
@@ -1230,8 +1270,6 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
 # ========================
 # ADMIN : INSCRIPTIONS PAYÉES
 # ========================
-from fastapi.responses import StreamingResponse
-import csv
 
 @app.post("/admin/paid-registrations")
 def get_paid_registrations(token: str = Form(...), db: Session = Depends(get_db)):
@@ -1320,10 +1358,25 @@ def checkin_scan(
     qr_code: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    # compat: accepte qr_code = participant.qr_code (si dispo) OU l'id
     participant = db.query(Participant).filter(
-        Participant.event_id == event_id,
-        Participant.id == qr_code   # ⚠️ à adapter si ton QR code contient autre chose
+        Participant.event_id == event_id
+    ).filter(
+        (Participant.id == qr_code) | (getattr(Participant, "qr_code", None) == qr_code)  # SQLAlchemy ne supporte pas getattr ici, on fait deux requêtes
     ).first()
+
+    if not participant:
+        # fallback en 2 temps si la colonne qr_code existe
+        if hasattr(Participant, "qr_code"):
+            participant = db.query(Participant).filter(
+                Participant.event_id == event_id,
+                Participant.qr_code == qr_code
+            ).first()
+        if not participant:
+            participant = db.query(Participant).filter(
+                Participant.event_id == event_id,
+                Participant.id == qr_code
+            ).first()
 
     if not participant:
         return {"success": False, "message": "QR code invalide ou participant introuvable"}
@@ -1337,9 +1390,9 @@ def checkin_scan(
             "last_name": " ".join(participant.name.split(" ")[1:]) if participant.name else "",
             "email": participant.email,
             "amount_paid": participant.amount,
-            "event_title": event.title,
-            "date": event.date,
-            "location": event.location,
+            "event_title": event.title if event else "",
+            "date": event.date if event else "",
+            "location": event.location if event else "",
             "scanned": participant.scanned
         }
     }
@@ -1351,10 +1404,17 @@ def checkin_validate(
     qr_code: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    participant = db.query(Participant).filter(
-        Participant.event_id == event_id,
-        Participant.id == qr_code
-    ).first()
+    participant = None
+    if hasattr(Participant, "qr_code"):
+        participant = db.query(Participant).filter(
+            Participant.event_id == event_id,
+            Participant.qr_code == qr_code
+        ).first()
+    if not participant:
+        participant = db.query(Participant).filter(
+            Participant.event_id == event_id,
+            Participant.id == qr_code
+        ).first()
 
     if not participant:
         return {"success": False, "message": "Participant introuvable"}
@@ -1363,7 +1423,7 @@ def checkin_validate(
         return {"success": False, "message": "⚠️ Déjà scanné à " + str(participant.scanned_at)}
 
     participant.scanned = True
-    participant.scanned_at = datetime.utcnow()
+    participant.scanned_at = utcnow()
     db.commit()
 
     return {"success": True, "message": f"✅ Check-in validé pour {participant.name}"}
@@ -1375,21 +1435,23 @@ def checkin_validate(
 async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.body()
-        headers = request.headers
         event = json.loads(body)
 
-        # 🔒 Vérification de la signature PayPal
+        # 🔒 Vérification de la signature PayPal (en-têtes insensibles à la casse)
+        hdr = {k.lower(): v for k, v in request.headers.items()}
         verify_url = f"{PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature"
         payload = {
-            "transmission_id": headers.get("Paypal-Transmission-Id"),
-            "transmission_time": headers.get("Paypal-Transmission-Time"),
-            "cert_url": headers.get("Paypal-Cert-Url"),
-            "auth_algo": headers.get("Paypal-Auth-Algo"),
-            "transmission_sig": headers.get("Paypal-Transmission-Sig"),
+            "transmission_id": hdr.get("paypal-transmission-id"),
+            "transmission_time": hdr.get("paypal-transmission-time"),
+            "cert_url": hdr.get("paypal-cert-url"),
+            "auth_algo": hdr.get("paypal-auth-algo"),
+            "transmission_sig": hdr.get("paypal-transmission-sig"),
             "webhook_id": PAYPAL_WEBHOOK_ID,
             "webhook_event": event
         }
-        r = requests.post(verify_url, auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET), json=payload)
+
+        async with httpx.AsyncClient() as client:
+            r = await client.post(verify_url, auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET), json=payload, timeout=30)
         verification = r.json()
         print("🔎 Vérification PayPal:", verification)
 
@@ -1417,12 +1479,14 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             return {"success": False, "message": "order_id manquant dans la capture"}
 
         # 🔹 Authentification PayPal
-        auth_req = requests.post(
-            f"{PAYPAL_API_BASE}/v1/oauth2/token",
-            headers={"Accept": "application/json", "Accept-Language": "en_US"},
-            data={"grant_type": "client_credentials"},
-            auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET)
-        )
+        async with httpx.AsyncClient() as client:
+            auth_req = await client.post(
+                f"{PAYPAL_API_BASE}/v1/oauth2/token",
+                headers={"Accept": "application/json", "Accept-Language": "en_US"},
+                data={"grant_type": "client_credentials"},
+                auth=(PAYPAL_CLIENT_ID, PAYPAL_SECRET),
+                timeout=30
+            )
         if auth_req.status_code != 200:
             return {"success": False, "message": "OAuth PayPal échoué", "paypal_response": auth_req.text}
 
@@ -1431,10 +1495,12 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
             return {"success": False, "message": "Impossible d’obtenir access_token"}
 
         # 🔹 Récupérer l’Order complet
-        order_req = requests.get(
-            f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
-            headers={"Authorization": f"Bearer {access_token}"}
-        )
+        async with httpx.AsyncClient() as client:
+            order_req = await client.get(
+                f"{PAYPAL_API_BASE}/v2/checkout/orders/{order_id}",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=30
+            )
         order_data = order_req.json()
         print("🔎 Order récupéré:", json.dumps(order_data, indent=2))
 
@@ -1471,29 +1537,33 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         if admin.participant_credits <= 0:
             return {"success": False, "message": "⚠️ Pas assez de crédits (après capture PayPal)"}
 
-
         # ---------------------------
         # CRÉATION EN DB
         # ---------------------------
         new_reg = EventRegistration(user_id=None, event_id=event_id, payment_id=transaction_id)
         db.add(new_reg)
 
-        participant = Participant(
-            name=payer_name or (payer_email.split("@")[0] if payer_email else "Participant"),
-            email=payer_email,
-            amount=float(amount) if amount else event_db.price,
-            transaction_id=transaction_id,
-            event_id=event_id,
-            created_at=datetime.utcnow()
-        )
+        participant_kwargs = {
+            "name": payer_name or (payer_email.split("@")[0] if payer_email else "Participant"),
+            "email": payer_email,
+            "amount": float(amount) if amount else event_db.price,
+            "transaction_id": transaction_id,
+            "event_id": event_id,
+            "created_at": utcnow()
+        }
+        if hasattr(Participant, "qr_code"):
+            participant_kwargs["qr_code"] = str(uuid.uuid4())
+
+        participant = Participant(**participant_kwargs)
         db.add(participant)
 
         admin.participant_credits -= 1
         db.commit()
         db.refresh(participant)
 
-        # ✅ Génère le QR data
-        qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={participant.id}"
+        # ✅ Génère le QR data (qr_code si dispo, sinon id)
+        qr_token = getattr(participant, "qr_code", None) or str(participant.id)
+        qr_data = f"{BASE_PUBLIC_URL}/api/event/{event_id}?participant={qr_token}"
 
         # ✅ Envoi email confirmation
         try:
@@ -1513,7 +1583,6 @@ async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
         print("❌ Exception webhook:", e)
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"success": False, "message": str(e)})
-
 
 
 # ========================
@@ -1539,7 +1608,7 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
     # Générer un token de reset valable 1h
     token = str(uuid.uuid4())
     user.token = token
-    user.token_expiry = datetime.utcnow() + timedelta(hours=1)
+    user.token_expiry = utcnow() + timedelta(hours=1)
     db.commit()
 
     reset_link = f"{BASE_PUBLIC_URL}/static/reset_password_confirm.html?token={token}"
@@ -1553,7 +1622,6 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-
   <title>Réinitialisation de mot de passe</title>
 </head>
 <body style="font-family: Arial, sans-serif; background:#f4f4f4; padding:20px; color:#333;">
@@ -1597,7 +1665,6 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
 
         return {"success": True, "message": "Email envoyé"}
     except Exception as e:
-        import traceback
         print("❌ Erreur reset-password:", e)
         traceback.print_exc()
         return {"success": False, "message": "Impossible d’envoyer l’email."}
@@ -1609,7 +1676,7 @@ def reset_password_request(email: str = Form(...), db: Session = Depends(get_db)
 @app.post("/reset-password/confirm")
 def reset_password_confirm(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
-    if not user or not user.token_expiry or datetime.utcnow() > user.token_expiry:
+    if not user or not user.token_expiry or utcnow() > user.token_expiry:
         return {"success": False, "message": "Lien invalide ou expiré."}
 
     # 🚫 NE PAS autoriser la confirmation si le compte n'est pas activé
@@ -1688,4 +1755,3 @@ def get_license_credits(event_id: int = None, db: Session = Depends(get_db)):
         return {"remaining_participant_credits": 0}
 
     return {"remaining_participant_credits": max(0, license_owner.participant_credits)}
-
