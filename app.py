@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, Streamin
 from sqlalchemy.orm import Session
 from database import Base, engine, get_db, AdminUser, Event, EventRegistration, Participant, AdminLog
 from passlib.hash import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import UploadFile, File
 from supabase import create_client, Client
 import uuid
@@ -423,53 +423,46 @@ def register(
 # ========================
 @app.post("/set-password")
 def set_password(token: str = Form(...), new_password: str = Form(...), db: Session = Depends(get_db)):
-    # 1) Token connu ?
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
     if not user:
-        return {"success": False, "message": "Lien invalide ou déjà utilisé."}
+        return {"success": False, "message": "Lien invalide."}
 
-    # 2) Lien déjà utilisé ? (compte activé / mot de passe défini)
-    #    -> empêche toute réutilisation si l’admin a déjà créé son mot de passe
+    now = datetime.now(timezone.utc)
+
+    # Déjà activé / déjà un mot de passe -> used
     if user.is_active or (user.password_hash and user.password_hash.strip() != ""):
-        # on invalide au cas où et on refuse
+        # on invalide au cas où
         user.token = None
         user.token_expiry = None
         db.commit()
         return {"success": False, "message": "Ce lien a déjà été utilisé."}
 
-    # 🔔 Si expiré → 410 Gone + invalidation du token
-    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+    # Expiré -> expired
+    if (user.token_expiry is None) or (now >= user.token_expiry):
         user.token = None
         user.token_expiry = None
         db.commit()
-        return JSONResponse(
-            status_code=status.HTTP_410_GONE,
-            content={"success": False, "error": "expired", "message": "Lien expiré. Renvoyez un nouveau lien d’activation."}
-        )
-    # 3) Lien expiré ?
-    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
-        # on invalide le token expiré pour éviter toute ré-utilisation
-        user.token = None
-        user.token_expiry = None
-        db.commit()
-        return {"success": False, "message": "Lien expiré. Demande un nouveau lien."}
+        return {"success": False, "message": "Lien expiré. Demandez un nouveau lien d’activation."}
 
-    # 4) Empêche de réutiliser le mot de passe actuel (au cas où il existe déjà)
+    # Empêche de réutiliser le même mot de passe (si jamais il existait déjà)
     if is_password_reused(user, new_password):
         return JSONResponse(
             status_code=409,
             content={"success": False, "error": "Mot de passe déjà utilisé. Choisissez-en un différent."}
         )
 
-    # ✅ Validation force minimale du mot de passe
+    # Règle simple de complexité
     pwd = new_password.strip()
-    if len(pwd) < 8:
+    if len(pwd) < 8 or \
+       not re.search(r"[A-Z]", pwd) or \
+       not re.search(r"[a-z]", pwd) or \
+       not re.search(r"[0-9]", pwd):
         return JSONResponse(
             status_code=400,
-            content={"success": False, "error": "Mot de passe trop court (min. 8 caractères)."}
+            content={"success": False, "error": "Mot de passe trop faible (min. 8 car., 1 maj, 1 min, 1 chiffre)."}
         )
 
-    # 5) OK : on active le compte et on invalide définitivement le lien
+    # OK : on active le compte et on invalide le token
     user.password_hash = bcrypt.hash(new_password)
     user.is_active = True
     user.token = None
@@ -477,6 +470,7 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
     db.commit()
 
     return {"success": True, "message": "Mot de passe défini. Vous pouvez vous connecter."}
+
 
 
 # ========================
@@ -525,21 +519,30 @@ def resend_activation(email: str = Form(...), db: Session = Depends(get_db)):
 # ========================
 @app.get("/set-password/check")
 def check_activation_token(token: str, db: Session = Depends(get_db)):
+    # 1) token manquant -> invalid
+    if not token or token.strip() == "":
+        return {"valid": False, "reason": "invalid"}
+
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
+
+    # 2) token inconnu -> invalid (ne surtout pas dire "used")
     if not user:
         return {"valid": False, "reason": "invalid"}
 
-    already_has_pwd = bool(user.password_hash and user.password_hash.strip() != "")
+    now = datetime.now(timezone.utc)
 
-    # ✅ Considérer "utilisé" si déjà actif OU déjà un mdp défini
+    # 3) déjà activé OU déjà un mot de passe -> used
+    already_has_pwd = bool(user.password_hash and user.password_hash.strip() != "")
     if user.is_active or already_has_pwd:
         return {"valid": False, "reason": "used"}
 
-    # ⏳ expiré ?
-    if not user.token_expiry or datetime.utcnow() >= user.token_expiry:
+    # 4) pas encore activé, mais token expiré -> expired
+    if (user.token_expiry is None) or (now >= user.token_expiry):
         return {"valid": False, "reason": "expired"}
 
+    # 5) OK
     return {"valid": True}
+
 
 # ========================
 # ACTIVATION CONFIRM
@@ -1629,10 +1632,13 @@ def reset_password_confirm(token: str = Form(...), new_password: str = Form(...)
 
     # ✅ Validation force minimale du mot de passe
     pwd = new_password.strip()
-    if len(pwd) < 8:
+    if len(pwd) < 8 or \
+       not re.search(r"[A-Z]", pwd) or \
+       not re.search(r"[a-z]", pwd) or \
+       not re.search(r"[0-9]", pwd):
         return JSONResponse(
             status_code=400,
-            content={"success": False, "error": "Mot de passe trop court (min. 8 caractères)."}
+            content={"success": False, "error": "Mot de passe trop faible (min. 8 car., 1 maj, 1 min, 1 chiffre)."}
         )
 
     user.password_hash = bcrypt.hash(new_password)
