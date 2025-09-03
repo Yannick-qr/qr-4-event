@@ -463,6 +463,47 @@ def set_password(token: str = Form(...), new_password: str = Form(...), db: Sess
 
 
 # ========================
+# ACTIVATION RESEND
+# ========================
+@app.post("/activation/resend")
+def resend_activation(email: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(AdminUser).filter(AdminUser.email == email.strip().lower()).first()
+    # Réponse générique pour éviter l’énumération d’emails
+    generic = {"success": True, "message": "Si un compte existe, un email a été envoyé."}
+
+    if not user:
+        return generic
+
+    if user.is_active:
+        # Si déjà actif, inutile d’envoyer un lien d’activation
+        return generic
+
+    # Regénère un token 48h
+    validation_token = str(uuid.uuid4())
+    expiry = datetime.utcnow() + timedelta(hours=48)
+    user.token = validation_token
+    user.token_expiry = expiry
+    db.commit()
+
+    verify_link = f"{BASE_PUBLIC_URL}/static/set-password.html?token={validation_token}"
+
+    body = f"""
+    <html><head><meta charset="UTF-8"></head><body>
+      <p>Voici ton lien pour définir ton mot de passe (valable <b>48h</b>) :</p>
+      <p><a href="{verify_link}">🔑 Définir mon mot de passe</a></p>
+      <p style="word-break:break-all;">{verify_link}</p>
+    </body></html>
+    """
+
+    try:
+        send_admin_email(user.email, "Nouveau lien d’activation - QR Event", body)
+    except Exception:
+        pass
+
+    return generic
+
+
+# ========================
 # SET PASSWORD CHECK
 # ========================
 @app.get("/set-password/check")
