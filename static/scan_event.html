@@ -814,9 +814,10 @@ togglePw.addEventListener("click", () => {
     }
 
     // Adapte la clé si besoin (ex: data.results)
+
     const list = Array.isArray(data.participants) ? data.participants : [];
 
-
+renderSearchResults(list);
 
 
 function renderSearchResults(list){
