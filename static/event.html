@@ -252,209 +252,178 @@ input {
   </div>
 
 <script>
-  let eventId = null;
-  let eventPrice = 0;
-  let eventTitle = "";
-  let paypalRendered = false; // ✅ empêche de recréer le bouton à chaque clic
-
-  // ✅ Ajoute la fonction ici
-  function isValidEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  }
-
-  const urlParams = new URLSearchParams(window.location.search);
-  eventId = urlParams.get("id");
-
+  let eventId = new URLSearchParams(location.search).get("id");
   if (!eventId) {
     document.body.innerHTML = "<h2>⚠️ Aucun événement sélectionné.</h2>";
   }
 
+  // petit utilitaire pour choisir la 1re clé non vide
+  const pick = (o, ...keys) => {
+    for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k];
+    return undefined;
+  };
+
   async function loadEvent() {
-    const resEvent = await fetch(`/api/event/${eventId}`);
-    const dataEvent = await resEvent.json();
-    if (!dataEvent.success) {
-      document.querySelector(".box").innerHTML = "<h2>❌ Événement introuvable</h2>";
-      return;
-    }
-const event = dataEvent.event;
-console.log("event payload:", event); // utile pour vérifier les clés reçues
+    try {
+      // ⚠️ certains back renvoient sur /api/event/:id, d’autres /api/event?id=...
+      const candidateUrls = [
+        `/api/event/${encodeURIComponent(eventId)}`,
+        `/api/event?id=${encodeURIComponent(eventId)}`,
+        `/event/${encodeURIComponent(eventId)}`
+      ];
 
-eventTitle = event.title;
-eventPrice = Number(event.price ?? event.amount ?? 0);
+      let dataEvent = null, lastErr = null;
+      for (const url of candidateUrls) {
+        try {
+          const r = await fetch(url, { headers: { "Accept": "application/json" } });
+          if (!r.ok) { lastErr = `HTTP ${r.status} @ ${url}`; continue; }
+          dataEvent = await r.json();
+          break;
+        } catch (e) { lastErr = e.message; }
+      }
+      if (!dataEvent) throw new Error(lastErr || "Aucun endpoint JSON valide");
 
-document.getElementById("event-title").textContent = event.title || "Événement";
-document.getElementById("event-description").textContent = event.description || "Pas de description disponible.";
-document.getElementById("event-date").textContent = event.date || event.event_date || "";
-document.getElementById("event-location").textContent = event.location || event.place || "";
-document.getElementById("event-price").textContent = (event.price ?? event.amount ?? 0);
+      // ✅ NE PAS utiliser le nom réservé "event"
+      const ev = dataEvent.event || dataEvent;
 
-// ✅ Image avec fallback multi-clés
-const img = document.getElementById("event-image");
-img.src = event.image_url || event.image || "/static/img/placeholder.png";
-img.onerror = () => { img.src = "/static/img/placeholder.png"; };
+      // REMPLISSAGE SÛR (avec fallbacks)
+      const title = pick(ev, "title", "name") || "Événement";
+      const description = pick(ev, "description", "desc") || "Pas de description disponible.";
+      const date = pick(ev, "date", "event_date", "start_date") || "—";
+      const locationTxt = pick(ev, "location", "place", "city", "venue") || "—";
+      const price = pick(ev, "price", "amount", "price_eur") ?? 0;
+      const image = pick(ev, "image_url", "image", "cover", "banner_url");
 
+      document.getElementById("event-title").textContent = title;
+      document.getElementById("event-description").textContent = description;
+      document.getElementById("event-date").textContent = date;
+      document.getElementById("event-location").textContent = locationTxt;
+      document.getElementById("event-price").textContent = price;
 
-    // Vérif crédits
-    const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);
-    const credits = await resCredits.json();
+      const img = document.getElementById("event-image");
+      img.src = image || "/static/img/placeholder.png";
+      img.onerror = () => { img.src = "/static/img/placeholder.png"; };
 
-    if (credits.remaining_participant_credits <= 0) {
-      document.getElementById("custom-paypal-btn").outerHTML =
-        "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (crédits épuisés)</p>";
-      return;
-    } else if (event.participants_count >= event.max_participants) {
-      document.getElementById("custom-paypal-btn").outerHTML =
-        "<p style='color:red; font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
-      return;
-    }
+      // ----- Crédits / capacité (protégé) -----
+      try {
+        const r = await fetch(`/api/license/credits?event_id=${encodeURIComponent(eventId)}`);
+        if (r.ok) {
+          const credits = await r.json();
+          if (typeof credits?.remaining_participant_credits === "number" &&
+              credits.remaining_participant_credits <= 0) {
+            document.getElementById("custom-paypal-btn").outerHTML =
+              "<p style='color:red;font-weight:bold;'>❌ Inscriptions closes (crédits épuisés)</p>";
+            return;
+          }
+        }
+      } catch { /* non bloquant */ }
 
-    // Charger PayPal SDK
-    const res = await fetch(`/api/paypal-client-id?event_id=${eventId}`);
-    const data = await res.json();
-    if (!data.client_id) return;
+      if ((ev.participants_count ?? 0) >= (ev.max_participants ?? Infinity)) {
+        document.getElementById("custom-paypal-btn").outerHTML =
+          "<p style='color:red;font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
+        return;
+      }
 
-    const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
-    document.head.appendChild(script);
+      // ----- SDK PayPal (inchangé) -----
+      const res = await fetch(`/api/paypal-client-id?event_id=${encodeURIComponent(eventId)}`);
+      const data = await res.json();
+      if (!data.client_id) return;
 
-    script.onload = () => {
-      const customBtn = document.getElementById("custom-paypal-btn");
-      const msg = document.getElementById("message");
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
+      document.head.appendChild(script);
 
-// ✅ Si l’utilisateur modifie ses infos → on reset PayPal
-["first_name", "last_name", "email"].forEach(id => {
-  const input = document.getElementById(id);
-  if (input) {
-    input.addEventListener("input", () => {
-      restoreBtn();          // ✅ réactive ton bouton bleu
-      msg.innerHTML = "";    // ✅ efface TOUS les messages (erreur, succès, info…)
-    });
-  }
-});
+      script.onload = () => {
+        const customBtn = document.getElementById("custom-paypal-btn");
+        const msg = document.getElementById("message");
+        let paypalRendered = false;
 
+        ["first_name","last_name","email"].forEach(id => {
+          const input = document.getElementById(id);
+          if (input) input.addEventListener("input", () => { restoreBtn(); msg.innerHTML = ""; });
+        });
 
+        customBtn.addEventListener("click", () => {
+          const firstName = document.getElementById("first_name").value.trim();
+          const lastName = document.getElementById("last_name").value.trim();
+          const email = document.getElementById("email").value.trim();
+          if (!firstName || !lastName || !email) { msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>"; return; }
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>"; return; }
+          if (paypalRendered) { msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>"; return; }
 
+          customBtn.classList.add("loading");
+          customBtn.disabled = true;
+          customBtn.textContent = "Chargement...";
+          document.getElementById("paypal-button-container").innerHTML = "";
 
-customBtn.addEventListener("click", () => {
-  const firstName = document.getElementById("first_name").value.trim();
-  const lastName = document.getElementById("last_name").value.trim();
-  const email = document.getElementById("email").value.trim();
-
-  if (!firstName || !lastName || !email) {
-    msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>";
-    return;
-  }
-  if (!isValidEmail(email)) {
-    msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>";
-    return;
-  }
-
-  // ✅ Si PayPal déjà affiché → ne rien faire
-  if (paypalRendered) {
-    msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>";
-    return;
-  }
-
-  customBtn.classList.add("loading");
-  customBtn.disabled = true;
-  customBtn.textContent = "Chargement...";
-
-  // ✅ Vider le conteneur avant de créer un nouveau bouton
-  document.getElementById("paypal-button-container").innerHTML = "";
-
-        // ✅ Ouvre directement le pop-up PayPal
-        paypal.Buttons({
-          createOrder: function(data, actions) {
-            return fetch(`/event/${eventId}/pay`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ firstName, lastName, email })
-            })
-            .then(r => r.json())
-            .then(order => {
-              if (!order || !order.id) {
-                msg.innerHTML = "<p class='error'>❌ " + (order.message || "Impossible de créer la commande PayPal") + "</p>";
-                restoreBtn();
-                throw new Error(order.message || "Impossible de créer la commande PayPal");
-              }
-              return order.id;
-            })
-            .catch(err => {
-              console.error("❌ Erreur PayPal:", err);
-              restoreBtn();
-              throw err;
-            });
-          },
-
-          onApprove: function(data, actions) {
-            return actions.order.capture().then(details => {
-              const transactionId = details.id;
-              const amount = details.purchase_units[0].amount.value;
-
-              fetch("/register_participant", {
+          paypal.Buttons({
+            createOrder() {
+              return fetch(`/event/${eventId}/pay`, {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({
-                  first_name: firstName,
-                  last_name: lastName,
-                  email: email,
-                  event_id: eventId,
-                  amount: amount,
-                  transaction_id: transactionId
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ firstName, lastName, email })
               })
               .then(r => r.json())
-              .then(res => {
-                // ✅ Affiche toujours res.message (succès ou erreur)
-                msg.innerHTML = "<p class='" + (res.success ? "success" : "error") + "'>" + (res.message || res.error || "Erreur inconnue") + "</p>";
-                restoreBtn();
-                if (res.success) document.getElementById("registerForm").reset();
+              .then(order => {
+                if (!order?.id) { msg.innerHTML = "<p class='error'>❌ " + (order.message || "Impossible de créer la commande PayPal") + "</p>"; restoreBtn(); throw new Error(order.message || "createOrder"); }
+                return order.id;
               })
-              .catch(err => {
-                console.error("❌ Erreur enregistrement participant:", err);
-                msg.innerHTML = "<p class='error'>❌ Paiement validé mais impossible d’enregistrer ton inscription.</p>";
-                restoreBtn();
+              .catch(err => { console.error("❌ Erreur PayPal:", err); restoreBtn(); throw err; });
+            },
+            onApprove(data, actions) {
+              return actions.order.capture().then(details => {
+                const transactionId = details.id;
+                const amount = details.purchase_units[0].amount.value;
+                return fetch("/register_participant", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                  body: new URLSearchParams({
+                    first_name: firstName, last_name: lastName, email,
+                    event_id: eventId, amount, transaction_id: transactionId
+                  })
+                })
+                .then(r => r.json())
+                .then(res => {
+                  msg.innerHTML = "<p class='" + (res.success ? "success" : "error") + "'>" + (res.message || res.error || "Erreur inconnue") + "</p>";
+                  restoreBtn();
+                  if (res.success) document.getElementById("registerForm").reset();
+                })
+                .catch(err => { console.error("❌ Enregistrement:", err); msg.innerHTML = "<p class='error'>❌ Paiement validé mais enregistrement impossible.</p>"; restoreBtn(); });
               });
-            });
-          },
-          onError: function(err) {
-            msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>";
+            },
+            onError(err) { msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>"; restoreBtn(); },
+            onCancel() { msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>"; restoreBtn(); }
+          }).render("#paypal-button-container");
+
+          document.getElementById("cancel-container").innerHTML =
+            "<button id='cancel-btn' style='background:none;border:none;color:#ff4444;font-size:1.2rem;cursor:pointer;'>❌ Annuler</button>";
+          document.getElementById("cancel-btn").addEventListener("click", () => {
+            msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé l’inscription.</p>";
             restoreBtn();
-          },
-          onCancel: function() {
-            msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>";
-            restoreBtn();
+            document.getElementById("cancel-container").innerHTML = "";
+          });
+
+          paypalRendered = true;
+          customBtn.style.display = "none";
+
+          function restoreBtn() {
+            customBtn.classList.remove("loading");
+            customBtn.disabled = false;
+            customBtn.textContent = "M’inscrire";
+            customBtn.style.display = "block";
+            paypalRendered = false;
+            document.getElementById("paypal-button-container").innerHTML = "";
+            document.getElementById("cancel-container").innerHTML = "";
           }
-        }).render("#paypal-button-container");
-
-// ✅ Ajoute la croix Annuler (juste après render)
-document.getElementById("cancel-container").innerHTML =
-  "<button id='cancel-btn' style='background:none; border:none; color:#ff4444; font-size:1.2rem; cursor:pointer;'>❌ Annuler</button>";
-
-document.getElementById("cancel-btn").addEventListener("click", () => {
-  msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé l’inscription.</p>";
-  restoreBtn();
-  document.getElementById("cancel-container").innerHTML = ""; // vide la croix
-});
-
-  // ✅ On marque que PayPal est déjà affiché
-  paypalRendered = true;
-
-  // ✅ Cacher le bouton bleu (facultatif)
-  customBtn.style.display = "none";
-});
-
-      function restoreBtn() {
-        customBtn.classList.remove("loading");
-        customBtn.disabled = false;
-        customBtn.textContent = "M’inscrire";
-        customBtn.style.display = "block";
-        paypalRendered = false;
-        document.getElementById("paypal-button-container").innerHTML = "";
-        document.getElementById("cancel-container").innerHTML = ""; // ✅ supprime la croix
-      }
-    };
+        });
+      };
+    } catch (e) {
+      console.error("loadEvent error:", e);
+      document.getElementById("event-title").textContent = "Événement";
+      document.getElementById("event-description").textContent = "❌ Impossible de charger l’événement.";
+      const msg = document.getElementById("message");
+      if (msg) msg.innerHTML = `<p class="error">${String(e)}</p>`;
+    }
   }
 
   loadEvent();
