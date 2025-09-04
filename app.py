@@ -1241,15 +1241,17 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
 # ========================
 @app.post("/admin/events/list")
 def list_events(token: str = Form(...), db: Session = Depends(get_db)):
+    # Vérifier utilisateur
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
-    if not check_token_valid(user, db):
+    if not user or not check_token_valid(user, db):
         return {"success": False, "message": "Non autorisé"}
 
+    # ⚡ Charger seulement ses événements
     events = db.query(Event).filter(Event.created_by == user.id).all()
 
     return {
         "success": True,
-        "participant_credits": user.participant_credits,
+        "participant_credits": getattr(user, "participant_credits", 0),
         "events": [
             {
                 "id": e.id,
@@ -1269,6 +1271,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
             for e in events
         ]
     }
+
 
 # ========================
 # ADMIN : INSCRIPTIONS PAYÉES
