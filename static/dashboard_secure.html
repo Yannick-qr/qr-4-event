@@ -19,6 +19,9 @@
     loadPayPalSdk();
   </script>
 
+  <!-- ✅ Charge ton gestionnaire de token admin -->
+  <script src="/static/js/admin-token.js" defer></script>
+
   <style>
 body {
   font-family: Arial, sans-serif;
@@ -436,6 +439,19 @@ iframe[src*="paypal.com"] {
 
   <div id="creditPacks"></div>
   <div id="paypal-button-container"></div>
+<hr style="margin:24px 0">
+
+<h3>➕ Ajouter des crédits manuellement (paiement externe)</h3>
+<p style="color:#555;margin:6px 0 12px;">Utilisez ceci si vous avez encaissé un paiement <u>hors PayPal</u> (virement, cash…)</p>
+
+<div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+  <input id="manualCredits" type="number" min="1" placeholder="Nombre de crédits" style="padding:10px;width:180px;">
+  <input id="manualPaymentId" type="text" placeholder="Réf. paiement (facultatif)" style="padding:10px;width:240px;">
+  <button id="manualAddBtn" class="btn">Ajouter maintenant</button>
+</div>
+
+<p id="manualAddMsg" style="margin-top:10px; font-size:14px; color:#555;"></p>
+
 </section>
 
 
@@ -556,10 +572,76 @@ function selectPack(packKey, event) {
   event.currentTarget.classList.add("selected");
 }
 
+// === Ajouter des crédits manuels (utilise /admin/credits/add) ===
+function setupManualCreditAdder(){
+  const btn = document.getElementById('manualAddBtn');
+  if (!btn || btn._wired) return;  // évite un double-binding si on revient sur l’onglet
+  btn._wired = true;
+
+  btn.addEventListener('click', async () => {
+    const msg = document.getElementById('manualAddMsg');
+    const credits = parseInt(document.getElementById('manualCredits').value || '0', 10);
+    const payment_id = (document.getElementById('manualPaymentId').value || '').trim();
+
+    if (!credits || credits <= 0) {
+      msg.textContent = '⚠️ Indique un nombre de crédits > 0.';
+      return;
+    }
+
+    msg.textContent = 'Ajout en cours…';
+
+    try {
+      const res = await fetchWithToken('/admin/credits/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credits, payment_id }) // pas besoin d'ajouter token, le wrapper le fait
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        msg.textContent = '❌ ' + (data.message || 'Erreur lors de l’ajout.');
+        return;
+      }
+
+      msg.textContent = `✅ Crédits ajoutés. Nouveau solde: ${data.new_credits}`;
+
+      // Mets à jour le compteur des stats à l’écran
+      const bal = document.getElementById('participantCredits');
+      if (bal) bal.textContent = data.new_credits;
+
+await refreshCredits();
+
+      // (optionnel) rafraîchir toute la liste/stats :
+      // await loadEvents();
+
+      // reset inputs
+      document.getElementById('manualCredits').value = '';
+      document.getElementById('manualPaymentId').value = '';
+
+    } catch (e) {
+      console.error(e);
+      msg.textContent = '❌ Erreur réseau.';
+    }
+  });
+}
+
+// Rafraîchir le compteur "Crédits participants disponibles"
+async function refreshCredits() {
+  try {
+    const res = await fetch('/api/license/credits');
+    const data = await res.json();
+    const el = document.getElementById('participantCredits');
+    if (el && typeof data.remaining_participant_credits === 'number') {
+      el.textContent = data.remaining_participant_credits;
+    }
+  } catch (e) {
+    console.warn('refreshCredits() a échoué:', e);
+  }
+}
 
 // ✅ Charger événements et stats
 async function loadEvents() {
-  const res = await fetch("/admin/events/list", { method: "POST", body: new URLSearchParams({ token }) });
+  const res = await fetchWithToken("/admin/events/list", { method: "POST", body: new URLSearchParams() });
   const data = await res.json();
   if (!data.success) return alert(data.error || "Erreur événements");
 
@@ -629,12 +711,13 @@ data.events.forEach(ev => {
   document.getElementById("participantCredits").textContent = data.participant_credits ?? 0;
 }
 loadEvents();
+refreshCredits();
 
 // ✅ Charger les inscriptions payées
 async function loadPaidRegistrations() {
-  const res = await fetch("/admin/paid-registrations", {
+  const res = await fetchWithToken("/admin/paid-registrations", {
     method: "POST",
-    body: new URLSearchParams({ token })
+    body: new URLSearchParams()
   });
   const data = await res.json();
   if (!data.success) {
@@ -660,10 +743,10 @@ async function loadPaidRegistrations() {
 
 // ✅ Export CSV
 async function exportCSV() {
-  const response = await fetch("/admin/paid-registrations/csv", {
+  const response = await fetchWithToken("/admin/paid-registrations/csv", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ token })
+    body: new URLSearchParams()
   });
 
   if (!response.ok) {
@@ -715,10 +798,9 @@ document.getElementById("cancelEditBtn").addEventListener("click", closeEditModa
 async function deleteEvent(id) {
   if (!confirm("Supprimer l’événement ?")) return;
   const form = new URLSearchParams();
-  form.append("token", token);
   form.append("event_id", id);
 
-  const res = await fetch("/admin/events/delete", {
+  const res = await fetchWithToken("/admin/events/delete", {
     method: "POST",
     body: form
   });
@@ -729,10 +811,9 @@ async function deleteEvent(id) {
 
 async function toggleEvent(id) {
   const form = new URLSearchParams();
-  form.append("token", token);
   form.append("event_id", id);
 
-  const res = await fetch("/admin/events/toggle", {
+  const res = await fetchWithToken("/admin/events/toggle", {
     method: "POST",
     body: form
   });
@@ -765,7 +846,7 @@ function showSection(id) {
 eventsBtn.addEventListener("click", () => showSection("events"));
 paypalConfigBtn.addEventListener("click", () => { showSection("paypalConfig"); loadPaypalStatus(); });
 logsBtn.addEventListener("click", () => { showSection("logs"); loadLogs(); });
-buyCreditsBtn.addEventListener("click", () => { showSection("buyCredits"); loadConfig(); });
+buyCreditsBtn.addEventListener("click", () => { showSection("buyCredits"); loadConfig(); setupManualCreditAdder(); refreshCredits(); });
 paidRegistrationsBtn.addEventListener("click", () => { 
   showSection("paidRegistrations"); 
   loadPaidRegistrations(); 
@@ -775,10 +856,8 @@ paidRegistrationsBtn.addEventListener("click", () => {
 // Vérifier statut PayPal
 // ========================
 async function loadPaypalStatus() {
-  const form = new URLSearchParams();
-  form.append("token", token);
 
-  const res = await fetch("/admin/paypal/status", { method: "POST", body: form });
+  const res = await fetchWithToken("/admin/paypal/status", { method: "POST", body: new URLSearchParams() });
   const data = await res.json();
 
   const statusEl = document.getElementById("paypalStatus");
@@ -804,9 +883,8 @@ document.getElementById("paypalForm").addEventListener("submit", async (e) => {
   const form = new URLSearchParams();
   form.append("client_id", document.getElementById("paypal_client_id").value);
   form.append("secret", document.getElementById("paypal_secret").value);
-  form.append("token", token);
 
-  const res = await fetch("/admin/paypal/set", { method: "POST", body: form });
+  const res = await fetchWithToken("/admin/paypal/set", { method: "POST", body: form });
   const data = await res.json();
 
   if (data.success) {
@@ -831,7 +909,6 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
   editForm.append("location", document.getElementById("edit_location").value);
   editForm.append("price", document.getElementById("edit_price").value);
   editForm.append("max_participants", document.getElementById("edit_max_participants").value);
-  editForm.append("token", token);
   editForm.append("checkin_login", document.getElementById("edit_checkin_login").value);
   editForm.append("checkin_password", document.getElementById("edit_checkin_password").value);
 
@@ -841,7 +918,7 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
     editForm.append("image", editImageFile);
   }
 
-  const res = await fetch("/admin/events/update", {
+  const res = await fetchWithToken("/admin/events/update", {
     method: "POST",
     body: editForm
   });
@@ -870,10 +947,9 @@ confirmDeleteBtn.addEventListener("click", async () => {
   if (!password) return alert("⚠️ Merci de saisir ton mot de passe");
 
   const form = new URLSearchParams();
-  form.append("token", token);
   form.append("password", password);
 
-  const res = await fetch("/admin/paypal/delete", { method: "POST", body: form });
+  const res = await fetchWithToken("/admin/paypal/delete", { method: "POST", body: form });
   const data = await res.json();
 
   if (data.success) {
@@ -890,10 +966,8 @@ confirmDeleteBtn.addEventListener("click", async () => {
 // Charger les logs admin
 // ========================
 async function loadLogs() {
-  const form = new URLSearchParams();
-  form.append("token", token);
 
-  const res = await fetch("/admin/logs", { method: "POST", body: form });
+  const res = await fetchWithToken("/admin/logs", { method: "POST", body: new URLSearchParams() });
   const data = await res.json();
 
   const tbody = document.querySelector("#logsTable tbody");
@@ -946,7 +1020,6 @@ document.getElementById("addEventForm").addEventListener("submit", async (e) => 
   form.append("location", document.getElementById("location").value);
   form.append("price", document.getElementById("price").value);
   form.append("max_participants", document.getElementById("max_participants").value);
-  form.append("token", token);
   form.append("checkin_login", document.getElementById("checkin_login").value);
   form.append("checkin_password", document.getElementById("checkin_password").value);
 
@@ -956,7 +1029,7 @@ document.getElementById("addEventForm").addEventListener("submit", async (e) => 
     form.append("image", imageFile);
   }
 
-  const res = await fetch("/admin/events", {
+  const res = await fetchWithToken("/admin/events", {
     method: "POST",
     body: form
   });
@@ -1045,6 +1118,25 @@ function togglePass(eventId, realPass) {
   }
 }
 </script>
+
+<!-- Modal Token Admin -->
+<div id="tokenModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#fff; width:min(520px,92%); border-radius:14px; padding:22px; box-shadow:0 12px 30px rgba(0,0,0,.25);">
+    <h3 style="margin:0 0 12px; font-size:20px;">Entrer le token administrateur</h3>
+    <p style="margin:0 0 14px; color:#555">Ouvre la page depuis ton Dashboard pour l’avoir automatiquement, ou colle-le ici.</p>
+    <input id="tokenInput" type="text" placeholder="colle ton token ici"
+           style="width:100%; padding:12px 14px; border:1px solid #cfd3d8; border-radius:10px; font-size:15px; outline:none;">
+    <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
+      <button id="tokenCancel" type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #d0d7de; background:#fff;">Annuler</button>
+      <button id="tokenSave" type="button" style="padding:10px 14px; border-radius:10px; border:0; background:#0ea5e9; color:#fff;">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Badge état du token -->
+<div id="tokenBadge" style="position:fixed; right:10px; bottom:10px; background:#eef6ff; color:#0369a1; border:1px solid #bae6fd; border-radius:999px; padding:6px 10px; font-size:12px; z-index:9999;">
+  Token: non chargé
+</div>
 
 </body>
 </html>
