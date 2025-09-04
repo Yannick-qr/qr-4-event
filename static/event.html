@@ -222,7 +222,8 @@ input {
   <!-- ✅ Header -->
   <div class="event-header">
     <img id="event-image" src="/static/img/placeholder.png" alt="Image de l'événement">
-    <h2 id="event-title">Chargement...</h2>
+   
+ <h2 id="event-title">Chargement...</h2>
   </div>
 
 <!-- ✅ Box infos améliorée -->
@@ -257,8 +258,10 @@ input {
     document.body.innerHTML = "<h2>⚠️ Aucun événement sélectionné.</h2>";
   }
 
-  // util : renvoie la 1re clé non vide
-  const pick = (o, ...keys) => { for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k]; };
+  const pick = (o, ...keys) => {
+    for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k];
+    return undefined;
+  };
 
   async function loadEvent() {
     const message = document.getElementById("message");
@@ -269,36 +272,28 @@ input {
     };
 
     try {
-// --- Appel direct vers l'endpoint JSON officiel ---
-const resEvent = await fetch(`/api/event/${encodeURIComponent(eventId)}`, {
-  headers: { "Accept": "application/json" }
-});
-if (!resEvent.ok) {
-  setFatal(`HTTP ${resEvent.status}`);
-  return;
-}
+      // --- Appel direct vers l'endpoint JSON ---
+      const resEvent = await fetch(`/api/event/${encodeURIComponent(eventId)}`, {
+        headers: { "Accept": "application/json" }
+      });
+      if (!resEvent.ok) { setFatal(`HTTP ${resEvent.status}`); return; }
 
-const dataEvent = await resEvent.json();
-const ev = dataEvent.event || dataEvent; // sécurité si la structure varie
+      const dataEvent = await resEvent.json();
+      const ev = dataEvent.event || dataEvent; // ← garder UNE SEULE FOIS
 
-
-      // Certains back renvoient { success, event }, d’autres les champs directement
-      const ev = dataEvent.event || dataEvent;
-
-      // 🧩 Remplissage UI avec fallbacks
-      const title   = pick(ev, "title", "name") || "Événement";
-      const desc    = pick(ev, "description", "desc") || "Pas de description disponible.";
-      const date    = pick(ev, "date", "event_date", "start_date") || "—";
-      const place   = pick(ev, "location", "place", "city", "venue") || "—";
-      const price   = pick(ev, "price", "amount", "price_eur") ?? 0;
-      const imgUrl  = pick(ev, "image_url", "image", "cover", "banner_url");
+      // --- Remplissage UI ---
+      const title  = pick(ev, "title", "name") || "Événement";
+      const desc   = pick(ev, "description", "desc") || "Pas de description disponible.";
+      const date   = pick(ev, "date", "event_date", "start_date") || "—";
+      const place  = pick(ev, "location", "place", "city", "venue") || "—";
+      const price  = pick(ev, "price", "amount", "price_eur") ?? 0;
+      const imgUrl = pick(ev, "image_url", "image", "cover", "banner_url");
 
       document.getElementById("event-title").textContent = title;
       document.getElementById("event-description").textContent = desc;
       document.getElementById("event-date").textContent = date;
       document.getElementById("event-location").textContent = place;
       document.getElementById("event-price").textContent = price;
-
       const img = document.getElementById("event-image");
       img.src = imgUrl || "/static/img/placeholder.png";
       img.onerror = () => { img.src = "/static/img/placeholder.png"; };
