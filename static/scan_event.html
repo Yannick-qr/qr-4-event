@@ -495,7 +495,15 @@
     }
 
     // ====== Login ======
-    togglePw.addEventListener("click", ()=>{ passwordInput.type = passwordInput.type==="password" ? "text" : "password"; });
+togglePw.addEventListener("click", () => {
+  if (passwordInput.type === "password") {
+    passwordInput.type = "text";
+    togglePw.textContent = "🙈"; // oeil barré
+  } else {
+    passwordInput.type = "password";
+    togglePw.textContent = "👁️"; // oeil normal
+  }
+});
     loginBtn.addEventListener("click", doLogin);
     passwordInput.addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
     function clearLoginError(){ hide(loginError); loginError.textContent = ""; }
