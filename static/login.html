@@ -292,10 +292,12 @@
 
         if (data && data.success) {
           showSuccess("Connexion réussie ✅");
-          localStorage.setItem("token", data.token);
-          setTimeout(() => {
-            window.location.href = "/static/dashboard_secure.html";
-          }, 900);
+// (optionnel) si tu gardes encore l'ancien code ailleurs :
+localStorage.setItem("token", data.token);
+// Redirige en passant ?token=... pour que admin-token.js le capte et le stocke
+setTimeout(() => {
+window.location.href = "/static/dashboard_secure.html?token=" + encodeURIComponent(data.token);
+}, 500);
         } else {
           // ⚠️ UTILISER data.message (ton backend renvoie {success:false, message:"..."})
           const msg = data?.message || data?.detail || data?.error || "❌ Erreur lors de la connexion.";
