@@ -609,7 +609,7 @@ data.events.forEach(ev => {
     <!-- 11) Actions -->
 <!-- 11) Actions -->
 <td>
-  <button class="btn btn-primary" onclick="openEditModal(${ev.id})"✏️ Modifier</button>
+  <button class="btn btn-primary" onclick="openEditModal(${ev.id})">✏️ Modifier</button>
   <button class="btn btn-danger" onclick="deleteEvent(${ev.id})">🗑️ Supprimer</button>
   <button class="btn btn-warning" onclick="toggleEvent(${ev.id})">
     ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
@@ -619,9 +619,6 @@ data.events.forEach(ev => {
   `;
 
   // 🔧 Brancher les actions sans inline onclick (évite les soucis de quotes)
-  row.querySelector(".edit-btn").addEventListener("click", () => editEvent(ev));
-  row.querySelector(".delete-btn").addEventListener("click", () => deleteEvent(ev.id));
-  row.querySelector(".toggle-btn").addEventListener("click", () => toggleEvent(ev.id));
 
   tbody.appendChild(row);
 });
