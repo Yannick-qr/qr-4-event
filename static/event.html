@@ -277,19 +277,23 @@ input {
       document.querySelector(".box").innerHTML = "<h2>❌ Événement introuvable</h2>";
       return;
     }
-    const event = dataEvent.event;
-    eventTitle = event.title;
-    eventPrice = event.price;
+const event = dataEvent.event;
+console.log("event payload:", event); // utile pour vérifier les clés reçues
 
-    document.getElementById("event-title").textContent = event.title;
-    document.getElementById("event-description").textContent = event.description || "Pas de description disponible.";
-    document.getElementById("event-date").textContent = event.date;
-    document.getElementById("event-location").textContent = event.location;
-    document.getElementById("event-price").textContent = event.price;
+eventTitle = event.title;
+eventPrice = Number(event.price ?? event.amount ?? 0);
 
-    // ✅ Image
-    const img = document.getElementById("event-image");
-    img.src = event.image_url || "/static/img/placeholder.png";
+document.getElementById("event-title").textContent = event.title || "Événement";
+document.getElementById("event-description").textContent = event.description || "Pas de description disponible.";
+document.getElementById("event-date").textContent = event.date || event.event_date || "";
+document.getElementById("event-location").textContent = event.location || event.place || "";
+document.getElementById("event-price").textContent = (event.price ?? event.amount ?? 0);
+
+// ✅ Image avec fallback multi-clés
+const img = document.getElementById("event-image");
+img.src = event.image_url || event.image || "/static/img/placeholder.png";
+img.onerror = () => { img.src = "/static/img/placeholder.png"; };
+
 
     // Vérif crédits
     const resCredits = await fetch(`/api/license/credits?event_id=${eventId}`);

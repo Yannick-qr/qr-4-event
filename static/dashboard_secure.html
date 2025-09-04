@@ -326,7 +326,7 @@ iframe[src*="paypal.com"] {
         <th data-i18n="location">Lieu</th>
         <th data-i18n="price">Prix</th>
         <th>Max participants</th>
-        <th data-i18n="status">Identifiant Scanner</th>
+        <th>Identifiants Check-in</th>
         <th>Login Check-in</th>
         <th>Image</th>
         <th data-i18n="publicLink">Lien public</th>
@@ -563,47 +563,57 @@ async function loadEvents() {
   const data = await res.json();
   if (!data.success) return alert(data.error || "Erreur événements");
 
-  const tbody = document.querySelector("#eventsTable tbody");
-  tbody.innerHTML = "";
+const tbody = document.querySelector("#eventsTable tbody");
+tbody.innerHTML = "";
+
 data.events.forEach(ev => {
   const row = document.createElement("tr");
+
   row.innerHTML = `
-  <td>${ev.title}</td>
-  <td>${ev.description}</td>
-  <td>${ev.date}</td>
-  <td>${ev.location}</td>
-  <td>${ev.price} €</td>
-  <td>${ev.max_participants || "∞"}</td>
+    <td>${ev.title || ""}</td>
+    <td>${ev.description || ""}</td>
+    <td>${ev.date || ""}</td>
+    <td>${ev.location || ""}</td>
+    <td>${ev.price != null ? ev.price + " €" : "—"}</td>
+    <td>${ev.max_participants || "∞"}</td>
 
-  <!-- 7) Identifiant Scanner -->
-  <td>${(ev.checkin_login || ev.checkin_password) ? "✅ Défini" : "❌ Non défini"}</td>
+    <!-- 7) Identifiants Check-in (login + mdp masqué) -->
+    <td>
+      <div><b>Login :</b> ${ev.checkin_login || "—"}</div>
+      <div><b>Pass :</b> ${ev.checkin_password ? "••••••" : "—"}</div>
+    </td>
 
-  <!-- 8) Login Check-in -->
-  <td>${ev.checkin_login ? ev.checkin_login : "—"}</td>
+    <!-- 8) Login Check-in (affiché à part si tu veux le voir d’un coup d’œil) -->
+    <td>${ev.checkin_login || "—"}</td>
 
-  <!-- 9) Image -->
-  <td>
-    ${ev.image_url
-      ? `<img src="${ev.image_url}" style="max-height:50px; border-radius:6px;">`
-      : "—"}
-  </td>
+    <!-- 9) Image -->
+    <td>
+      ${ev.image_url
+        ? `<img src="${ev.image_url}" style="max-height:50px;border-radius:6px;">`
+        : "—"}
+    </td>
 
-  <!-- 10) Lien public -->
-  <td>
-    <a href="${ev.public_url}" target="_blank">
-      <button class="action-btn link-btn">🔗 Voir</button>
-    </a>
-  </td>
+    <!-- 10) Lien public -->
+    <td>
+      <a href="${ev.public_url || ("/static/event.html?id=" + ev.id)}" target="_blank">
+        <button class="action-btn link-btn">🔗 Voir</button>
+      </a>
+    </td>
 
-  <!-- 11) Actions -->
-  <td>
-    <button class="action-btn edit-btn" onclick='editEvent(${JSON.stringify(ev)})'✏️</button>
-    <button class="action-btn delete-btn" onclick="deleteEvent(${ev.id})">🗑️</button>
-    <button class="action-btn toggle-btn" onclick="toggleEvent(${ev.id})">
-      ${ev.is_active ? "Désactiver" : "Activer"}
-    </button>
-  </td>
-`;
+    <!-- 11) Actions -->
+    <td>
+      <button class="action-btn edit-btn"✏️</button>
+      <button class="action-btn delete-btn">🗑️</button>
+      <button class="action-btn toggle-btn">
+        ${ev.is_active ? "Désactiver" : "Activer"}
+      </button>
+    </td>
+  `;
+
+  // 🔧 Brancher les actions sans inline onclick (évite les soucis de quotes)
+  row.querySelector(".edit-btn").addEventListener("click", () => editEvent(ev));
+  row.querySelector(".delete-btn").addEventListener("click", () => deleteEvent(ev.id));
+  row.querySelector(".toggle-btn").addEventListener("click", () => toggleEvent(ev.id));
 
   tbody.appendChild(row);
 });
