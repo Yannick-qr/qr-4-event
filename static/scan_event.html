@@ -377,6 +377,7 @@
 
   <!-- Scanner -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+
   <script>
     // ====== State ======
     let eventId = null;
@@ -781,7 +782,7 @@ togglePw.addEventListener("click", () => {
       }
     });
 
-   async function searchParticipants(query){
+async function searchParticipants(query){
   if (!eventId){
     searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
     return;
@@ -813,15 +814,17 @@ togglePw.addEventListener("click", () => {
       return;
     }
 
-    // Adapte la clé si besoin (ex: data.results)
-
     const list = Array.isArray(data.participants) ? data.participants : [];
+    renderSearchResults(list);
 
-renderSearchResults(list);
-
+  } catch(err){
+    searchResults.innerHTML = "";
+    searchCount.textContent = "0 résultat";
+    searchHint.textContent  = "❌ Erreur serveur : " + (err?.message || err);
+  }
+} // 👈 FIN DE searchParticipants
 
 function renderSearchResults(list){
-  // Cas vide → table avec une ligne "aucun"
   if (!Array.isArray(list) || !list.length){
     searchResults.classList.add("table-wrap");
     searchResults.innerHTML = `
@@ -838,7 +841,6 @@ function renderSearchResults(list){
     return;
   }
 
-  // Mapping tolérant aux différents noms de champs
   const rowsHtml = list.map(p=>{
     const qr     = p.qr_code || p.qr || p.id || "";
     const fname  = p.first_name || p.prenom || p.firstname || "";
@@ -875,7 +877,6 @@ function renderSearchResults(list){
       <tbody>${rowsHtml}</tbody>
     </table>`;
 
-  // Bind actions
   searchResults.querySelectorAll("tbody tr").forEach(tr=>{
     const qr = tr.getAttribute("data-qr");
     const btnShow  = tr.querySelector("button[data-action='afficher']");
@@ -885,26 +886,25 @@ function renderSearchResults(list){
       if (!qr) return;
       pushHistory(qr, "Recherche");
       participantId = qr;
-      doScan(); // affiche la fiche via /checkin/scan
+      doScan();
     });
 
     btnCheck?.addEventListener("click", async ()=>{
       if (!qr) return;
       pushHistory(qr, "Check-in (recherche)");
       participantId = qr;
-      await doScan();                 // affiche d'abord
+      await doScan();
       if (!checkinBtn.classList.contains("hidden")){
-        validateCheckin();            // puis valide si possible
+        validateCheckin();
       }
     });
   });
 }
 
+// ====== Boot misc ======
+fpsVal.textContent = fpsRange.value;
+qrboxVal.textContent = qrboxRange.value;
 
-
-    // ====== Boot misc ======
-    fpsVal.textContent = fpsRange.value;
-    qrboxVal.textContent = qrboxRange.value;
-  </script>
+</script>
 </body>
 </html>
