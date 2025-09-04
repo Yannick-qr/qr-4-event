@@ -1261,7 +1261,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
                 "is_locked": e.is_locked,
                 "max_participants": e.max_participants,
                 "image_url": e.image_url,
-                "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={e.id}"
+                "public_url": f"{BASE_PUBLIC_URL}/static/event.html?id={e.id}",
                 # ✅ champs check-in pour le dashboard admin
                 "checkin_login": e.checkin_login,
                 "checkin_password": e.checkin_password,

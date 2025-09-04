@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scan Event - Check-in</title>
   <style>
-    /* ===== Base & Background (aligné avec tes pages login/reset) ===== */
+    /* ===== Base & Background ===== */
     body {
       font-family: "Segoe UI", Arial, sans-serif;
       background: url("https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/login.webp")
@@ -55,7 +55,6 @@
       border-radius:12px; overflow:hidden;
       background:#000;
     }
-    /* Overlay “cadre” */
     .qr-overlay {
       pointer-events:none; position:absolute; inset:0;
       display:flex; align-items:center; justify-content:center;
@@ -107,14 +106,13 @@
     }
 
     /* ===== Panel droite (infos + historique) ===== */
-    .panel {
-      display:grid; gap:14px;
-    }
+    .panel { display:grid; gap:14px; }
     .box {
       background:#fff; border-radius:14px; padding:14px;
       box-shadow: 0 8px 18px rgba(0,0,0,0.08);
     }
     .box h3 { margin:0 0 8px; color:#2c3e50 }
+
     .info, .error-box, .success-box {
       padding:12px; border-radius:10px; margin:8px 0; font-size:.95em; display:none;
       text-align:left;
@@ -123,9 +121,13 @@
     .error-box  { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; display:none }
     .success-box{ background:#d4edda; color:#155724; border:1px solid #c3e6cb; display:none }
 
-    .participant {
-      line-height:1.55; color:#2c3e50; font-size:.95em;
+    .participant { line-height:1.55; color:#2c3e50; font-size:.95em; }
+
+    .badge {
+      display:inline-block; padding:6px 10px; border-radius:999px; font-weight:700; font-size:.85rem;
     }
+    .badge.ok { background:#e8f5e9; color:#2e7d32; }
+    .badge.warn { background:#ffebee; color:#c62828; }
 
     .history { max-height:240px; overflow:auto; border:1px solid #eef2f5; border-radius:10px; }
     .history-item {
@@ -133,83 +135,43 @@
     }
     .history-item:last-child{ border-bottom:none }
     .tag { font-size:.75rem; padding:3px 8px; border-radius:999px; background:#f1f5f9; color:#475569; }
-    .muted { color:#6c7a89; font-size:.85em }
+
+    /* ===== Form fields (login) ===== */
+    label.login-label {
+      display: block;
+      width: var(--field-width);
+      margin: 12px auto 6px;
+      text-align: left;
+      color: #2c3e50;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+    .input-wrap {
+      position: relative;
+      width: var(--field-width);
+      margin: 0 auto 12px;
+    }
+    .input-wrap input {
+      width: 100%;
+      padding: 12px 42px 12px 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 0.95em;
+      transition: all 0.25s ease;
+      background: #fff; color: #2c3e50;
+    }
+    .input-wrap input:focus {
+      border-color: #3498db;
+      box-shadow: 0 0 0 3px rgba(52,152,219,0.25);
+      outline: none;
+    }
+    .input-wrap input::placeholder { color: #94a3b8; }
+    .toggle-visibility {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: transparent; border: none; cursor: pointer; font-size: 0.95em; color: #2c3e50; opacity: 0.8;
+    }
 
     .hidden { display:none !important }
-    /* —— Champs de formulaire harmonisés (comme pages login/reset) —— */
-:root { --field-width: 94%; }
-
-/* reset cohérent */
-*, *::before, *::after { box-sizing: border-box; }
-
-/* label + wrapper centrés à la même largeur */
-label.login-label {
-  display: block;
-  width: var(--field-width);
-  margin: 12px auto 6px;
-  text-align: left;
-  color: #2c3e50;
-  font-weight: 600;
-  font-size: 0.95em;
-}
-
-.input-wrap {
-  position: relative;
-  width: var(--field-width);
-  margin: 0 auto 12px;
-}
-
-/* input harmonisés */
-.input-wrap input {
-  width: 100%;
-  padding: 12px 42px 12px 12px;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  font-size: 0.95em;
-  transition: all 0.25s ease;
-  background: #fff;
-  color: #2c3e50;
-}
-
-/* focus bleu + halo */
-.input-wrap input:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52,152,219,0.25);
-  outline: none;
-}
-
-/* placeholder plus doux */
-.input-wrap input::placeholder {
-  color: #94a3b8;
-}
-
-/* bouton œil (même style que la page mot de passe) */
-.toggle-visibility {
-  position: absolute;
-  right: 10px; top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95em;
-  color: #2c3e50;
-  opacity: 0.8;
-  line-height: 1;
-}
-
-/* état erreur (optionnel) */
-.input-error input {
-  border-color: #e74c3c;
-  box-shadow: 0 0 0 3px rgba(231,76,60,0.2);
-}
-
-/* autofill Chrome (évite le jaune) */
-.input-wrap input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px #fff inset;
-  -webkit-text-fill-color: #2c3e50;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
   </style>
 </head>
 <body>
@@ -223,31 +185,31 @@ label.login-label {
       <div style="margin-left:auto" class="chip" id="cameraState">📷 off</div>
     </div>
 
+    <!-- ===== Connexion ===== -->
     <div class="card-body" id="loginSection">
-      <!-- ===== Connexion ===== -->
       <div class="video-wrap">
         <h3>Connexion Check-in</h3>
         <div class="info" id="loginTip" style="display:block">💡 Utilisez la caméra arrière pour une lecture plus rapide.</div>
         <div class="error-box" id="loginError"></div>
 
-<label for="loginInput" class="login-label">Login</label>
-<div class="input-wrap">
-  <input id="loginInput" type="text" placeholder="email ou identifiant" autocomplete="username" />
-</div>
+        <label for="loginInput" class="login-label">Login</label>
+        <div class="input-wrap">
+          <input id="loginInput" type="text" placeholder="email ou identifiant" autocomplete="username" />
+        </div>
 
-<label for="passwordInput" class="login-label">Mot de passe</label>
-<div class="input-wrap">
-  <input id="passwordInput" type="password" placeholder="••••••••" autocomplete="current-password" />
-  <button type="button" class="toggle-visibility" id="togglePw" aria-label="Afficher/Masquer">👁️</button>
-</div>
-        
+        <label for="passwordInput" class="login-label">Mot de passe</label>
+        <div class="input-wrap">
+          <input id="passwordInput" type="password" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" class="toggle-visibility" id="togglePw" aria-label="Afficher/Masquer">👁️</button>
+        </div>
+
         <button class="btn" id="loginBtn">Se connecter</button>
       </div>
 
       <div class="panel">
         <div class="box">
           <h3>Aide</h3>
-          <p class="muted">Vos identifiants sont fournis depuis le Dashboard QR Event. Après connexion, vous pourrez choisir la caméra, régler la zone de scan, activer le flash (quand supporté), mettre en pause, etc.</p>
+          <p class="subtitle">Vos identifiants sont fournis depuis le Dashboard QR Event. Après connexion, vous pourrez choisir la caméra, régler la zone de scan, activer le flash (si supporté), mettre en pause, etc.</p>
         </div>
       </div>
     </div>
@@ -257,7 +219,7 @@ label.login-label {
       <div class="video-wrap">
         <div class="row" style="justify-content:space-between; align-items:center">
           <h3 id="eventTitle">🎟️ Événement</h3>
-          <span class="tag" id="eventInfoTag">—</span>
+          <span class="chip" id="eventInfoTag">—</span>
         </div>
 
         <!-- Lecteur -->
@@ -280,12 +242,12 @@ label.login-label {
               <select id="cameraSelect"></select>
             </div>
             <div class="row">
-              <label class="muted" for="fpsRange" style="width:120px">FPS</label>
+              <label class="subtitle" for="fpsRange" style="width:120px">FPS</label>
               <input id="fpsRange" type="range" min="5" max="30" step="1" value="10">
               <span id="fpsVal" style="width:40px;text-align:right">10</span>
             </div>
             <div class="row">
-              <label class="muted" for="qrboxRange" style="width:120px">Zone (px)</label>
+              <label class="subtitle" for="qrboxRange" style="width:120px">Zone (px)</label>
               <input id="qrboxRange" type="range" min="180" max="380" step="10" value="250">
               <span id="qrboxVal" style="width:40px;text-align:right">250</span>
             </div>
@@ -317,6 +279,7 @@ label.login-label {
       <div class="panel">
         <div class="box">
           <h3>Résultats / Messages</h3>
+          <div id="scanBadge" class="badge hidden"></div>
           <div id="scanSuccess" class="success-box"></div>
           <div id="scanError" class="error-box"></div>
 
@@ -336,7 +299,7 @@ label.login-label {
           <h3>Historique</h3>
           <div class="history" id="historyList"></div>
           <div class="row" style="justify-content:space-between; margin-top:10px">
-            <span class="muted" id="historyCount">0 élément</span>
+            <span class="subtitle" id="historyCount">0 élément</span>
             <button class="btn-outline" id="clearHistory">Effacer</button>
           </div>
         </div>
@@ -361,6 +324,7 @@ label.login-label {
     let lastScanTime = 0;
     let lastTorch = false;
     let facingUser = false;
+    let devicesCache = [];
 
     // ====== UI refs ======
     const loginSection   = document.getElementById("loginSection");
@@ -392,8 +356,9 @@ label.login-label {
     const btnTorch       = document.getElementById("btnTorch");
     const btnFullscreen  = document.getElementById("btnFullscreen");
 
+    const scanBadge      = document.getElementById("scanBadge");
     const scanSuccess    = document.getElementById("scanSuccess");
-    const scanError      = document.getElementById("scanError");
+    const scanErrorBox   = document.getElementById("scanError");
     const participantInfo= document.getElementById("participantInfo");
     const checkinBtn     = document.getElementById("checkinBtn");
 
@@ -412,11 +377,12 @@ label.login-label {
     function show(el){ el.style.display = "block"; }
     function hide(el){ el.style.display = "none"; }
     function clearMsgs(){
-      hide(scanSuccess); hide(scanError);
-      scanSuccess.innerHTML = ""; scanError.textContent = "";
+      hide(scanSuccess); hide(scanErrorBox);
+      scanSuccess.innerHTML = ""; scanErrorBox.textContent = "";
+      hide(scanBadge); scanBadge.textContent = ""; scanBadge.className = "badge";
     }
-    function showSuccess(msg){ scanSuccess.innerHTML = msg; show(scanSuccess); hide(scanError); }
-    function showError(msg){ scanError.textContent = msg; show(scanError); hide(scanSuccess); }
+    function showSuccess(msg){ scanSuccess.innerHTML = msg; show(scanSuccess); hide(scanErrorBox); }
+    function showError(msg){ scanErrorBox.textContent = msg; show(scanErrorBox); hide(scanSuccess); }
     function setCamState(text){ cameraState.textContent = text; }
 
     function beep(){
@@ -429,18 +395,16 @@ label.login-label {
         o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 120);
       } catch {}
     }
-    function vibrate(){
-      if (navigator.vibrate) navigator.vibrate(80);
-    }
+    function vibrate(){ if (navigator.vibrate) navigator.vibrate(80); }
 
-    function pushHistory(entry){
+    function pushHistory(label, status){
       const div = document.createElement("div");
       div.className = "history-item";
       div.innerHTML = `
-        <span class="tag">Scan</span>
+        <span class="tag">${status || "Scan"}</span>
         <div>
-          <div>${entry.text}</div>
-          <div class="muted">${new Date().toLocaleString()}</div>
+          <div>${label}</div>
+          <div class="subtitle">${new Date().toLocaleString()}</div>
         </div>`;
       historyList.prepend(div);
       historyCount.textContent =
@@ -451,10 +415,23 @@ label.login-label {
       historyList.innerHTML = ""; historyCount.textContent = "0 élément";
     });
 
+    // Parse JSON en sécurité (évite "Unexpected token ..." sur 500 HTML)
+    async function parseJSONSafe(res){
+      const ct = (res.headers.get("content-type") || "").toLowerCase();
+      if (ct.includes("application/json")) {
+        try { return await res.json(); } catch { /* fallback */ }
+      }
+      // fallback texte
+      const txt = await res.text();
+      try { return JSON.parse(txt); }
+      catch {
+        return { success: false, error: txt || (res.ok ? "Réponse du serveur vide." : `HTTP ${res.status}`) };
+      }
+    }
+
     // ====== Login ======
     togglePw.addEventListener("click", ()=>{
-      const t = passwordInput.type==="password" ? "text" : "password";
-      passwordInput.type = t;
+      passwordInput.type = passwordInput.type==="password" ? "text" : "password";
     });
     loginBtn.addEventListener("click", doLogin);
     passwordInput.addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
@@ -473,8 +450,8 @@ label.login-label {
             password: passwordInput.value
           })
         });
-        const data = await res.json();
-        if(!data.success) throw new Error("Mauvais identifiants");
+        const data = await parseJSONSafe(res);
+        if(!data.success) throw new Error(data.error || "Mauvais identifiants");
 
         eventId = data.event_id;
         eventTitle.textContent = "🎟️ " + data.event_title;
@@ -497,18 +474,16 @@ label.login-label {
     // ====== Camera control ======
     async function populateCameras(){
       try{
-        const devices = await Html5Qrcode.getCameras();
+        devicesCache = await Html5Qrcode.getCameras();
         cameraSelect.innerHTML = "";
-        devices.forEach((d,i)=>{
+        devicesCache.forEach((d,i)=>{
           const opt = document.createElement("option");
           opt.value = d.id; opt.textContent = d.label || ("Caméra " + (i+1));
           cameraSelect.appendChild(opt);
         });
-        // par défaut: tenter "environment" si dispo
-        if (devices.length>0) {
-          const back = devices.find(d=>/back|rear|environment/i.test(d.label));
-          if(back) cameraSelect.value = back.id;
-        }
+        // par défaut: tenter back
+        const back = devicesCache.find(d=>/back|rear|environment/i.test(d.label));
+        if(back) cameraSelect.value = back.id;
       }catch(e){
         cameraSelect.innerHTML = "<option>Caméra non disponible</option>";
       }
@@ -517,33 +492,43 @@ label.login-label {
     fpsRange.addEventListener("input", ()=> fpsVal.textContent = fpsRange.value);
     qrboxRange.addEventListener("input", ()=>{
       qrboxVal.textContent = qrboxRange.value;
-      // Ajuste l’overlay visuel
       overlayBox.style.width = Math.min(520, parseInt(qrboxRange.value,10)) + "px";
       overlayBox.style.aspectRatio = "1 / 1";
     });
 
-    btnStart.addEventListener("click", startCamera);
-    btnPause.addEventListener("click", async ()=>{
+    document.getElementById("btnStart").addEventListener("click", startCamera);
+    document.getElementById("btnPause").addEventListener("click", async ()=>{
       try { qrScanner?.pause(true); setCamState("⏸ pause"); btnPause.disabled=true; btnResume.disabled=false; } catch {}
     });
-    btnResume.addEventListener("click", async ()=>{
+    document.getElementById("btnResume").addEventListener("click", async ()=>{
       try { qrScanner?.resume(); setCamState("📷 on"); btnResume.disabled=true; btnPause.disabled=false; } catch {}
     });
-    btnStop.addEventListener("click", stopCamera);
-    btnFlip.addEventListener("click", ()=>{
-      facingUser = !facingUser;
-      cameraSelect.value = ""; // pour indiquer qu'on force facingMode
-      startCamera();
+    document.getElementById("btnStop").addEventListener("click", stopCamera);
+
+    // Flip robuste : si plusieurs devices, on passe au suivant; sinon on alterne facingMode
+    document.getElementById("btnFlip").addEventListener("click", async ()=>{
+      try {
+        if (devicesCache.length >= 2 && cameraSelect.options.length >= 2) {
+          const idx = cameraSelect.selectedIndex;
+          const next = (idx + 1) % cameraSelect.options.length;
+          cameraSelect.selectedIndex = next;
+          facingUser = /front|user/i.test(cameraSelect.options[next].textContent);
+        } else {
+          facingUser = !facingUser;
+          cameraSelect.value = ""; // force facingMode
+        }
+        await startCamera();
+      } catch {}
     });
-    btnFullscreen.addEventListener("click", ()=>{
+
+    document.getElementById("btnFullscreen").addEventListener("click", ()=>{
       const el = document.documentElement;
       if (!document.fullscreenElement) el.requestFullscreen?.();
       else document.exitFullscreen?.();
     });
 
-    btnTorch.addEventListener("click", async ()=>{
+    document.getElementById("btnTorch").addEventListener("click", async ()=>{
       try {
-        // accès au track vidéo interne
         const video = reader.querySelector("video");
         const track = video?.srcObject?.getVideoTracks?.()[0];
         const caps  = track?.getCapabilities?.();
@@ -564,11 +549,9 @@ label.login-label {
       setCamState("⏳…");
       try{
         if(!qrScanner) qrScanner = new Html5Qrcode("reader");
-
-        // Arrêter proprement si déjà en cours
         try { if (qrScanner.isScanning) await qrScanner.stop(); } catch {}
 
-        const facing = cameraSelect.value
+        const facingConstraint = cameraSelect.value
           ? { deviceId: { exact: cameraSelect.value } }
           : { facingMode: facingUser ? "user" : "environment" };
 
@@ -576,10 +559,10 @@ label.login-label {
         const box = parseInt(qrboxRange.value, 10) || 250;
 
         await qrScanner.start(
-          facing,
+          facingConstraint,
           { fps, qrbox: box },
           onScanSuccess,
-          ()=>{} // ignore errors de flux
+          ()=>{} // ignore frame errors
         );
         setCamState("📷 on");
 
@@ -587,8 +570,7 @@ label.login-label {
         const video = reader.querySelector("video");
         const track = video?.srcObject?.getVideoTracks?.()[0];
         const caps  = track?.getCapabilities?.();
-        if (caps && "torch" in caps) { btnTorch.disabled = false; } else { btnTorch.disabled = true; }
-
+        btnTorch.disabled = !(caps && "torch" in caps);
       }catch(err){
         showError("❌ Accès caméra impossible : " + (err?.message || err));
         setCamState("📷 off");
@@ -615,7 +597,8 @@ label.login-label {
       if (beepChk.checked) beep();
       if (vibrateChk.checked) vibrate();
 
-      pushHistory({ text: qrText });
+      // Historique: on stocke la chaîne brute, le nom s’ajoute après l’appel /scan
+      pushHistory(qrText, "Scan");
       handleQr(qrText);
     }
 
@@ -632,7 +615,7 @@ label.login-label {
     manualBtn.addEventListener("click", ()=>{
       const txt = manualInput.value.trim();
       if(!txt) return;
-      pushHistory({ text: txt });
+      pushHistory(txt, "Manuel");
       handleQr(txt);
     });
     manualInput.addEventListener("keydown", e=>{
@@ -646,27 +629,49 @@ label.login-label {
           method:"POST",
           body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
         });
-        const data = await res.json();
-        if(data.success){
-          participantInfo.innerHTML = `
-            <p><b>${data.participant.first_name} ${data.participant.last_name}</b></p>
-            <p>Email : ${data.participant.email}</p>
-            <p>Payé : ${data.participant.amount_paid}€</p>
-            <p>Événement : ${data.participant.event_title}</p>
-            <p>Date : ${data.participant.date}</p>
-            <p>Lieu : ${data.participant.location}</p>
-            ${data.participant.scanned ? "<p style='color:#c0392b;font-weight:600;margin-top:6px;'>⚠️ Déjà scanné</p>" : ""}
-          `;
-          checkinBtn.classList.toggle("hidden", !!data.participant.scanned);
+        const data = await parseJSONSafe(res);
+        if(data.success && data.participant){
+          const p = data.participant;
 
-          if (autoclearChk.checked && !data.participant.scanned){
-            // On laisse l'agent cliquer "Valider" — on n'efface qu'après la validation
-          } else if (autoclearChk.checked && data.participant.scanned) {
-            setTimeout(()=>{ participantInfo.innerHTML=""; }, 1800);
+          // Badge statut
+          scanBadge.textContent = p.scanned ? "Déjà scanné" : "Nouveau / prêt à valider";
+          scanBadge.className = "badge " + (p.scanned ? "warn" : "ok");
+          show(scanBadge);
+
+          // Détails
+          participantInfo.innerHTML = `
+            <p><b>${p.first_name} ${p.last_name}</b></p>
+            <p>Email : ${p.email}</p>
+            <p>Payé : ${p.amount_paid}€</p>
+            <p>Événement : ${p.event_title}</p>
+            <p>Date : ${p.date}</p>
+            <p>Lieu : ${p.location}</p>
+          `;
+
+          // Bouton check-in visible si pas encore scanné
+          if (!p.scanned) {
+            checkinBtn.classList.remove("hidden");
+          } else {
+            checkinBtn.classList.add("hidden");
+          }
+
+          // Met à jour la dernière ligne de l’historique (ajoute le nom)
+          const firstItem = historyList.querySelector(".history-item");
+          if (firstItem) {
+            const labelDiv = firstItem.querySelector("div > div:first-child");
+            if (labelDiv) labelDiv.textContent = `${p.first_name} ${p.last_name} (${p.email})`;
+            const tag = firstItem.querySelector(".tag");
+            if (tag) tag.textContent = p.scanned ? "Déjà scanné" : "Nouveau";
+          }
+
+          // Efface auto si déjà scanné (option)
+          if (autoclearChk.checked && p.scanned){
+            setTimeout(()=>{ clearMsgs(); participantInfo.innerHTML=""; }, 1800);
           }
         }else{
           participantInfo.innerHTML = "";
-          showError(data.message || "Erreur pendant le scan.");
+          const msg = data.message || data.error || "Erreur pendant le scan.";
+          showError(msg);
           checkinBtn.classList.add("hidden");
         }
       }catch(err){
@@ -682,17 +687,14 @@ label.login-label {
           method:"POST",
           body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
         });
-        const data = await res.json();
+        const data = await parseJSONSafe(res);
         if(data.success){
-          showSuccess("✅ " + data.message + "<br>Vous pouvez scanner un nouveau participant…");
+          showSuccess("✅ " + (data.message || "Check-in validé") + "<br>Vous pouvez scanner un nouveau participant…");
           checkinBtn.classList.add("hidden");
           participantInfo.innerHTML = "";
-
-          if (autoclearChk.checked){
-            setTimeout(()=>{ clearMsgs(); }, 1800);
-          }
+          if (autoclearChk.checked){ setTimeout(()=>{ clearMsgs(); }, 1800); }
         }else{
-          showError(data.message || "Validation impossible.");
+          showError(data.message || data.error || "Validation impossible.");
         }
       }catch(err){
         showError("❌ Erreur serveur : " + (err?.message || err));
@@ -701,6 +703,10 @@ label.login-label {
 
     // ====== Boot misc ======
     try { localStorage.removeItem("token"); } catch {}
+
+    // Init UI small bindings
+    fpsVal.textContent = fpsRange.value;
+    qrboxVal.textContent = qrboxRange.value;
   </script>
 </body>
 </html>
