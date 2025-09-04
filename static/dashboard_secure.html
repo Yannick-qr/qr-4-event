@@ -578,10 +578,16 @@ data.events.forEach(ev => {
     <td>${ev.max_participants || "∞"}</td>
 
     <!-- 7) Identifiants Check-in (login + mdp masqué) -->
-    <td>
-      <div><b>Login :</b> ${ev.checkin_login || "—"}</div>
-      <div><b>Pass :</b> ${ev.checkin_password ? "••••••" : "—"}</div>
-    </td>
+<td>
+  <b>Login :</b> ${ev.checkin_login || "—"}<br>
+  <b>Pass :</b> 
+  <span class="pass" id="pass-${ev.id}">••••••</span>
+  <button onclick="togglePass('${ev.id}', '${ev.checkin_password}')"
+          style="border:none;background:none;cursor:pointer;color:#007bff;">
+    👁️
+  </button>
+</td>
+
 
     <!-- 8) Login Check-in (affiché à part si tu veux le voir d’un coup d’œil) -->
     <td>${ev.checkin_login || "—"}</td>
@@ -601,13 +607,15 @@ data.events.forEach(ev => {
     </td>
 
     <!-- 11) Actions -->
-    <td>
-      <button class="action-btn edit-btn"✏️</button>
-      <button class="action-btn delete-btn">🗑️</button>
-      <button class="action-btn toggle-btn">
-        ${ev.is_active ? "Désactiver" : "Activer"}
-      </button>
-    </td>
+<!-- 11) Actions -->
+<td>
+<button class="btn btn-primary" onclick='editEvent(${JSON.stringify(ev)})'✏️ Modifier</button>
+  <button class="btn btn-danger" onclick="deleteEvent(${ev.id})">🗑️ Supprimer</button>
+  <button class="btn btn-warning" onclick="toggleEvent(${ev.id})">
+    ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
+  </button>
+</td>
+
   `;
 
   // 🔧 Brancher les actions sans inline onclick (évite les soucis de quotes)
@@ -1017,6 +1025,14 @@ const checkPaypal = setInterval(() => {
     renderPayPalButton();
   }
 }, 500);
+function togglePass(eventId, realPass) {
+  const el = document.getElementById("pass-" + eventId);
+  if (el.textContent.includes("•")) {
+    el.textContent = realPass;
+  } else {
+    el.textContent = "••••••";
+  }
+}
 </script>
 
 </body>
