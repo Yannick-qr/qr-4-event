@@ -609,7 +609,7 @@ data.events.forEach(ev => {
     <!-- 11) Actions -->
 <!-- 11) Actions -->
 <td>
-<button class="btn btn-primary" onclick='editEvent(${JSON.stringify(ev)})'✏️ Modifier</button>
+  <button class="btn btn-primary" onclick="openEditModal(${ev.id})"✏️ Modifier</button>
   <button class="btn btn-danger" onclick="deleteEvent(${ev.id})">🗑️ Supprimer</button>
   <button class="btn btn-warning" onclick="toggleEvent(${ev.id})">
     ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
@@ -686,20 +686,34 @@ async function exportCSV() {
 }
 
 // ✅ Gestion édition / suppression
-function editEvent(ev) {
-  document.getElementById("edit_id").value = ev.id;
-  document.getElementById("edit_title").value = ev.title;
-  document.getElementById("edit_description").value = ev.description;
-  document.getElementById("edit_date").value = ev.date;
-  document.getElementById("edit_location").value = ev.location;
-  document.getElementById("edit_price").value = ev.price;
-  document.getElementById("edit_max_participants").value = ev.max_participants || 100;
-  document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
-  document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
+function openEditModal(id) {
+  fetch(`/api/event/${id}`)
+    .then(r => r.json())
+    .then(data => {
+      const ev = data.event || data;
 
-  document.getElementById("editModal").style.display = "flex";
+      document.getElementById("edit_id").value = ev.id;
+      document.getElementById("edit_title").value = ev.title || "";
+      document.getElementById("edit_description").value = ev.description || "";
+      document.getElementById("edit_date").value = ev.date || "";
+      document.getElementById("edit_location").value = ev.location || "";
+      document.getElementById("edit_price").value = ev.price || 0;
+      document.getElementById("edit_max_participants").value = ev.max_participants || 100;
+      document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
+      document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
+
+      document.getElementById("editModal").style.display = "flex";
+    })
+    .catch(err => {
+      alert("❌ Impossible de charger l’événement : " + err.message);
+    });
 }
-document.getElementById("cancelEditBtn").addEventListener("click", () => document.getElementById("editModal").style.display = "none");
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+}
+document.getElementById("cancelEditBtn").addEventListener("click", closeEditModal);
+
 
 async function deleteEvent(id) {
   if (!confirm("Supprimer l’événement ?")) return;
