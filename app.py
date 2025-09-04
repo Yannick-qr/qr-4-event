@@ -18,6 +18,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+from typing import Optional, List
 import httpx
 import requests  # gardé pour /paypal/test-auth (sync) si tu veux
 import json
@@ -1287,36 +1288,41 @@ def admin_search_participants(
     if not check_token_valid(user, db):
         return {"success": False, "error": "Non autorisé"}
 
-    # 2) Base query
+    # 2) Base query (sur l'événement demandé)
     qry = db.query(Participant).filter(Participant.event_id == event_id)
 
-    # 3) Filtre texte (nom/prénom/email)
+    # 3) Filtre texte : on cherche dans name OU email
     if q:
         like = f"%{q.strip()}%"
         qry = qry.filter(
-            (Participant.first_name.ilike(like)) |
-            (Participant.last_name.ilike(like))  |
+            (Participant.name.ilike(like)) |
             (Participant.email.ilike(like))
         )
 
-    # 4) Limite soft pour l’UI
-    qry = qry.order_by(Participant.last_name.asc()).limit(50)
+    # 4) Limite soft + tri (tri par nom complet)
+    qry = qry.order_by(Participant.name.asc()).limit(50)
     rows: List[Participant] = qry.all()
 
-    # 5) Retour au format attendu par le front
+    # 5) Mapping : découper 'name' -> first_name / last_name
     results = []
     for p in rows:
+        full_name = p.name or ""
+        parts = full_name.split()
+        first_name = parts[0] if parts else ""
+        last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+
         results.append({
             "id": p.id,
-            "qr_code": p.qr_code,
-            "first_name": p.first_name,
-            "last_name": p.last_name,
+            "qr_code": getattr(p, "qr_code", None),
+            "first_name": first_name,
+            "last_name": last_name,
             "email": p.email,
-            "amount_paid": getattr(p, "amount_paid", None),
+            "amount_paid": getattr(p, "amount", None),   # aligne le nom attendu par le front
             "scanned": bool(getattr(p, "scanned", False))
         })
 
     return {"success": True, "participants": results}
+
 
 # ========================
 # ADMIN : INSCRIPTIONS PAYÉES
