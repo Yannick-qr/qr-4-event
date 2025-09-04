@@ -257,58 +257,57 @@ input {
     document.body.innerHTML = "<h2>⚠️ Aucun événement sélectionné.</h2>";
   }
 
-  // petit utilitaire pour choisir la 1re clé non vide
-  const pick = (o, ...keys) => {
-    for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k];
-    return undefined;
-  };
+  // util : renvoie la 1re clé non vide
+  const pick = (o, ...keys) => { for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k]; };
 
   async function loadEvent() {
+    const message = document.getElementById("message");
+    const setFatal = (txt) => {
+      document.getElementById("event-title").textContent = "Événement";
+      document.getElementById("event-description").textContent = "❌ Impossible de charger l’événement.";
+      if (message) message.innerHTML = `<p class="error">${txt}</p>`;
+    };
+
     try {
-      // ⚠️ certains back renvoient sur /api/event/:id, d’autres /api/event?id=...
-      const candidateUrls = [
-        `/api/event/${encodeURIComponent(eventId)}`,
-        `/api/event?id=${encodeURIComponent(eventId)}`,
-        `/event/${encodeURIComponent(eventId)}`
-      ];
+// --- Appel direct vers l'endpoint JSON officiel ---
+const resEvent = await fetch(`/api/event/${encodeURIComponent(eventId)}`, {
+  headers: { "Accept": "application/json" }
+});
+if (!resEvent.ok) {
+  setFatal(`HTTP ${resEvent.status}`);
+  return;
+}
 
-      let dataEvent = null, lastErr = null;
-      for (const url of candidateUrls) {
-        try {
-          const r = await fetch(url, { headers: { "Accept": "application/json" } });
-          if (!r.ok) { lastErr = `HTTP ${r.status} @ ${url}`; continue; }
-          dataEvent = await r.json();
-          break;
-        } catch (e) { lastErr = e.message; }
-      }
-      if (!dataEvent) throw new Error(lastErr || "Aucun endpoint JSON valide");
+const dataEvent = await resEvent.json();
+const ev = dataEvent.event || dataEvent; // sécurité si la structure varie
 
-      // ✅ NE PAS utiliser le nom réservé "event"
+
+      // Certains back renvoient { success, event }, d’autres les champs directement
       const ev = dataEvent.event || dataEvent;
 
-      // REMPLISSAGE SÛR (avec fallbacks)
-      const title = pick(ev, "title", "name") || "Événement";
-      const description = pick(ev, "description", "desc") || "Pas de description disponible.";
-      const date = pick(ev, "date", "event_date", "start_date") || "—";
-      const locationTxt = pick(ev, "location", "place", "city", "venue") || "—";
-      const price = pick(ev, "price", "amount", "price_eur") ?? 0;
-      const image = pick(ev, "image_url", "image", "cover", "banner_url");
+      // 🧩 Remplissage UI avec fallbacks
+      const title   = pick(ev, "title", "name") || "Événement";
+      const desc    = pick(ev, "description", "desc") || "Pas de description disponible.";
+      const date    = pick(ev, "date", "event_date", "start_date") || "—";
+      const place   = pick(ev, "location", "place", "city", "venue") || "—";
+      const price   = pick(ev, "price", "amount", "price_eur") ?? 0;
+      const imgUrl  = pick(ev, "image_url", "image", "cover", "banner_url");
 
       document.getElementById("event-title").textContent = title;
-      document.getElementById("event-description").textContent = description;
+      document.getElementById("event-description").textContent = desc;
       document.getElementById("event-date").textContent = date;
-      document.getElementById("event-location").textContent = locationTxt;
+      document.getElementById("event-location").textContent = place;
       document.getElementById("event-price").textContent = price;
 
       const img = document.getElementById("event-image");
-      img.src = image || "/static/img/placeholder.png";
+      img.src = imgUrl || "/static/img/placeholder.png";
       img.onerror = () => { img.src = "/static/img/placeholder.png"; };
 
-      // ----- Crédits / capacité (protégé) -----
+      // 🔒 Crédits (non bloquant)
       try {
-        const r = await fetch(`/api/license/credits?event_id=${encodeURIComponent(eventId)}`);
-        if (r.ok) {
-          const credits = await r.json();
+        const rC = await fetch(`/api/license/credits?event_id=${encodeURIComponent(eventId)}`);
+        if (rC.ok) {
+          const credits = await rC.json();
           if (typeof credits?.remaining_participant_credits === "number" &&
               credits.remaining_participant_credits <= 0) {
             document.getElementById("custom-paypal-btn").outerHTML =
@@ -316,7 +315,7 @@ input {
             return;
           }
         }
-      } catch { /* non bloquant */ }
+      } catch {}
 
       if ((ev.participants_count ?? 0) >= (ev.max_participants ?? Infinity)) {
         document.getElementById("custom-paypal-btn").outerHTML =
@@ -324,7 +323,7 @@ input {
         return;
       }
 
-      // ----- SDK PayPal (inchangé) -----
+      // 💳 PayPal
       const res = await fetch(`/api/paypal-client-id?event_id=${encodeURIComponent(eventId)}`);
       const data = await res.json();
       if (!data.client_id) return;
@@ -338,6 +337,7 @@ input {
         const msg = document.getElementById("message");
         let paypalRendered = false;
 
+        // reset si l'utilisateur modifie un champ
         ["first_name","last_name","email"].forEach(id => {
           const input = document.getElementById(id);
           if (input) input.addEventListener("input", () => { restoreBtn(); msg.innerHTML = ""; });
@@ -345,8 +345,9 @@ input {
 
         customBtn.addEventListener("click", () => {
           const firstName = document.getElementById("first_name").value.trim();
-          const lastName = document.getElementById("last_name").value.trim();
-          const email = document.getElementById("email").value.trim();
+          const lastName  = document.getElementById("last_name").value.trim();
+          const email     = document.getElementById("email").value.trim();
+
           if (!firstName || !lastName || !email) { msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>"; return; }
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>"; return; }
           if (paypalRendered) { msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>"; return; }
@@ -365,7 +366,11 @@ input {
               })
               .then(r => r.json())
               .then(order => {
-                if (!order?.id) { msg.innerHTML = "<p class='error'>❌ " + (order.message || "Impossible de créer la commande PayPal") + "</p>"; restoreBtn(); throw new Error(order.message || "createOrder"); }
+                if (!order?.id) {
+                  msg.innerHTML = "<p class='error'>❌ " + (order.message || "Impossible de créer la commande PayPal") + "</p>";
+                  restoreBtn();
+                  throw new Error(order.message || "createOrder");
+                }
                 return order.id;
               })
               .catch(err => { console.error("❌ Erreur PayPal:", err); restoreBtn(); throw err; });
@@ -378,8 +383,12 @@ input {
                   method: "POST",
                   headers: { "Content-Type": "application/x-www-form-urlencoded" },
                   body: new URLSearchParams({
-                    first_name: firstName, last_name: lastName, email,
-                    event_id: eventId, amount, transaction_id: transactionId
+                    first_name: firstName,
+                    last_name: lastName,
+                    email,
+                    event_id: eventId,
+                    amount,
+                    transaction_id: transactionId
                   })
                 })
                 .then(r => r.json())
@@ -388,13 +397,18 @@ input {
                   restoreBtn();
                   if (res.success) document.getElementById("registerForm").reset();
                 })
-                .catch(err => { console.error("❌ Enregistrement:", err); msg.innerHTML = "<p class='error'>❌ Paiement validé mais enregistrement impossible.</p>"; restoreBtn(); });
+                .catch(err => {
+                  console.error("❌ Enregistrement:", err);
+                  msg.innerHTML = "<p class='error'>❌ Paiement validé mais enregistrement impossible.</p>";
+                  restoreBtn();
+                });
               });
             },
             onError(err) { msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>"; restoreBtn(); },
-            onCancel() { msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>"; restoreBtn(); }
+            onCancel()   { msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>"; restoreBtn(); }
           }).render("#paypal-button-container");
 
+          // bouton Annuler
           document.getElementById("cancel-container").innerHTML =
             "<button id='cancel-btn' style='background:none;border:none;color:#ff4444;font-size:1.2rem;cursor:pointer;'>❌ Annuler</button>";
           document.getElementById("cancel-btn").addEventListener("click", () => {
@@ -418,16 +432,14 @@ input {
         });
       };
     } catch (e) {
-      console.error("loadEvent error:", e);
-      document.getElementById("event-title").textContent = "Événement";
-      document.getElementById("event-description").textContent = "❌ Impossible de charger l’événement.";
-      const msg = document.getElementById("message");
-      if (msg) msg.innerHTML = `<p class="error">${String(e)}</p>`;
+      console.error(e);
+      setFatal(String(e));
     }
   }
 
   loadEvent();
 </script>
+
 
 </body>
 </html>

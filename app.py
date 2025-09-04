@@ -1134,10 +1134,11 @@ def public_event(event_id: int, db: Session = Depends(get_db)):
 # API PUBLIC EVENT (JSON)
 # ========================
 @app.get("/api/event/{event_id}")
+@app.get("/api/events/{event_id}")      # ← alias facultatif
 def api_event(event_id: int, db: Session = Depends(get_db)):
     event = db.query(Event).filter(Event.id == event_id, Event.is_active == True).first()
     if not event:
-        return JSONResponse(status_code=404, content={"success": False, "message": "Événement introuvable ou inactif"})
+        raise HTTPException(status_code=404, detail="Not found")
 
     participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
 
