@@ -565,34 +565,41 @@ async function loadEvents() {
 
   const tbody = document.querySelector("#eventsTable tbody");
   tbody.innerHTML = "";
-  data.events.forEach(ev => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${ev.title}</td><td>${ev.description}</td><td>${ev.date}</td>
-      <td>${ev.location}</td>
-      <td>${ev.price} €</td>
-      <td>${ev.max_participants || "∞"}</td>
-      <td>
-        ${ev.checkin_login ? "<b>Login : </b>" + ev.checkin_login : "❌ Non défini"}<br>
-        ${ev.checkin_password ? "<b>Password : </b>" + ev.checkin_password : ""}
-      </td>
-      <td>${ev.is_active ? "✅ Actif" : "❌ Inactif"}</td>
+data.events.forEach(ev => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${ev.title}</td>
+    <td>${ev.description}</td>
+    <td>${ev.date}</td>
+    <td>${ev.location}</td>
+    <td>${ev.price} €</td>
+    <td>${ev.max_participants || "∞"}</td>
 
-              <!-- ✅ Nouvelle colonne image -->
-              <td>
-                    ${ev.image_url 
-                          ? `<img src="${ev.image_url}" style="max-height:50px; border-radius:6px;">`
-                          : "—"}
-              </td>
+    <!-- 7) Identifiant Scanner -->
+    <td>${(ev.checkin_login || ev.checkin_password) ? "✅ Défini" : "❌ Non défini"}</td>
 
-      <td><a href="${ev.public_url}" target="_blank"><button class="action-btn link-btn">🔗 Voir</button></a></td>
-      <td>
-        <button class="action-btn edit-btn" onclick='editEvent(${JSON.stringify(ev)})'>✏️</button>
-        <button class="action-btn delete-btn" onclick="deleteEvent(${ev.id})">🗑️</button>
-        <button class="action-btn toggle-btn" onclick="toggleEvent(${ev.id})">${ev.is_active ? "Désactiver" : "Activer"}</button>
-      </td>`;
-    tbody.appendChild(row);
-  });
+    <!-- 8) Login Check-in -->
+    <td>${ev.checkin_login ? ev.checkin_login : "—"}</td>
+
+    <!-- 9) Image -->
+    <td>
+      ${ev.image_url 
+        ? `<img src="${ev.image_url}" style="max-height:50px; border-radius:6px;">`
+        : "—"}
+    </td>
+
+    <!-- 10) Lien public -->
+    <td><a href="${ev.public_url}" target="_blank"><button class="action-btn link-btn">🔗 Voir</button></a></td>
+
+    <!-- 11) Actions -->
+    <td>
+      <button class="action-btn edit-btn" onclick='editEvent(${JSON.stringify(ev)})'✏️</button>
+      <button class="action-btn delete-btn" onclick="deleteEvent(${ev.id})">🗑️</button>
+      <button class="action-btn toggle-btn" onclick="toggleEvent(${ev.id})">${ev.is_active ? "Désactiver" : "Activer"}</button>
+    </td>
+  `;
+  tbody.appendChild(row);
+});
 
   document.getElementById("totalEvents").textContent = data.events.length;
   document.getElementById("activeEvents").textContent = data.events.filter(e => e.is_active).length;
