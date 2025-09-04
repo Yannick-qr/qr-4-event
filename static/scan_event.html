@@ -1,198 +1,706 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scan Event</title>
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f6fa;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scan Event - Check-in</title>
+  <style>
+    /* ===== Base & Background (aligné avec tes pages login/reset) ===== */
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: url("https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/login.webp")
+                 center/cover no-repeat fixed;
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; margin: 0; padding: 20px;
+    }
+
+    :root { --field-width: 94%; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* ===== Card ===== */
+    .card {
+      width: 100%; max-width: 980px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      animation: fadeIn .6s ease-in-out;
+      overflow: hidden;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    .card-header {
+      display:flex; align-items:center; gap:12px;
+      padding:16px 20px; border-bottom:1px solid #eee;
+    }
+    .card-header img { width:42px; height:42px; object-fit:contain }
+    .card-header h1 { margin:0; font-size:1.25rem; color:#2c3e50 }
+    .subtitle { color:#566573; font-weight:400; font-size:.95em }
+
+    .card-body {
+      display:grid; gap:18px;
+      grid-template-columns: 1.05fr .95fr;
+      padding:18px;
+    }
+    @media (max-width: 900px){
+      .card-body { grid-template-columns: 1fr; }
+    }
+
+    /* ===== Panel gauche (vidéo + overlay + menu) ===== */
+    .video-wrap {
+      background:#fff; border-radius:14px; padding:12px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    #reader {
+      position: relative;
+      border-radius:12px; overflow:hidden;
+      background:#000;
+    }
+    /* Overlay “cadre” */
+    .qr-overlay {
+      pointer-events:none; position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .qr-box {
+      position:relative; width:80%; max-width:520px; aspect-ratio:1 / 1; border-radius:16px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.9);
+    }
+    .qr-corner { position:absolute; width:34px; height:34px; border:4px solid #00b894; }
+    .qr-corner.tl { top:-2px; left:-2px; border-right:none; border-bottom:none; border-top-left-radius:12px }
+    .qr-corner.tr { top:-2px; right:-2px; border-left:none; border-bottom:none; border-top-right-radius:12px }
+    .qr-corner.bl { bottom:-2px; left:-2px; border-right:none; border-top:none; border-bottom-left-radius:12px }
+    .qr-corner.br { bottom:-2px; right:-2px; border-left:none; border-top:none; border-bottom-right-radius:12px }
+
+    .controls {
+      margin-top:12px; display:grid; gap:10px;
+      grid-template-columns: 1fr 1fr; align-items:end;
+    }
+    @media (max-width: 520px){
+      .controls { grid-template-columns: 1fr; }
+    }
+    .control-group {
+      background:#f7f9fb; border:1px solid #eef2f5; border-radius:12px; padding:10px;
+    }
+    .control-group h4 { margin:0 0 8px; font-size:.95rem; color:#2c3e50 }
+    .row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .row:last-child{ margin-bottom:0 }
+    select, input[type="number"], input[type="text"] {
+      width:100%; padding:10px 12px; border:1px solid #ccc; border-radius:10px; font-size:.95em; background:#fff;
+    }
+    input[type="range"] { width:100% }
+
+    .btn {
+      appearance:none; border:none; border-radius:12px; padding:12px 16px;
+      font-weight:700; cursor:pointer; transition:transform .2s, box-shadow .2s;
+      background:linear-gradient(135deg,#007bff,#3498db,#e91e63); background-size:200% 200%; color:#fff;
+      animation: gradientMove 5s ease infinite; text-align:center;
+    }
+    @keyframes gradientMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .btn:hover { transform: translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,.15) }
+    .btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; transform:none }
+    .btn-outline {
+      background:#fff; color:#2c3e50; border:1px solid #cfd9e3; animation:none; font-weight:600;
+    }
+
+    .chip {
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+      background:#eef6ff; color:#1f5fbf; border-radius:999px; font-size:.85rem; font-weight:600;
+    }
+
+    /* ===== Panel droite (infos + historique) ===== */
+    .panel {
+      display:grid; gap:14px;
+    }
+    .box {
+      background:#fff; border-radius:14px; padding:14px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    .box h3 { margin:0 0 8px; color:#2c3e50 }
+    .info, .error-box, .success-box {
+      padding:12px; border-radius:10px; margin:8px 0; font-size:.95em; display:none;
+      text-align:left;
+    }
+    .info       { background:#fff8e5; color:#8a6d3b; border:1px solid #ffecb5; }
+    .error-box  { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; display:none }
+    .success-box{ background:#d4edda; color:#155724; border:1px solid #c3e6cb; display:none }
+
+    .participant {
+      line-height:1.55; color:#2c3e50; font-size:.95em;
+    }
+
+    .history { max-height:240px; overflow:auto; border:1px solid #eef2f5; border-radius:10px; }
+    .history-item {
+      padding:10px 12px; border-bottom:1px dashed #e7edf3; display:flex; gap:10px; align-items:flex-start;
+    }
+    .history-item:last-child{ border-bottom:none }
+    .tag { font-size:.75rem; padding:3px 8px; border-radius:999px; background:#f1f5f9; color:#475569; }
+    .muted { color:#6c7a89; font-size:.85em }
+
+    .hidden { display:none !important }
+    /* —— Champs de formulaire harmonisés (comme pages login/reset) —— */
+:root { --field-width: 94%; }
+
+/* reset cohérent */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* label + wrapper centrés à la même largeur */
+label.login-label {
+  display: block;
+  width: var(--field-width);
+  margin: 12px auto 6px;
+  text-align: left;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 0.95em;
 }
 
-.container {
-  background: white;
-  padding: 25px;   /* même que login */
+.input-wrap {
+  position: relative;
+  width: var(--field-width);
+  margin: 0 auto 12px;
+}
+
+/* input harmonisés */
+.input-wrap input {
+  width: 100%;
+  padding: 12px 42px 12px 12px;
+  border: 1px solid #ccc;
   border-radius: 10px;
-  box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-  width: 90%;          /* largeur flexible */
-  max-width: 350px;    /* limite sur PC */
-  text-align: center;
-  box-sizing: border-box;
+  font-size: 0.95em;
+  transition: all 0.25s ease;
+  background: #fff;
+  color: #2c3e50;
 }
 
-.container img {
-  width: 120px;
-  height: auto;
-  margin-bottom: 15px;
+/* focus bleu + halo */
+.input-wrap input:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52,152,219,0.25);
+  outline: none;
 }
 
-
-h2 {
-  color: #007bff;
-  margin-bottom: 20px;
+/* placeholder plus doux */
+.input-wrap input::placeholder {
+  color: #94a3b8;
 }
 
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-sizing: border-box;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
+/* bouton œil (même style que la page mot de passe) */
+.toggle-visibility {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
   border: none;
-  border-radius: 6px;
-  font-size: 15px;
   cursor: pointer;
-  transition: background 0.3s;
-  box-sizing: border-box;
+  font-size: 0.95em;
+  color: #2c3e50;
+  opacity: 0.8;
+  line-height: 1;
 }
 
-button:hover {
-  background: #0056b3;
+/* état erreur (optionnel) */
+.input-error input {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231,76,60,0.2);
 }
 
-.success { color: green; font-weight: bold; }
-.error { color: red; font-weight: bold; }
-#reader { width: 100%; max-width: 400px; margin: 20px auto; }
+/* autofill Chrome (évite le jaune) */
+.input-wrap input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #fff inset;
+  -webkit-text-fill-color: #2c3e50;
+  transition: background-color 5000s ease-in-out 0s;
+}
 
-</style>
+  </style>
 </head>
 <body>
-<div class="container" id="loginBox">
-  <!-- Logo -->
-  <img src="/static/img/scanevent-logo.png" alt="Scan Event Logo">
-  
-  <!-- Titre -->
-  <h2>Connexion Check-in</h2>
+  <div class="card" id="app">
+    <div class="card-header">
+      <img src="/static/img/scanevent-logo.png" alt="Scan Event" />
+      <div>
+        <h1>Scan Event – Check-in</h1>
+        <div class="subtitle" id="headerSubtitle">Identifiez-vous pour lancer le scanner</div>
+      </div>
+      <div style="margin-left:auto" class="chip" id="cameraState">📷 off</div>
+    </div>
 
-  <!-- Formulaire -->
-  <input id="login" placeholder="Login">
-  <input id="password" type="password" placeholder="Mot de passe">
-  <button onclick="login()">Se connecter</button>
-  <p id="loginMessage"></p>
+    <div class="card-body" id="loginSection">
+      <!-- ===== Connexion ===== -->
+      <div class="video-wrap">
+        <h3>Connexion Check-in</h3>
+        <div class="info" id="loginTip" style="display:block">💡 Utilisez la caméra arrière pour une lecture plus rapide.</div>
+        <div class="error-box" id="loginError"></div>
+
+<label for="loginInput" class="login-label">Login</label>
+<div class="input-wrap">
+  <input id="loginInput" type="text" placeholder="email ou identifiant" autocomplete="username" />
 </div>
 
+<label for="passwordInput" class="login-label">Mot de passe</label>
+<div class="input-wrap">
+  <input id="passwordInput" type="password" placeholder="••••••••" autocomplete="current-password" />
+  <button type="button" class="toggle-visibility" id="togglePw" aria-label="Afficher/Masquer">👁️</button>
+</div>
+        
+        <button class="btn" id="loginBtn">Se connecter</button>
+      </div>
 
-  <div class="box" id="scanBox" style="display:none;">
-    <h2 id="eventTitle"></h2>
-    <div id="reader"></div> <!-- 📷 zone caméra -->
-    <div id="participantInfo"></div>
-    <button id="checkinBtn" style="display:none;" onclick="validate()">✅ Check-in</button>
+      <div class="panel">
+        <div class="box">
+          <h3>Aide</h3>
+          <p class="muted">Vos identifiants sont fournis depuis le Dashboard QR Event. Après connexion, vous pourrez choisir la caméra, régler la zone de scan, activer le flash (quand supporté), mettre en pause, etc.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Scanner + Infos ===== -->
+    <div class="card-body hidden" id="scanSection">
+      <div class="video-wrap">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <h3 id="eventTitle">🎟️ Événement</h3>
+          <span class="tag" id="eventInfoTag">—</span>
+        </div>
+
+        <!-- Lecteur -->
+        <div id="reader">
+          <div class="qr-overlay">
+            <div class="qr-box" id="overlayBox">
+              <span class="qr-corner tl"></span>
+              <span class="qr-corner tr"></span>
+              <span class="qr-corner bl"></span>
+              <span class="qr-corner br"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Caméra -->
+        <div class="controls">
+          <div class="control-group">
+            <h4>Caméra & Qualité</h4>
+            <div class="row">
+              <select id="cameraSelect"></select>
+            </div>
+            <div class="row">
+              <label class="muted" for="fpsRange" style="width:120px">FPS</label>
+              <input id="fpsRange" type="range" min="5" max="30" step="1" value="10">
+              <span id="fpsVal" style="width:40px;text-align:right">10</span>
+            </div>
+            <div class="row">
+              <label class="muted" for="qrboxRange" style="width:120px">Zone (px)</label>
+              <input id="qrboxRange" type="range" min="180" max="380" step="10" value="250">
+              <span id="qrboxVal" style="width:40px;text-align:right">250</span>
+            </div>
+            <div class="row">
+              <button class="btn-outline" id="btnFlip">↻ Inverser</button>
+              <button class="btn-outline" id="btnTorch" disabled>🔦 Flash</button>
+              <button class="btn-outline" id="btnFullscreen">⛶ Plein écran</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <h4>Actions</h4>
+            <div class="row">
+              <button class="btn" id="btnStart">▶ Démarrer</button>
+              <button class="btn-outline" id="btnPause" disabled>⏸ Pause</button>
+              <button class="btn-outline" id="btnResume" disabled>▶ Reprendre</button>
+              <button class="btn-outline" id="btnStop" disabled>⏹ Stop</button>
+            </div>
+            <div class="row" style="gap:14px">
+              <label><input type="checkbox" id="beepChk" checked> Bip au scan</label>
+              <label><input type="checkbox" id="vibrateChk" checked> Vibration</label>
+              <label><input type="checkbox" id="autoclearChk" checked> Effacer auto (1.8s)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panneau droit -->
+      <div class="panel">
+        <div class="box">
+          <h3>Résultats / Messages</h3>
+          <div id="scanSuccess" class="success-box"></div>
+          <div id="scanError" class="error-box"></div>
+
+          <div class="participant" id="participantInfo"></div>
+          <button id="checkinBtn" class="btn hidden" style="margin-top:10px">✅ Valider le check-in</button>
+        </div>
+
+        <div class="box">
+          <h3>Scan manuel</h3>
+          <div class="row">
+            <input id="manualInput" type="text" placeholder="Coller un QR/ID participant…">
+            <button class="btn-outline" id="manualBtn">Scanner</button>
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>Historique</h3>
+          <div class="history" id="historyList"></div>
+          <div class="row" style="justify-content:space-between; margin-top:10px">
+            <span class="muted" id="historyCount">0 élément</span>
+            <button class="btn-outline" id="clearHistory">Effacer</button>
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>Liens utiles</h3>
+          <div class="row">
+            <a class="btn-outline" href="/static/login.html" style="text-decoration:none; display:inline-block; text-align:center">⬅ Retour à la connexion</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- 📦 Librairie scanner QR -->
+  <!-- Scanner -->
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script>
+    // ====== State ======
     let eventId = null;
     let participantId = null;
     let qrScanner = null;
     let lastScanTime = 0;
+    let lastTorch = false;
+    let facingUser = false;
 
-    // ✅ Login check-in
-    async function login() {
-      const res = await fetch("/checkin/login", {
-        method:"POST",
-        body:new URLSearchParams({
-          login: document.getElementById("login").value,
-          password: document.getElementById("password").value
-        })
-      });
-      const data = await res.json();
-      if(data.success){
-        eventId = data.event_id;
-        document.getElementById("eventTitle").textContent = "🎟️ " + data.event_title;
-        document.getElementById("loginBox").style.display="none";
-        document.getElementById("scanBox").style.display="block";
+    // ====== UI refs ======
+    const loginSection   = document.getElementById("loginSection");
+    const scanSection    = document.getElementById("scanSection");
+    const loginBtn       = document.getElementById("loginBtn");
+    const loginError     = document.getElementById("loginError");
+    const loginInput     = document.getElementById("loginInput");
+    const passwordInput  = document.getElementById("passwordInput");
+    const togglePw       = document.getElementById("togglePw");
+    const headerSubtitle = document.getElementById("headerSubtitle");
+    const cameraState    = document.getElementById("cameraState");
+    const eventTitle     = document.getElementById("eventTitle");
+    const eventInfoTag   = document.getElementById("eventInfoTag");
 
-        // 🚀 Lancer caméra
-        qrScanner = new Html5Qrcode("reader");
-        qrScanner.start(
-          { facingMode: "environment" }, // caméra arrière si dispo
-          { fps: 10, qrbox: 250 },
-          qrCodeMessage => {
-            const now = Date.now();
-            // éviter double scan du même code trop vite
-            if (now - lastScanTime < 2000) return; 
-            lastScanTime = now;
-            handleQr(qrCodeMessage);
-          },
-          errorMessage => {}
-        ).catch(err => {
-          console.error("Erreur caméra:", err);
-          document.getElementById("participantInfo").innerHTML = "<p class='error'>❌ Impossible d’accéder à la caméra</p>";
+    const reader         = document.getElementById("reader");
+    const overlayBox     = document.getElementById("overlayBox");
+
+    const cameraSelect   = document.getElementById("cameraSelect");
+    const fpsRange       = document.getElementById("fpsRange");
+    const fpsVal         = document.getElementById("fpsVal");
+    const qrboxRange     = document.getElementById("qrboxRange");
+    const qrboxVal       = document.getElementById("qrboxVal");
+
+    const btnStart       = document.getElementById("btnStart");
+    const btnPause       = document.getElementById("btnPause");
+    const btnResume      = document.getElementById("btnResume");
+    const btnStop        = document.getElementById("btnStop");
+    const btnFlip        = document.getElementById("btnFlip");
+    const btnTorch       = document.getElementById("btnTorch");
+    const btnFullscreen  = document.getElementById("btnFullscreen");
+
+    const scanSuccess    = document.getElementById("scanSuccess");
+    const scanError      = document.getElementById("scanError");
+    const participantInfo= document.getElementById("participantInfo");
+    const checkinBtn     = document.getElementById("checkinBtn");
+
+    const manualInput    = document.getElementById("manualInput");
+    const manualBtn      = document.getElementById("manualBtn");
+
+    const historyList    = document.getElementById("historyList");
+    const historyCount   = document.getElementById("historyCount");
+    const clearHistory   = document.getElementById("clearHistory");
+
+    const beepChk        = document.getElementById("beepChk");
+    const vibrateChk     = document.getElementById("vibrateChk");
+    const autoclearChk   = document.getElementById("autoclearChk");
+
+    // ====== Helpers UI ======
+    function show(el){ el.style.display = "block"; }
+    function hide(el){ el.style.display = "none"; }
+    function clearMsgs(){
+      hide(scanSuccess); hide(scanError);
+      scanSuccess.innerHTML = ""; scanError.textContent = "";
+    }
+    function showSuccess(msg){ scanSuccess.innerHTML = msg; show(scanSuccess); hide(scanError); }
+    function showError(msg){ scanError.textContent = msg; show(scanError); hide(scanSuccess); }
+    function setCamState(text){ cameraState.textContent = text; }
+
+    function beep(){
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = "sine"; o.frequency.value = 880; g.gain.value = 0.05;
+        o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 120);
+      } catch {}
+    }
+    function vibrate(){
+      if (navigator.vibrate) navigator.vibrate(80);
+    }
+
+    function pushHistory(entry){
+      const div = document.createElement("div");
+      div.className = "history-item";
+      div.innerHTML = `
+        <span class="tag">Scan</span>
+        <div>
+          <div>${entry.text}</div>
+          <div class="muted">${new Date().toLocaleString()}</div>
+        </div>`;
+      historyList.prepend(div);
+      historyCount.textContent =
+        historyList.childElementCount + " élément" + (historyList.childElementCount>1?"s":"");
+    }
+
+    clearHistory.addEventListener("click", ()=>{
+      historyList.innerHTML = ""; historyCount.textContent = "0 élément";
+    });
+
+    // ====== Login ======
+    togglePw.addEventListener("click", ()=>{
+      const t = passwordInput.type==="password" ? "text" : "password";
+      passwordInput.type = t;
+    });
+    loginBtn.addEventListener("click", doLogin);
+    passwordInput.addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+    function clearLoginError(){ hide(loginError); loginError.textContent = ""; }
+    loginInput.addEventListener("input", clearLoginError);
+    passwordInput.addEventListener("input", clearLoginError);
+
+    async function doLogin(){
+      clearLoginError();
+      loginBtn.disabled = true; loginBtn.textContent = "Connexion…";
+      try{
+        const res = await fetch("/checkin/login", {
+          method:"POST",
+          body:new URLSearchParams({
+            login: loginInput.value.trim(),
+            password: passwordInput.value
+          })
         });
-      } else {
-        document.getElementById("loginMessage").textContent="❌ Mauvais identifiants";
+        const data = await res.json();
+        if(!data.success) throw new Error("Mauvais identifiants");
+
+        eventId = data.event_id;
+        eventTitle.textContent = "🎟️ " + data.event_title;
+        eventInfoTag.textContent = "ID: " + eventId;
+        headerSubtitle.textContent = "Scanner actif pour « " + data.event_title + " »";
+
+        loginSection.classList.add("hidden");
+        scanSection.classList.remove("hidden");
+
+        await populateCameras();
+        await startCamera();
+      }catch(err){
+        loginError.textContent = "❌ " + (err?.message || "Erreur serveur");
+        show(loginError);
+      }finally{
+        loginBtn.disabled = false; loginBtn.textContent = "Se connecter";
       }
     }
 
-    // ✅ Extraire participant=XX depuis QR
-    function handleQr(qrInput) {
+    // ====== Camera control ======
+    async function populateCameras(){
+      try{
+        const devices = await Html5Qrcode.getCameras();
+        cameraSelect.innerHTML = "";
+        devices.forEach((d,i)=>{
+          const opt = document.createElement("option");
+          opt.value = d.id; opt.textContent = d.label || ("Caméra " + (i+1));
+          cameraSelect.appendChild(opt);
+        });
+        // par défaut: tenter "environment" si dispo
+        if (devices.length>0) {
+          const back = devices.find(d=>/back|rear|environment/i.test(d.label));
+          if(back) cameraSelect.value = back.id;
+        }
+      }catch(e){
+        cameraSelect.innerHTML = "<option>Caméra non disponible</option>";
+      }
+    }
+
+    fpsRange.addEventListener("input", ()=> fpsVal.textContent = fpsRange.value);
+    qrboxRange.addEventListener("input", ()=>{
+      qrboxVal.textContent = qrboxRange.value;
+      // Ajuste l’overlay visuel
+      overlayBox.style.width = Math.min(520, parseInt(qrboxRange.value,10)) + "px";
+      overlayBox.style.aspectRatio = "1 / 1";
+    });
+
+    btnStart.addEventListener("click", startCamera);
+    btnPause.addEventListener("click", async ()=>{
+      try { qrScanner?.pause(true); setCamState("⏸ pause"); btnPause.disabled=true; btnResume.disabled=false; } catch {}
+    });
+    btnResume.addEventListener("click", async ()=>{
+      try { qrScanner?.resume(); setCamState("📷 on"); btnResume.disabled=true; btnPause.disabled=false; } catch {}
+    });
+    btnStop.addEventListener("click", stopCamera);
+    btnFlip.addEventListener("click", ()=>{
+      facingUser = !facingUser;
+      cameraSelect.value = ""; // pour indiquer qu'on force facingMode
+      startCamera();
+    });
+    btnFullscreen.addEventListener("click", ()=>{
+      const el = document.documentElement;
+      if (!document.fullscreenElement) el.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    });
+
+    btnTorch.addEventListener("click", async ()=>{
       try {
-        let url = new URL(qrInput);
+        // accès au track vidéo interne
+        const video = reader.querySelector("video");
+        const track = video?.srcObject?.getVideoTracks?.()[0];
+        const caps  = track?.getCapabilities?.();
+        if (caps && "torch" in caps) {
+          lastTorch = !lastTorch;
+          await track.applyConstraints({ advanced:[{ torch: lastTorch }] });
+          btnTorch.textContent = lastTorch ? "🔦 Flash (ON)" : "🔦 Flash";
+        }
+      } catch {}
+    });
+
+    async function startCamera(){
+      clearMsgs();
+      btnStart.disabled = true;
+      btnStop.disabled = false;
+      btnPause.disabled = false;
+      btnResume.disabled = true;
+      setCamState("⏳…");
+      try{
+        if(!qrScanner) qrScanner = new Html5Qrcode("reader");
+
+        // Arrêter proprement si déjà en cours
+        try { if (qrScanner.isScanning) await qrScanner.stop(); } catch {}
+
+        const facing = cameraSelect.value
+          ? { deviceId: { exact: cameraSelect.value } }
+          : { facingMode: facingUser ? "user" : "environment" };
+
+        const fps = parseInt(fpsRange.value, 10) || 10;
+        const box = parseInt(qrboxRange.value, 10) || 250;
+
+        await qrScanner.start(
+          facing,
+          { fps, qrbox: box },
+          onScanSuccess,
+          ()=>{} // ignore errors de flux
+        );
+        setCamState("📷 on");
+
+        // Torch support ?
+        const video = reader.querySelector("video");
+        const track = video?.srcObject?.getVideoTracks?.()[0];
+        const caps  = track?.getCapabilities?.();
+        if (caps && "torch" in caps) { btnTorch.disabled = false; } else { btnTorch.disabled = true; }
+
+      }catch(err){
+        showError("❌ Accès caméra impossible : " + (err?.message || err));
+        setCamState("📷 off");
+        btnStop.disabled = true; btnPause.disabled=true; btnResume.disabled=true;
+      }finally{
+        btnStart.disabled = false;
+      }
+    }
+
+    async function stopCamera(){
+      try{
+        if(qrScanner && qrScanner.isScanning){ await qrScanner.stop(); }
+        setCamState("📷 off");
+        btnStop.disabled = true; btnPause.disabled=true; btnResume.disabled=true;
+      }catch{}
+    }
+
+    // ====== Scan handlers ======
+    function onScanSuccess(qrText){
+      const now = Date.now();
+      if (now - lastScanTime < 900) return; // anti double scan
+      lastScanTime = now;
+
+      if (beepChk.checked) beep();
+      if (vibrateChk.checked) vibrate();
+
+      pushHistory({ text: qrText });
+      handleQr(qrText);
+    }
+
+    function handleQr(qrInput){
+      try {
+        const url = new URL(qrInput);
         participantId = url.searchParams.get("participant");
       } catch {
-        participantId = qrInput; // si QR = juste l’ID
+        participantId = qrInput; // ID brut
       }
-      if (participantId) scan();
+      if (participantId) doScan();
     }
 
-    // ✅ Scan infos participant
-    async function scan() {
-      const res = await fetch("/checkin/scan", {
-        method:"POST",
-        body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
-      });
-      const data = await res.json();
-      if(data.success){
-        document.getElementById("participantInfo").innerHTML =
-          `<p><b>${data.participant.first_name} ${data.participant.last_name}</b></p>
-           <p>Email: ${data.participant.email}</p>
-           <p>Payé: ${data.participant.amount_paid}€</p>
-           <p>Événement: ${data.participant.event_title}</p>
-           <p>Date: ${data.participant.date}</p>
-           <p>Lieu: ${data.participant.location}</p>
-           ${data.participant.scanned ? "<p class='error'>⚠️ Déjà scanné</p>" : ""}`;
-        document.getElementById("checkinBtn").style.display = data.participant.scanned ? "none" : "block";
-      } else {
-        document.getElementById("participantInfo").innerHTML = `<p class="error">${data.message}</p>`;
-        document.getElementById("checkinBtn").style.display="none";
+    manualBtn.addEventListener("click", ()=>{
+      const txt = manualInput.value.trim();
+      if(!txt) return;
+      pushHistory({ text: txt });
+      handleQr(txt);
+    });
+    manualInput.addEventListener("keydown", e=>{
+      if(e.key==="Enter"){ e.preventDefault(); manualBtn.click(); }
+    });
+
+    async function doScan(){
+      clearMsgs();
+      try{
+        const res = await fetch("/checkin/scan", {
+          method:"POST",
+          body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
+        });
+        const data = await res.json();
+        if(data.success){
+          participantInfo.innerHTML = `
+            <p><b>${data.participant.first_name} ${data.participant.last_name}</b></p>
+            <p>Email : ${data.participant.email}</p>
+            <p>Payé : ${data.participant.amount_paid}€</p>
+            <p>Événement : ${data.participant.event_title}</p>
+            <p>Date : ${data.participant.date}</p>
+            <p>Lieu : ${data.participant.location}</p>
+            ${data.participant.scanned ? "<p style='color:#c0392b;font-weight:600;margin-top:6px;'>⚠️ Déjà scanné</p>" : ""}
+          `;
+          checkinBtn.classList.toggle("hidden", !!data.participant.scanned);
+
+          if (autoclearChk.checked && !data.participant.scanned){
+            // On laisse l'agent cliquer "Valider" — on n'efface qu'après la validation
+          } else if (autoclearChk.checked && data.participant.scanned) {
+            setTimeout(()=>{ participantInfo.innerHTML=""; }, 1800);
+          }
+        }else{
+          participantInfo.innerHTML = "";
+          showError(data.message || "Erreur pendant le scan.");
+          checkinBtn.classList.add("hidden");
+        }
+      }catch(err){
+        showError("❌ Erreur serveur : " + (err?.message || err));
       }
     }
 
-    // ✅ Validation check-in
-    async function validate() {
-      const res = await fetch("/checkin/validate", {
-        method:"POST",
-        body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
-      });
-      const data = await res.json();
-      if(data.success){
-        document.getElementById("participantInfo").innerHTML = `<p class="success">✅ ${data.message}. Scanner un nouveau participant...</p>`;
-        document.getElementById("checkinBtn").style.display="none";
+    checkinBtn.addEventListener("click", validateCheckin);
+    async function validateCheckin(){
+      clearMsgs();
+      try{
+        const res = await fetch("/checkin/validate", {
+          method:"POST",
+          body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
+        });
+        const data = await res.json();
+        if(data.success){
+          showSuccess("✅ " + data.message + "<br>Vous pouvez scanner un nouveau participant…");
+          checkinBtn.classList.add("hidden");
+          participantInfo.innerHTML = "";
 
-        // 🔁 Attendre 2s puis vider pour le suivant
-        setTimeout(() => {
-          document.getElementById("participantInfo").innerHTML = "";
-        }, 2000);
-
-      } else {
-        document.getElementById("participantInfo").innerHTML = `<p class="error">${data.message}</p>`;
+          if (autoclearChk.checked){
+            setTimeout(()=>{ clearMsgs(); }, 1800);
+          }
+        }else{
+          showError(data.message || "Validation impossible.");
+        }
+      }catch(err){
+        showError("❌ Erreur serveur : " + (err?.message || err));
       }
     }
+
+    // ====== Boot misc ======
+    try { localStorage.removeItem("token"); } catch {}
   </script>
 </body>
 </html>
