@@ -171,7 +171,63 @@
       background: transparent; border: none; cursor: pointer; font-size: 0.95em; color: #2c3e50; opacity: 0.8;
     }
 
+    /* ====== Recherche participants ====== */
+    .search-wrap { display:grid; gap:10px; }
+    .search-meta { display:flex; justify-content:space-between; align-items:center; font-size:.9em; color:#566573 }
+    .results {
+      border:1px solid #eef2f5; border-radius:10px; overflow:hidden; max-height:260px; overflow:auto;
+    }
+    .result-item {
+      display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center;
+      padding:10px 12px; border-bottom:1px dashed #e7edf3;
+    }
+    .result-item:last-child { border-bottom:none; }
+    .result-name { font-weight:700; color:#2c3e50 }
+    .result-sub { font-size:.88em; color:#6b7c93 }
+    .pill {
+      display:inline-block; padding:4px 8px; border-radius:999px; font-size:.75em; font-weight:700;
+      background:#f1f5f9; color:#475569; margin-left:6px;
+    }
+    .result-actions { display:flex; gap:8px; }
+    .muted { opacity:.7 }
+
     .hidden { display:none !important }
+/* ====== Résultats en tableau ====== */
+.results.table-wrap {
+  border: 1px solid #eef2f5;
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: 260px;
+  overflow: auto;
+}
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px; /* évite des casses sur petits écrans */
+}
+.results-table th, .results-table td {
+  padding: 10px 12px;
+  border-bottom: 1px dashed #e7edf3;
+  text-align: left;
+  font-size: 0.95em;
+}
+.results-table th {
+  background: #f8fafc;
+  position: sticky; top: 0; z-index: 1;
+}
+.results-table tr:hover td { background: #f9fbff; }
+.stat-dot {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 600;
+}
+.stat-dot i {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block;
+}
+.stat-ok i { background: #2ecc71; }
+.stat-no i { background: #e74c3c; }
+.actions-cell { display: flex; gap: 8px; }
+
   </style>
 </head>
 <body>
@@ -287,11 +343,16 @@
           <button id="checkinBtn" class="btn hidden" style="margin-top:10px">✅ Valider le check-in</button>
         </div>
 
+        <!-- ===== Recherche participant (remplace l'ancien "Scan manuel") ===== -->
         <div class="box">
-          <h3>Scan manuel</h3>
-          <div class="row">
-            <input id="manualInput" type="text" placeholder="Coller un QR/ID participant…">
-            <button class="btn-outline" id="manualBtn">Scanner</button>
+          <h3>Recherche participant</h3>
+          <div class="search-wrap">
+            <input id="searchInput" type="text" placeholder="🔍 Rechercher par nom ou prénom…" autocomplete="off" />
+            <div class="search-meta">
+              <span class="subtitle" id="searchHint">Tapez au moins 2 caractères</span>
+              <span class="subtitle" id="searchCount">0 résultat</span>
+            </div>
+            <div class="results" id="searchResults"></div>
           </div>
         </div>
 
@@ -338,7 +399,7 @@
     const cameraState    = document.getElementById("cameraState");
     const eventTitle     = document.getElementById("eventTitle");
     const eventInfoTag   = document.getElementById("eventInfoTag");
-
+/admin/events/participants
     const reader         = document.getElementById("reader");
     const overlayBox     = document.getElementById("overlayBox");
 
@@ -362,8 +423,11 @@
     const participantInfo= document.getElementById("participantInfo");
     const checkinBtn     = document.getElementById("checkinBtn");
 
-    const manualInput    = document.getElementById("manualInput");
-    const manualBtn      = document.getElementById("manualBtn");
+    // Recherche
+    const searchInput    = document.getElementById("searchInput");
+    const searchResults  = document.getElementById("searchResults");
+    const searchCount    = document.getElementById("searchCount");
+    const searchHint     = document.getElementById("searchHint");
 
     const historyList    = document.getElementById("historyList");
     const historyCount   = document.getElementById("historyCount");
@@ -372,6 +436,8 @@
     const beepChk        = document.getElementById("beepChk");
     const vibrateChk     = document.getElementById("vibrateChk");
     const autoclearChk   = document.getElementById("autoclearChk");
+    const adminToken = localStorage.getItem("token"); // token admin déjà posé par le dashboard
+
 
     // ====== Helpers UI ======
     function show(el){ el.style.display = "block"; }
@@ -421,7 +487,6 @@
       if (ct.includes("application/json")) {
         try { return await res.json(); } catch { /* fallback */ }
       }
-      // fallback texte
       const txt = await res.text();
       try { return JSON.parse(txt); }
       catch {
@@ -430,9 +495,7 @@
     }
 
     // ====== Login ======
-    togglePw.addEventListener("click", ()=>{
-      passwordInput.type = passwordInput.type==="password" ? "text" : "password";
-    });
+    togglePw.addEventListener("click", ()=>{ passwordInput.type = passwordInput.type==="password" ? "text" : "password"; });
     loginBtn.addEventListener("click", doLogin);
     passwordInput.addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
     function clearLoginError(){ hide(loginError); loginError.textContent = ""; }
@@ -481,7 +544,6 @@
           opt.value = d.id; opt.textContent = d.label || ("Caméra " + (i+1));
           cameraSelect.appendChild(opt);
         });
-        // par défaut: tenter back
         const back = devicesCache.find(d=>/back|rear|environment/i.test(d.label));
         if(back) cameraSelect.value = back.id;
       }catch(e){
@@ -505,7 +567,6 @@
     });
     document.getElementById("btnStop").addEventListener("click", stopCamera);
 
-    // Flip robuste : si plusieurs devices, on passe au suivant; sinon on alterne facingMode
     document.getElementById("btnFlip").addEventListener("click", async ()=>{
       try {
         if (devicesCache.length >= 2 && cameraSelect.options.length >= 2) {
@@ -566,7 +627,6 @@
         );
         setCamState("📷 on");
 
-        // Torch support ?
         const video = reader.querySelector("video");
         const track = video?.srcObject?.getVideoTracks?.()[0];
         const caps  = track?.getCapabilities?.();
@@ -597,7 +657,6 @@
       if (beepChk.checked) beep();
       if (vibrateChk.checked) vibrate();
 
-      // Historique: on stocke la chaîne brute, le nom s’ajoute après l’appel /scan
       pushHistory(qrText, "Scan");
       handleQr(qrText);
     }
@@ -612,16 +671,6 @@
       if (participantId) doScan();
     }
 
-    manualBtn.addEventListener("click", ()=>{
-      const txt = manualInput.value.trim();
-      if(!txt) return;
-      pushHistory(txt, "Manuel");
-      handleQr(txt);
-    });
-    manualInput.addEventListener("keydown", e=>{
-      if(e.key==="Enter"){ e.preventDefault(); manualBtn.click(); }
-    });
-
     async function doScan(){
       clearMsgs();
       try{
@@ -633,12 +682,10 @@
         if(data.success && data.participant){
           const p = data.participant;
 
-          // Badge statut
           scanBadge.textContent = p.scanned ? "Déjà scanné" : "Nouveau / prêt à valider";
           scanBadge.className = "badge " + (p.scanned ? "warn" : "ok");
           show(scanBadge);
 
-          // Détails
           participantInfo.innerHTML = `
             <p><b>${p.first_name} ${p.last_name}</b></p>
             <p>Email : ${p.email}</p>
@@ -648,14 +695,12 @@
             <p>Lieu : ${p.location}</p>
           `;
 
-          // Bouton check-in visible si pas encore scanné
           if (!p.scanned) {
             checkinBtn.classList.remove("hidden");
           } else {
             checkinBtn.classList.add("hidden");
           }
 
-          // Met à jour la dernière ligne de l’historique (ajoute le nom)
           const firstItem = historyList.querySelector(".history-item");
           if (firstItem) {
             const labelDiv = firstItem.querySelector("div > div:first-child");
@@ -664,7 +709,6 @@
             if (tag) tag.textContent = p.scanned ? "Déjà scanné" : "Nouveau";
           }
 
-          // Efface auto si déjà scanné (option)
           if (autoclearChk.checked && p.scanned){
             setTimeout(()=>{ clearMsgs(); participantInfo.innerHTML=""; }, 1800);
           }
@@ -701,10 +745,155 @@
       }
     }
 
-    // ====== Boot misc ======
-    try { localStorage.removeItem("token"); } catch {}
+    // ====== Recherche participants (nouveau) ======
+    let searchTimer = null;
 
-    // Init UI small bindings
+    searchInput.addEventListener("input", ()=>{
+      const q = searchInput.value.trim();
+      if (q.length === 0){
+        searchResults.innerHTML = "";
+        searchCount.textContent = "0 résultat";
+        searchHint.textContent = "Tapez au moins 2 caractères";
+        return;
+      }
+      if (q.length < 2){
+        searchHint.textContent = "➜ Encore 1 caractère…";
+        return;
+      }
+      searchHint.textContent = "Recherche…";
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(()=> searchParticipants(q), 220); // debounce
+    });
+
+    // Entrée = ouvrir la 1ère ligne s'il y en a
+    searchInput.addEventListener("keydown", (e)=>{
+      if (e.key === "Enter"){
+        const firstBtn = searchResults.querySelector(".result-item button[data-action='afficher']");
+        if (firstBtn) firstBtn.click();
+      }
+    });
+
+   async function searchParticipants(query){
+  if (!eventId){
+    searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
+    return;
+  }
+  if (!adminToken){
+    searchHint.textContent = "Token admin manquant (ouvrir depuis le Dashboard).";
+    return;
+  }
+
+  try{
+    const form = new URLSearchParams({
+      token: adminToken,
+      event_id: String(eventId),
+      q: query
+    });
+
+    const res = await fetch("/admin/events/participants", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form
+    });
+
+    const data = await parseJSONSafe(res);
+
+    if (!data.success){
+      searchResults.innerHTML = "";
+      searchCount.textContent = "0 résultat";
+      searchHint.textContent  = data.error || "Aucun résultat";
+      return;
+    }
+
+    // Adapte la clé si besoin (ex: data.results)
+    const list = Array.isArray(data.participants) ? data.participants : [];
+
+
+
+
+function renderSearchResults(list){
+  // Cas vide → table avec une ligne "aucun"
+  if (!Array.isArray(list) || !list.length){
+    searchResults.classList.add("table-wrap");
+    searchResults.innerHTML = `
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Nom</th><th>Prénom</th><th>Email</th><th>Check-in</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" class="muted">Aucun participant trouvé.</td></tr>
+        </tbody>
+      </table>`;
+    return;
+  }
+
+  // Mapping tolérant aux différents noms de champs
+  const rowsHtml = list.map(p=>{
+    const qr     = p.qr_code || p.qr || p.id || "";
+    const fname  = p.first_name || p.prenom || p.firstname || "";
+    const lname  = p.last_name  || p.nom    || p.lastname  || "";
+    const email  = p.email || "";
+    const paid   = (p.amount_paid != null ? p.amount_paid : p.amount);
+    const hasCheckin = !!p.scanned;
+
+    const statHtml = hasCheckin
+      ? `<span class="stat-dot stat-ok"><i></i>✅</span>`
+      : `<span class="stat-dot stat-no"><i></i>❌</span>`;
+
+    return `
+      <tr data-qr="${qr}">
+        <td>${lname || "—"}</td>
+        <td>${fname || "—"}</td>
+        <td>${email || "—"}${paid!=null ? ` <span class="pill" title="Payé">${paid}€</span>`:""}</td>
+        <td>${statHtml}</td>
+        <td class="actions-cell">
+          <button class="btn-outline" data-action="afficher">Afficher</button>
+          <button class="btn" data-action="checkin"${hasCheckin ? " disabled title='Déjà scanné'":""}>Check-in</button>
+        </td>
+      </tr>`;
+  }).join("");
+
+  searchResults.classList.add("table-wrap");
+  searchResults.innerHTML = `
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Nom</th><th>Prénom</th><th>Email</th><th>Check-in</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+
+  // Bind actions
+  searchResults.querySelectorAll("tbody tr").forEach(tr=>{
+    const qr = tr.getAttribute("data-qr");
+    const btnShow  = tr.querySelector("button[data-action='afficher']");
+    const btnCheck = tr.querySelector("button[data-action='checkin']");
+
+    btnShow?.addEventListener("click", ()=>{
+      if (!qr) return;
+      pushHistory(qr, "Recherche");
+      participantId = qr;
+      doScan(); // affiche la fiche via /checkin/scan
+    });
+
+    btnCheck?.addEventListener("click", async ()=>{
+      if (!qr) return;
+      pushHistory(qr, "Check-in (recherche)");
+      participantId = qr;
+      await doScan();                 // affiche d'abord
+      if (!checkinBtn.classList.contains("hidden")){
+        validateCheckin();            // puis valide si possible
+      }
+    });
+  });
+}
+
+
+
+    // ====== Boot misc ======
     fpsVal.textContent = fpsRange.value;
     qrboxVal.textContent = qrboxRange.value;
   </script>

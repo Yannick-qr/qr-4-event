@@ -1272,6 +1272,51 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
         ]
     }
 
+# ========================
+# ADMIN : RECHERCHE PARTICIPANTS
+# ========================
+@app.post("/admin/events/participants")
+def admin_search_participants(
+    token: str = Form(...),
+    event_id: int = Form(...),
+    q: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    # 1) Auth admin
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(user, db):
+        return {"success": False, "error": "Non autorisé"}
+
+    # 2) Base query
+    qry = db.query(Participant).filter(Participant.event_id == event_id)
+
+    # 3) Filtre texte (nom/prénom/email)
+    if q:
+        like = f"%{q.strip()}%"
+        qry = qry.filter(
+            (Participant.first_name.ilike(like)) |
+            (Participant.last_name.ilike(like))  |
+            (Participant.email.ilike(like))
+        )
+
+    # 4) Limite soft pour l’UI
+    qry = qry.order_by(Participant.last_name.asc()).limit(50)
+    rows: List[Participant] = qry.all()
+
+    # 5) Retour au format attendu par le front
+    results = []
+    for p in rows:
+        results.append({
+            "id": p.id,
+            "qr_code": p.qr_code,
+            "first_name": p.first_name,
+            "last_name": p.last_name,
+            "email": p.email,
+            "amount_paid": getattr(p, "amount_paid", None),
+            "scanned": bool(getattr(p, "scanned", False))
+        })
+
+    return {"success": True, "participants": results}
 
 # ========================
 # ADMIN : INSCRIPTIONS PAYÉES
