@@ -19,8 +19,8 @@
     loadPayPalSdk();
   </script>
 
-  <!-- ✅ Charge ton gestionnaire de token admin -->
-  <script src="/static/js/admin-token.js" defer></script>
+<!-- ✅ cache-busting pour éviter une vieille version -->
+<script src="/static/js/admin-token.js?v=2025-09-05" defer></script>
 
   <style>
 body {
@@ -235,7 +235,8 @@ iframe[src*="paypal.com"] {
   <button id="logsBtn">📜 Historique</button>
 
   <!-- Logo ScanEvent comme bouton ouvrant une nouvelle fenêtre -->
-  <a href="scan_event.html" target="_blank">
+  <a href="scan_event.html" target="_blank" rel="noopener">
+
     <img src="/static/img/scanevent-logo.png" 
          alt="Scan Event" 
          style="height:65px; width:auto; margin-left:20px; cursor:pointer; padding:5px; background:white; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
@@ -527,7 +528,9 @@ async function loadUserInfo() {
 
 console.log("👤 Réponse /me :", data);  // <-- DEBUG
 
-  document.getElementById("userEmail").textContent = data.success ? data.email : "Non connecté";
+  document.getElementById("userEmail").textContent =
+  (data && data.success && data.email) ? data.email : "Session expirée";
+
 }
 
 // ✅ Déconnexion
@@ -642,77 +645,101 @@ async function refreshCredits() {
 
 // ✅ Charger événements et stats
 async function loadEvents() {
-  const res = await fetchWithToken("/admin/events/list", { method: "POST", body: new URLSearchParams() });
-  const data = await res.json();
+  try {
+    const res = await fetchWithToken("/admin/events/list", {
+      method: "POST",
+      body: new URLSearchParams()
+    });
 
-  console.log("📦 Réponse /admin/events/list :", data);  // <-- DEBUG
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
 
-  if (!data.success) return alert(data.error || "Erreur événements");
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      throw new Error("Réponse backend non-JSON");
+    }
 
-const tbody = document.querySelector("#eventsTable tbody");
-tbody.innerHTML = "";
+    console.log("📦 /admin/events/list →", data);
 
-data.events.forEach(ev => {
-  const row = document.createElement("tr");
+    if (!data || data.success === false) {
+      const msg = data?.message || data?.error || "Backend a renvoyé success:false";
+      throw new Error(msg);
+    }
 
-  row.innerHTML = `
-    <td>${ev.title || ""}</td>
-    <td>${ev.description || ""}</td>
-    <td>${ev.date || ""}</td>
-    <td>${ev.location || ""}</td>
-    <td>${ev.price != null ? ev.price + " €" : "—"}</td>
-    <td>${ev.max_participants || "∞"}</td>
+    const events = Array.isArray(data.events) ? data.events : [];
 
-    <!-- 7) Identifiants Check-in (login + mdp masqué) -->
-<td>
-  <b>Login :</b> ${ev.checkin_login || "—"}<br>
-  <b>Pass :</b> 
-  <span class="pass" id="pass-${ev.id}">••••••</span>
-  <button onclick="togglePass('${ev.id}', '${ev.checkin_password}')"
-          style="border:none;background:none;cursor:pointer;color:#007bff;">
-    👁️
-  </button>
-</td>
+    // --- KPIs ---
+    document.getElementById("totalEvents").textContent    = events.length;
+    document.getElementById("activeEvents").textContent   = events.filter(e => !!e.is_active).length;
+    document.getElementById("inactiveEvents").textContent = events.filter(e => !e.is_active).length;
+    document.getElementById("participantCredits").textContent = data.participant_credits ?? 0;
 
+    // --- Table ---
+    const tbody = document.querySelector("#eventsTable tbody");
+    tbody.innerHTML = "";
 
-    <!-- 8) Login Check-in (affiché à part si tu veux le voir d’un coup d’œil) -->
-    <td>${ev.checkin_login || "—"}</td>
+    const safe   = v => (v ?? "");
+    const asText = v => String(v ?? "");
 
-    <!-- 9) Image -->
-    <td>
-      ${ev.image_url
-        ? `<img src="${ev.image_url}" style="max-height:50px;border-radius:6px;">`
-        : "—"}
-    </td>
+    events.forEach(ev => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${safe(ev.title)}</td>
+        <td>${safe(ev.description)}</td>
+        <td>${safe(ev.date)}</td>
+        <td>${safe(ev.location)}</td>
+        <td>${ev.price != null ? asText(ev.price) + " €" : "—"}</td>
+        <td>${ev.max_participants ?? "∞"}</td>
 
-    <!-- 10) Lien public -->
-    <td>
-      <a href="${ev.public_url || ("/static/event.html?id=" + ev.id)}" target="_blank">
-        <button class="action-btn link-btn">🔗 Voir</button>
-      </a>
-    </td>
+        <td>
+          <b>Login :</b> ${safe(ev.checkin_login) || "—"}<br>
+          <b>Pass :</b> <span class="pass" id="pass-${ev.id}">••••••</span>
+          <button class="btn-showpass" data-id="${ev.id}">👁️</button>
+        </td>
 
-    <!-- 11) Actions -->
-<!-- 11) Actions -->
-<td>
-  <button class="btn btn-primary" onclick="openEditModal(${ev.id})">✏️ Modifier</button>
-  <button class="btn btn-danger" onclick="deleteEvent(${ev.id})">🗑️ Supprimer</button>
-  <button class="btn btn-warning" onclick="toggleEvent(${ev.id})">
-    ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
-  </button>
-</td>
+        <td>${safe(ev.checkin_login) || "—"}</td>
 
-  `;
+        <td>
+          ${ev.image_url
+            ? `<img src="${safe(ev.image_url)}" style="max-height:50px;border-radius:6px;">`
+            : "—"}
+        </td>
 
-  // 🔧 Brancher les actions sans inline onclick (évite les soucis de quotes)
+        <td>
+          <a href="${safe(ev.public_url) || ("/static/event.html?id=" + ev.id)}" target="_blank" rel="noopener">
+            <button class="action-btn link-btn">🔗 Voir</button>
+          </a>
+        </td>
 
-  tbody.appendChild(row);
-});
+        <td>
+          <button class="btn btn-primary btn-edit"  data-id="${ev.id}">✏️ Modifier</button>
+          <button class="btn btn-danger  btn-del"   data-id="${ev.id}">🗑️ Supprimer</button>
+          <button class="btn btn-warning btn-toggle" data-id="${ev.id}">
+            ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
+          </button>
+        </td>
+      `;
+      tbody.appendChild(row);
 
-  document.getElementById("totalEvents").textContent = data.events.length;
-  document.getElementById("activeEvents").textContent = data.events.filter(e => e.is_active).length;
-  document.getElementById("inactiveEvents").textContent = data.events.filter(e => !e.is_active).length;
-  document.getElementById("participantCredits").textContent = data.participant_credits ?? 0;
+      // branchements sans inline JS
+      row.querySelector(".btn-edit")   ?.addEventListener("click", () => openEditModal(ev.id));
+      row.querySelector(".btn-del")    ?.addEventListener("click", () => deleteEvent(ev.id));
+      row.querySelector(".btn-toggle") ?.addEventListener("click", () => toggleEvent(ev.id));
+      row.querySelector(".btn-showpass")?.addEventListener("click", () => {
+        const el = document.getElementById("pass-" + ev.id);
+        if (!el) return;
+        const real = ev.checkin_password ?? "";
+        el.textContent = el.textContent.includes("•") ? real : "••••••";
+      });
+    });
+
+  } catch (err) {
+    console.error("loadEvents() →", err);
+    alert("Erreur événements : " + err.message);
+  }
 }
 
 // ✅ Charger les inscriptions payées
@@ -1111,14 +1138,6 @@ const checkPaypal = setInterval(() => {
     renderPayPalButton();
   }
 }, 500);
-function togglePass(eventId, realPass) {
-  const el = document.getElementById("pass-" + eventId);
-  if (el.textContent.includes("•")) {
-    el.textContent = realPass;
-  } else {
-    el.textContent = "••••••";
-  }
-}
 </script>
 
 
