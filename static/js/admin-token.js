@@ -1,119 +1,55 @@
-// /static/js/admin-token.js — minimal
+// /static/js/admin-token.js — version simplifiée sans modale
+
 (() => {
   const TOKEN_KEY = 'qr4event_admin_token';
+  let token = null;
 
-  const getTokenFromUrl = () => {
+  function initToken() {
+    // 1) token dans l’URL
     const p = new URLSearchParams(location.search);
-    const t = p.get('token');
-    return t && t.trim() ? t.trim() : null;
-  };
-  const saveToken = (t) => { try { localStorage.setItem(TOKEN_KEY, t); } catch {} };
-  const getToken  = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
-
-  const showTokenStatus = (t) => {
-    const el = document.getElementById('tokenBadge');
-    if (!el) return;
-    if (t) {
-      el.textContent = 'Token chargé';
-      el.style.background = '#ecfdf5';
-      el.style.color = '#065f46';
-      el.style.borderColor = '#a7f3d0';
-    } else {
-      el.textContent = 'Token: non chargé';
-      el.style.background = '#eef6ff';
-      el.style.color = '#0369a1';
-      el.style.borderColor = '#bae6fd';
+    const fromUrl = p.get('token');
+    if (fromUrl) {
+      token = fromUrl.trim();
+      try { localStorage.setItem(TOKEN_KEY, token); } catch {}
+      return token;
     }
-  };
 
-  const openTokenModal = () => {
-    const m = document.getElementById('tokenModal');
-    const i = document.getElementById('tokenInput');
-    if (!m || !i) return;
-    m.style.display = 'flex';
-    i.value = '';
-    setTimeout(() => i.focus(), 50);
-  };
-  const closeTokenModal = () => {
-    const m = document.getElementById('tokenModal');
-    if (m) m.style.display = 'none';
-  };
+    // 2) token en localStorage
+    token = localStorage.getItem(TOKEN_KEY);
+    if (token) return token;
 
-  async function ensureToken() {
-    // 1) param URL > 2) localStorage > 3) modal
-    const fromUrl = getTokenFromUrl();
-    if (fromUrl) { saveToken(fromUrl); showTokenStatus(fromUrl); return fromUrl; }
+    // 3) sinon → retour login
+    alert("⚠️ Session expirée. Merci de vous reconnecter.");
+    window.location.href = "/static/login.html";
+    return null;
+  }
 
-    const stored = getToken();
-    if (stored) { showTokenStatus(stored); return stored; }
-
-    openTokenModal();
-    return new Promise((resolve) => {
-      const saveBtn = document.getElementById('tokenSave');
-      const cancelBtn = document.getElementById('tokenCancel');
-      const input = document.getElementById('tokenInput');
-      if (!saveBtn || !cancelBtn || !input) {
-        // Pas de modale présente : on résout à null
-        showTokenStatus(null);
-        return resolve(null);
-      }
-
-      function onSave() {
-        const v = (input.value || '').trim();
-        if (!v) { input.focus(); return; }
-        saveToken(v);
-        showTokenStatus(v);
-        closeTokenModal();
-        cleanup();
-        resolve(v);
-      }
-      function onCancel() {
-        closeTokenModal();
-        cleanup();
-        showTokenStatus(null);
-        resolve(null);
-      }
-      function onEnter(e){ if (e.key === 'Enter') onSave(); }
-      function cleanup() {
-        saveBtn.removeEventListener('click', onSave);
-        cancelBtn.removeEventListener('click', onCancel);
-        input.removeEventListener('keydown', onEnter);
-      }
-
-      saveBtn.addEventListener('click', onSave);
-      cancelBtn.addEventListener('click', onCancel);
-      input.addEventListener('keydown', onEnter);
-    });
+  function getToken() {
+    if (!token) token = initToken();
+    return token;
   }
 
   async function fetchWithToken(url, options = {}) {
-    const token = await ensureToken();
-    if (!token) throw new Error('Token administrateur manquant.');
+    const t = getToken();
+    if (!t) throw new Error("Token administrateur manquant.");
 
     const method = (options.method || 'GET').toUpperCase();
 
     if (method === 'GET') {
       const u = new URL(url, location.origin);
-      if (!u.searchParams.get('token')) u.searchParams.set('token', token);
+      if (!u.searchParams.get('token')) u.searchParams.set('token', t);
       return fetch(u.toString(), options);
     }
 
     if (options.body instanceof FormData) {
-      if (!options.body.has('token')) options.body.append('token', token);
+      if (!options.body.has('token')) options.body.append('token', t);
     } else if (options.headers && /application\/json/i.test(options.headers['Content-Type'] || '')) {
-      try {
-        const obj = options.body ? JSON.parse(options.body) : {};
-        obj.token = obj.token || token;
-        options.body = JSON.stringify(obj);
-      } catch {
-        const fd = new URLSearchParams();
-        fd.set('token', token);
-        options.body = fd;
-        options.headers = { ...(options.headers || {}), 'Content-Type': 'application/x-www-form-urlencoded' };
-      }
+      const obj = options.body ? JSON.parse(options.body) : {};
+      obj.token = obj.token || t;
+      options.body = JSON.stringify(obj);
     } else {
-      const fd = new URLSearchParams(typeof options.body === 'string' ? options.body : '');
-      if (!fd.has('token')) fd.set('token', token);
+      const fd = new URLSearchParams(options.body || '');
+      if (!fd.has('token')) fd.set('token', t);
       options.body = fd;
       options.headers = { ...(options.headers || {}), 'Content-Type': 'application/x-www-form-urlencoded' };
     }
@@ -123,18 +59,8 @@
 
   // Expose global
   window.fetchWithToken = fetchWithToken;
-  window.ensureToken = ensureToken;
-  window.changeAdminToken = function() {
-    try { localStorage.removeItem(TOKEN_KEY); } catch {}
-    showTokenStatus(null);
-    openTokenModal();
-  };
+  window.getAdminToken = getToken;
 
-  // Init safe (utile même avec "defer")
-  const boot = () => ensureToken();
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot, { once: true });
-  } else {
-    boot();
-  }
+  // Init auto
+  initToken();
 })();
