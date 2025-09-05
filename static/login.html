@@ -293,10 +293,10 @@ const data = await response.json();
 if (data && data.success && data.token) {
   showSuccess("Connexion réussie ✅");
 
-  // ✅ Stocke le token automatiquement
-  localStorage.setItem("qr4event_admin_token", data.token);
 
-  // ✅ Redirige vers le Dashboard (plus besoin de ?token=…)
+  localStorage.setItem("qr4event_admin_token", data.token);
+  console.log("🔑 Token sauvegardé dans localStorage:", data.token);
+
   setTimeout(() => {
     window.location.href = "/static/dashboard_secure.html";
   }, 500);
