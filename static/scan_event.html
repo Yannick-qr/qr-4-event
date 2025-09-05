@@ -803,26 +803,16 @@ togglePw.addEventListener("click", () => {
     });
 
 async function searchParticipants(query){
-  if (!eventId){
+  if (!checkinToken){
     searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
     return;
   }
-if (!checkinToken){
-  searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
-  return;
-}
 
   try{
-    const form = new URLSearchParams({
-      token: checkinToken,
-      event_id: String(eventId),
-      q: query
-    });
-
-    const res = await fetchWithCheckinToken("/admin/events/participants", {
+    const res = await fetch("/checkin/search", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: form
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: checkinToken, q: query })
     });
 
     const data = await parseJSONSafe(res);
@@ -834,7 +824,7 @@ if (!checkinToken){
       return;
     }
 
-    const list = Array.isArray(data.participants) ? data.participants : [];
+    const list = Array.isArray(data.results) ? data.results : [];
     renderSearchResults(list);
 
   } catch(err){
@@ -842,16 +832,21 @@ if (!checkinToken){
     searchCount.textContent = "0 résultat";
     searchHint.textContent  = "❌ Erreur serveur : " + (err?.message || err);
   }
-} // 👈 FIN DE searchParticipants
+}
+ // 👈 FIN DE searchParticipants
+
 
 function renderSearchResults(list){
-  if (!Array.isArray(list) || !list.length){
+  const count = Array.isArray(list) ? list.length : 0;
+  searchCount.textContent = `${count} résultat${count > 1 ? "s" : ""}`;
+
+  if (!count){
     searchResults.classList.add("table-wrap");
     searchResults.innerHTML = `
       <table class="results-table">
         <thead>
           <tr>
-            <th>Nom</th><th>Prénom</th><th>Email</th><th>Check-in</th><th>Actions</th>
+            <th>Nom</th><th>Email</th><th>Ticket</th><th>Check-in</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -862,26 +857,28 @@ function renderSearchResults(list){
   }
 
   const rowsHtml = list.map(p=>{
-    const qr     = p.qr_code || p.qr || p.id || "";
-    const fname  = p.first_name || p.prenom || p.firstname || "";
-    const lname  = p.last_name  || p.nom    || p.lastname  || "";
-    const email  = p.email || "";
-    const paid   = (p.amount_paid != null ? p.amount_paid : p.amount);
-    const hasCheckin = !!p.scanned;
+    const id        = p.id;
+    const fullname  = p.name || "—";
+    const email     = p.email || "—";
+    const ticket    = p.ticket_id || "—";
+    const scanned   = !!p.scanned_at;
 
-    const statHtml = hasCheckin
+    const statHtml = scanned
       ? `<span class="stat-dot stat-ok"><i></i>✅</span>`
       : `<span class="stat-dot stat-no"><i></i>❌</span>`;
 
+    // On utilisera le ticket_id comme payload "qr" quand il existe, sinon l'id
+    const qr = ticket !== "—" ? ticket : String(id);
+
     return `
       <tr data-qr="${qr}">
-        <td>${lname || "—"}</td>
-        <td>${fname || "—"}</td>
-        <td>${email || "—"}${paid!=null ? ` <span class="pill" title="Payé">${paid}€</span>`:""}</td>
+        <td>${escapeHtml(fullname)}</td>
+        <td>${escapeHtml(email)}</td>
+        <td>${escapeHtml(ticket)}</td>
         <td>${statHtml}</td>
         <td class="actions-cell">
           <button class="btn-outline" data-action="afficher">Afficher</button>
-          <button class="btn" data-action="checkin"${hasCheckin ? " disabled title='Déjà scanné'":""}>Check-in</button>
+          <button class="btn" data-action="checkin"${scanned ? " disabled title='Déjà scanné'":""}>Check-in</button>
         </td>
       </tr>`;
   }).join("");
@@ -891,12 +888,13 @@ function renderSearchResults(list){
     <table class="results-table">
       <thead>
         <tr>
-          <th>Nom</th><th>Prénom</th><th>Email</th><th>Check-in</th><th>Actions</th>
+          <th>Nom</th><th>Email</th><th>Ticket</th><th>Check-in</th><th>Actions</th>
         </tr>
       </thead>
       <tbody>${rowsHtml}</tbody>
     </table>`;
 
+  // Actions
   searchResults.querySelectorAll("tbody tr").forEach(tr=>{
     const qr = tr.getAttribute("data-qr");
     const btnShow  = tr.querySelector("button[data-action='afficher']");
@@ -905,21 +903,21 @@ function renderSearchResults(list){
     btnShow?.addEventListener("click", ()=>{
       if (!qr) return;
       pushHistory(qr, "Recherche");
-      participantId = qr;
-      doScan();
+      participantId = qr;     // réutilise ton flux existant
+      doScan();               // appelle /checkin/scan puis affiche la fiche
     });
 
     btnCheck?.addEventListener("click", async ()=>{
       if (!qr) return;
       pushHistory(qr, "Check-in (recherche)");
       participantId = qr;
-      await doScan();
+      await doScan();         // affiche la fiche
       if (!checkinBtn.classList.contains("hidden")){
-        validateCheckin();
+        validateCheckin();    // appelle /checkin/validate (ton flux existant)
       }
     });
   });
-}
+} //👈 FIN DE renderSearchResults
 
 // ====== Boot misc ======
 fpsVal.textContent = fpsRange.value;
