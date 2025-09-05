@@ -27,7 +27,7 @@ import csv
 import html
 import re
 import traceback
-
+app = FastAPI()
 load_dotenv()
 
 # ========================
@@ -89,7 +89,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ========================
 # APP INIT
 # ========================
-app = FastAPI()
+
 
 Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -282,6 +282,33 @@ def is_password_reused(user: AdminUser, new_password: str) -> bool:
         return bcrypt.verify(new_password, user.password_hash)
     except Exception:
         return False
+
+
+
+
+def get_current_user(token: str, db: Session):
+    user = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not user:
+        return None
+    if not user.is_active:
+        return None
+    return user
+
+# ========================
+# ENDPOINT PROFIL
+# ========================
+@app.post("/api/me")
+def get_profile(token: str = Form(...), db: Session = Depends(get_db)):
+    user = get_current_user(token, db)
+    if not user:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized"})
+
+    return {
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "avatar_url": getattr(user, "avatar_url", None)
+    }
 
 
 # ========================
@@ -1249,7 +1276,7 @@ async def event_pay(event_id: int, request: Request, db: Session = Depends(get_d
         traceback.print_exc()
         return {"id": None, "message": str(e)}
 
-
+    
 # ========================
 # LIST EVENTS
 # ========================
