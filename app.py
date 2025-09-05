@@ -7,6 +7,7 @@ from passlib.hash import bcrypt
 from datetime import timedelta
 from database import utcnow
 from supabase import create_client, Client
+from utils import check_token_valid
 import uuid
 import os
 import smtplib
@@ -845,11 +846,23 @@ def register_participant(
 @app.post("/me")
 def get_me(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
+
     if not check_token_valid(user, db):
         return {"success": False, "message": "Session invalide"}
+
+    # Construit un nom lisible
+    if hasattr(user, "first_name") and hasattr(user, "last_name"):
+        name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+    elif hasattr(user, "name"):
+        name = user.name
+    else:
+        # fallback : utiliser la partie avant @ de l'email
+        name = user.email.split("@")[0]
+
     return {
         "success": True,
         "email": user.email,
+        "name": name,
         "credits": user.participant_credits
     }
 

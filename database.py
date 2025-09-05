@@ -69,6 +69,9 @@ class AdminUser(Base):
     token_expiry = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=False, nullable=False)
 
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+
     # 🔥 Nouvel attribut : nombre de crédits d’événements
     participant_credits = Column(Integer, default=0, nullable=False)
 
