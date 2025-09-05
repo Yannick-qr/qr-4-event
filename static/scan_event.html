@@ -421,6 +421,31 @@
           </div>
         </div>
 
+ <!-- Panneau droit -->
+      <div class="panel">
+        <div class="box">
+          <h3>Résultats / Messages</h3>
+          <div id="scanBadge" class="badge hidden"></div>
+          <div id="scanSuccess" class="success-box"></div>
+          <div id="scanError" class="error-box"></div>
+
+          <div class="participant" id="participantInfo"></div>
+          <button id="checkinBtn" class="btn hidden" style="margin-top:10px">✅ Valider le check-in</button>
+        </div>
+
+        <!-- ===== Recherche participant (remplace l'ancien "Scan manuel") ===== -->
+        <div class="box">
+          <h3>Recherche participant</h3>
+          <div class="search-wrap">
+            <input id="searchInput" type="text" placeholder="🔍 Rechercher par nom ou prénom…" autocomplete="off" />
+            <div class="search-meta">
+              <span class="subtitle" id="searchHint">Tapez au moins 2 caractères</span>
+              <span class="subtitle" id="searchCount">0 résultat</span>
+            </div>
+            <div class="results" id="searchResults"></div>
+          </div>
+        </div>
+
         <!-- Menu Caméra -->
         <div class="controls">
           <div class="control-group">
@@ -462,31 +487,7 @@
         </div>
       </div>
 
-      <!-- Panneau droit -->
-      <div class="panel">
-        <div class="box">
-          <h3>Résultats / Messages</h3>
-          <div id="scanBadge" class="badge hidden"></div>
-          <div id="scanSuccess" class="success-box"></div>
-          <div id="scanError" class="error-box"></div>
-
-          <div class="participant" id="participantInfo"></div>
-          <button id="checkinBtn" class="btn hidden" style="margin-top:10px">✅ Valider le check-in</button>
-        </div>
-
-        <!-- ===== Recherche participant (remplace l'ancien "Scan manuel") ===== -->
-        <div class="box">
-          <h3>Recherche participant</h3>
-          <div class="search-wrap">
-            <input id="searchInput" type="text" placeholder="🔍 Rechercher par nom ou prénom…" autocomplete="off" />
-            <div class="search-meta">
-              <span class="subtitle" id="searchHint">Tapez au moins 2 caractères</span>
-              <span class="subtitle" id="searchCount">0 résultat</span>
-            </div>
-            <div class="results" id="searchResults"></div>
-          </div>
-        </div>
-
+     
         <div class="box">
           <h3>Historique</h3>
           <div class="history" id="historyList"></div>
