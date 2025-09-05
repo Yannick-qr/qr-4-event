@@ -878,9 +878,9 @@ searchInput.addEventListener("keydown", (e) => {
   }
 });
 
-// ⬇️ Fonction de recherche avec fallback sur plusieurs routes possibles
+// Remplace TOUTE la fonction searchParticipants par celle-ci
 async function searchParticipants(query){
-  // routes candidates côté backend
+  // ⚙️ Routes candidates côté backend (on testera dans cet ordre)
   const candidates = [
     "/checkin/search",
     "/checkin/participants/search",
@@ -891,6 +891,7 @@ async function searchParticipants(query){
     "/participants/find"
   ];
 
+  // Corps form-urlencoded, inclut event_id si présent
   const makeBody = () => {
     const body = new URLSearchParams({ q: query });
     if (eventId) body.set("event_id", String(eventId));
@@ -901,8 +902,11 @@ async function searchParticipants(query){
 
   for (const url of candidates){
     try{
-      // utilise le wrapper (gère token + credentials + form-urlencoded)
-      const res = await fetchWithCheckinToken(url, { method: "POST", body: makeBody() });
+      const res = await fetchWithCheckinToken(url, {
+        method: "POST",
+        body: makeBody()
+      });
+
       if (!res.ok){
         lastErr = new Error(url + " → HTTP " + res.status);
         continue; // essaie l'URL suivante
@@ -911,36 +915,36 @@ async function searchParticipants(query){
       const data = await parseJSONSafe(res);
       console.log("[search used]", url, data);
 
-      // tolère différents schémas de réponse
+      // Tolère plusieurs schémas de réponse
       const list =
         Array.isArray(data.results)      ? data.results :
         Array.isArray(data.participants) ? data.participants :
         Array.isArray(data.items)        ? data.items :
         Array.isArray(data.data)         ? data.data : [];
 
+      // Si l'API dit success:false ET qu'on n'a rien, on tente la suivante
       if ((data.success === false) && list.length === 0){
         lastErr = new Error(url + " → success:false");
         continue;
       }
 
-      // ✅ on a des données → affiche et termine
+      // ✅ Succès : on rend les résultats et on sort
       renderSearchResults(list);
       searchHint.textContent = list.length ? "Résultats" : "Aucun résultat";
       return;
     }catch(err){
       lastErr = err;
-      continue; // tente l'URL suivante
+      // on tente l'URL suivante
+      continue;
     }
   }
 
-  // Si toutes les routes échouent :
+  // 🧹 Si on arrive ici, toutes les routes ont échoué
+  console.warn("Toutes les routes de recherche ont échoué :", lastErr);
   searchResults.innerHTML = "";
   searchCount.textContent = "0 résultat";
-  searchHint.textContent  = "❌ Recherche indisponible (route introuvable)";
-  if (lastErr) console.warn("[searchParticipants] fallback error:", lastErr);
+  searchHint.textContent  = "Aucun endpoint de recherche disponible";
 }
-
-
  // 👈 FIN DE searchParticipants
 
 function escapeHtml(s){
@@ -969,34 +973,28 @@ function renderSearchResults(list){
     return;
   }
 
-const rowsHtml = list.map(p=>{
-  const id   = p.id ?? p.participant_id ?? p.user_id ?? "—";
-  const fn   = p.first_name || p.firstname || "";
-  const ln   = p.last_name  || p.lastname  || "";
-  const name = (p.name && p.name.trim()) || [fn, ln].filter(Boolean).join(" ") || "—";
-  const email  = p.email || p.mail || "—";
-  const ticket = p.ticket_id || p.ticket || p.qr_code || "—";
-  const scanned = !!(p.scanned_at || p.checked_in_at || p.is_scanned);
+  const rowsHtml = list.map(p=>{
+    const fullname = `${p.first_name || ""} ${p.last_name || ""}`.trim() || "—";
+    const email    = p.email || "—";
+    const ticket   = p.qr_code || String(p.id);       // ce que tu veux utiliser comme “qr”
+    const scanned  = !!p.scanned;
 
-  const statHtml = scanned
-    ? `<span class="stat-dot stat-ok"><i></i>✅</span>`
-    : `<span class="stat-dot stat-no"><i></i>❌</span>`;
+    const statHtml = scanned
+      ? `<span class="stat-dot stat-ok"><i></i>✅</span>`
+      : `<span class="stat-dot stat-no"><i></i>❌</span>`;
 
-  const qr = ticket !== "—" ? String(ticket) : String(id);
-
-  return `
-    <tr data-qr="${qr}">
-      <td>${escapeHtml(name)}</td>
-      <td>${escapeHtml(email)}</td>
-      <td>${escapeHtml(String(ticket))}</td>
-      <td>${statHtml}</td>
-      <td class="actions-cell">
-        <button class="btn-outline" data-action="afficher">Afficher</button>
-        <button class="btn" data-action="checkin"${scanned ? " disabled title='Déjà scanné'":""}>Check-in</button>
-      </td>
-    </tr>`;
-}).join("");
-
+    return `
+      <tr data-qr="${ticket}">
+        <td>${escapeHtml(fullname)}</td>
+        <td>${escapeHtml(email)}</td>
+        <td>${escapeHtml(ticket)}</td>
+        <td>${statHtml}</td>
+        <td class="actions-cell">
+          <button class="btn-outline" data-action="afficher">Afficher</button>
+          <button class="btn" data-action="checkin"${scanned ? " disabled title='Déjà scanné'":""}>Check-in</button>
+        </td>
+      </tr>`;
+  }).join("");
 
   searchResults.classList.add("table-wrap");
   searchResults.innerHTML = `
@@ -1018,8 +1016,8 @@ const rowsHtml = list.map(p=>{
     btnShow?.addEventListener("click", ()=>{
       if (!qr) return;
       pushHistory(qr, "Recherche");
-      participantId = qr;     // réutilise ton flux existant
-      doScan();               // appelle /checkin/scan puis affiche la fiche
+      participantId = qr;
+      doScan();               // /checkin/scan
     });
 
     btnCheck?.addEventListener("click", async ()=>{
@@ -1028,11 +1026,12 @@ const rowsHtml = list.map(p=>{
       participantId = qr;
       await doScan();         // affiche la fiche
       if (!checkinBtn.classList.contains("hidden")){
-        validateCheckin();    // appelle /checkin/validate (ton flux existant)
+        validateCheckin();    // /checkin/validate
       }
     });
   });
-} //👈 FIN DE renderSearchResults
+}
+ //👈 FIN DE renderSearchResults
 
 // ====== Boot misc ======
 fpsVal.textContent = fpsRange.value;

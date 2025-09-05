@@ -1812,3 +1812,41 @@ def get_license_credits(event_id: int = None, db: Session = Depends(get_db)):
         return {"remaining_participant_credits": 0}
 
     return {"remaining_participant_credits": max(0, license_owner.participant_credits)}
+
+# ========================
+# CHECK-IN : RECHERCHE PARTICIPANTS
+# ========================
+@app.post("/checkin/search")
+def checkin_search(
+    event_id: int = Form(...),
+    q: Optional[str] = Form(""),
+    db: Session = Depends(get_db)
+):
+    qry = db.query(Participant).filter(Participant.event_id == event_id)
+
+    if q:
+        like = f"%{q.strip()}%"
+        qry = qry.filter(
+            (Participant.name.ilike(like)) |
+            (Participant.email.ilike(like))
+        )
+
+    rows = qry.order_by(Participant.name.asc()).limit(50).all()
+
+    results = []
+    for p in rows:
+        parts = (p.name or "").split()
+        first_name = parts[0] if parts else ""
+        last_name  = " ".join(parts[1:]) if len(parts) > 1 else ""
+        results.append({
+            "id": p.id,
+            "qr_code": getattr(p, "qr_code", None),
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": p.email,
+            "amount_paid": getattr(p, "amount", None),
+            "scanned": bool(getattr(p, "scanned", False)),
+        })
+
+    return {"success": True, "participants": results}
+
