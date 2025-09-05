@@ -796,7 +796,7 @@ async function loadUserInfo() {
 
 // ✅ Déconnexion
 document.getElementById("logoutBtn").addEventListener("click", () => {
-  localStorage.removeItem("admin_token"); // on supprime bien le bon token
+  localStorage.removeItem("qr4event_admin_token"); // on supprime bien le bon token
   window.location.href = "/static/login.html";
 });
 
