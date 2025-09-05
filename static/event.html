@@ -215,6 +215,164 @@ input {
   background: linear-gradient(to right, #007bff, #00c6ff); /* design */
   border-radius: 2px;
 }
+/* ====== Patch UI propre & responsive (safe override) ====== */
+:root{
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #007bff;
+  --primary-dark:#0056b3;
+  --ring: 0 0 0 3px rgba(0,123,255,.18);
+}
+
+/* Page */
+body{
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Header/banner ---------- */
+.event-header{
+  box-shadow: 0 10px 24px rgba(0,0,0,.06);
+}
+.event-header img{
+  height: 260px;              /* garde une belle bandeau sur desktop */
+  object-fit: cover;
+}
+@media (max-width: 768px){
+  .event-header img{ height: 220px; }
+}
+.event-header h2{
+  letter-spacing: .2px;
+  line-height: 1.2;
+  backdrop-filter: blur(2px);
+  border-radius: 10px;
+}
+
+/* ---------- Card principale ---------- */
+.box{
+  background: var(--card);
+  border: 1px solid #eef2f7;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.box h3{
+  margin: 0 0 14px;
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+/* Séparateur plus doux en fallback si gradient non supporté */
+.box hr{
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+}
+
+/* ---------- Détails événement ---------- */
+.event-details p{
+  margin: 8px 0;
+  color: #374151;
+}
+.event-details .icon{
+  width: 22px; display:inline-flex; align-items:center; justify-content:center;
+}
+
+/* Description */
+.description{
+  background: #fafbff;
+  border: 1px solid #eef2f7;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #4b5563;
+  font-style: normal;
+}
+
+/* ---------- Formulaire (grid + champs) ---------- */
+#registerForm{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+#registerForm input{
+  margin: 0;                             /* retire l’ancien margin pour le grid */
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 1rem;
+  background: #fff;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+#registerForm input::placeholder{ color:#94a3b8; }
+#registerForm input:focus{
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--ring);
+  background: #ffffff;
+}
+/* États simples (HTML5) */
+#registerForm input:invalid:focus{ border-color:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.16); }
+#registerForm input:valid:focus  { border-color:#10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.16); }
+
+@media (max-width: 680px){
+  #registerForm{ grid-template-columns: 1fr; }
+}
+
+/* ---------- Bouton custom PayPal ---------- */
+#custom-paypal-btn{
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  letter-spacing: .2px;
+  box-shadow: 0 8px 18px rgba(0,123,255,.25);
+}
+#custom-paypal-btn:hover{ box-shadow: 0 10px 22px rgba(0,86,179,.28); }
+#custom-paypal-btn.loading{ opacity:.85; }
+
+/* Espace/centrage des conteneurs de boutons */
+#paypal-button-container{
+  margin-top: 14px;
+  display: flex; justify-content: center;
+}
+#cancel-container{ margin-top: 10px; }
+
+/* ---------- Messages feedback ---------- */
+#message{ margin-top: 10px; }
+#message .success,
+.success{
+  color:#065f46;
+  background:#ecfdf5;
+  border:1px solid #a7f3d0;
+  padding:10px 12px;
+  border-radius:10px;
+  font-weight:600;
+}
+#message .error,
+.error{
+  color:#7f1d1d;
+  background:#fee2e2;
+  border:1px solid #fecaca;
+  padding:10px 12px;
+  border-radius:10px;
+  font-weight:600;
+}
+
+/* ---------- Micro animations ---------- */
+.about-title{ position: relative; }
+.about-title::after{
+  content:"";
+  position:absolute; left:0; bottom:-6px; width:42px; height:3px;
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+  border-radius: 2px;
+}
+
+/* ---------- Petits affinages mobiles ---------- */
+@media (max-width: 768px){
+  .box{ width: 94%; padding: 20px; }
+  #custom-paypal-btn{ max-width: none; }
+  .description{ padding: 10px 12px; }
+}
+
   </style>
 </head>
 <body>
