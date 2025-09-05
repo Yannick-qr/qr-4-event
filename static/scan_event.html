@@ -601,7 +601,6 @@ eventId       = data.event_id ?? data.eventId ?? data.id ?? null;
 // Pas de token ? -> on passera en mode cookie (credentials: 'include')
 const hasToken = !!checkinToken;
 sessionStorage.setItem("checkin_has_token", hasToken ? "1" : "0");
-}
 
 // UI
 eventTitle.textContent     = "🎟️ " + (evTitle || "Événement");
@@ -618,7 +617,6 @@ loginSection.classList.add("hidden");
 scanSection.classList.remove("hidden");
 await populateCameras();
 await startCamera();
-
 
   } catch (err) {
     loginError.textContent = "❌ " + (err?.message || "Erreur serveur");
