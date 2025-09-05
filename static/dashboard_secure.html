@@ -519,9 +519,10 @@ const deletePaypalBtn = document.getElementById("deletePaypalBtn");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
+
 // ✅ Charger infos utilisateur
 async function loadUserInfo() {
-  const res = await fetchWithToken("/me", { method: "POST", body: new URLSearchParams({ token }) });
+  const res = await fetchWithToken("/me", { method: "POST", body: new URLSearchParams() });
   const data = await res.json();
   document.getElementById("userEmail").textContent = data.success ? data.email : "Non connecté";
 }
