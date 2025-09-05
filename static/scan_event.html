@@ -849,29 +849,28 @@ await startCamera();
       }
     }
 
-    // ====== Recherche participants (nouveau) ======
-    let searchTimer = null;
+  // ====== Recherche participants (nouveau) ======
+let searchTimer = null;
 
-    searchInput.addEventListener("input", ()=>{
-      const q = searchInput.value.trim();
-      if (q.length === 0){
-        searchResults.innerHTML = "";
-        searchCount.textContent = "0 résultat";
-        searchHint.textContent = "Tapez au moins 2 caractères";
-        return;
-      }
-      if (q.length < 2){
-        searchHint.textContent = "➜ Encore 1 caractère…";
-        return;
-      }
-      searchHint.textContent = "Recherche…";
-      if (searchTimer) clearTimeout(searchTimer);
-      searchTimer = setTimeout(()=> searchParticipants(q), 220); // debounce
-    });
+searchInput.addEventListener("input", () => {
+  const q = searchInput.value.trim();
+  if (q.length === 0){
+    searchResults.innerHTML = "";
+    searchCount.textContent = "0 résultat";
+    searchHint.textContent = "Tapez au moins 2 caractères";
+    return;
+  }
+  if (q.length < 2){
+    searchHint.textContent = "➜ Encore 1 caractère…";
+    return;
+  }
+  searchHint.textContent = "Recherche…";
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => searchParticipants(q), 220); // debounce
+});
 
-    // Entrée = ouvrir la 1ère ligne s'il y en a
-
-    searchInput.addEventListener("keydown", (e)=>{
+// Entrée = ouvrir la 1ère ligne s'il y en a
+searchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter"){
     const firstBtn =
       document.querySelector(".results-table tbody tr button[data-action='afficher']");
@@ -879,42 +878,68 @@ await startCamera();
   }
 });
 
-
-// ⬇️ Remplacer TOUTE la fonction searchParticipants par celle-ci
+// ⬇️ Fonction de recherche avec fallback sur plusieurs routes possibles
 async function searchParticipants(query){
-  try{
+  // routes candidates côté backend
+  const candidates = [
+    "/checkin/search",
+    "/checkin/participants/search",
+    "/checkin/participants/find",
+    "/checkin/find",
+    "/checkin/lookup",
+    "/participants/search",
+    "/participants/find"
+  ];
+
+  const makeBody = () => {
     const body = new URLSearchParams({ q: query });
-    if (eventId) body.set("event_id", String(eventId)); // beaucoup d'API filtrent par event
+    if (eventId) body.set("event_id", String(eventId));
+    return body;
+  };
 
-    // utilise le même wrapper que scan/validate → form-urlencoded + token + credentials
-    const res = await fetchWithCheckinToken("/checkin/search", {
-      method: "POST",
-      body
-    });
+  let lastErr = null;
 
-    const data = await parseJSONSafe(res);
-    console.log("[/checkin/search] payload:", data);
+  for (const url of candidates){
+    try{
+      // utilise le wrapper (gère token + credentials + form-urlencoded)
+      const res = await fetchWithCheckinToken(url, { method: "POST", body: makeBody() });
+      if (!res.ok){
+        lastErr = new Error(url + " → HTTP " + res.status);
+        continue; // essaie l'URL suivante
+      }
 
-    // on accepte plusieurs schémas côté serveur
-    const list =
-      Array.isArray(data.results) ? data.results :
-      Array.isArray(data.participants) ? data.participants :
-      Array.isArray(data.items) ? data.items : [];
+      const data = await parseJSONSafe(res);
+      console.log("[search used]", url, data);
 
-    if (!data.success && list.length === 0){
-      searchResults.innerHTML = "";
-      searchCount.textContent = "0 résultat";
-      searchHint.textContent  = data.error || "Aucun résultat";
+      // tolère différents schémas de réponse
+      const list =
+        Array.isArray(data.results)      ? data.results :
+        Array.isArray(data.participants) ? data.participants :
+        Array.isArray(data.items)        ? data.items :
+        Array.isArray(data.data)         ? data.data : [];
+
+      if ((data.success === false) && list.length === 0){
+        lastErr = new Error(url + " → success:false");
+        continue;
+      }
+
+      // ✅ on a des données → affiche et termine
+      renderSearchResults(list);
+      searchHint.textContent = list.length ? "Résultats" : "Aucun résultat";
       return;
+    }catch(err){
+      lastErr = err;
+      continue; // tente l'URL suivante
     }
-
-    renderSearchResults(list);
-  } catch(err){
-    searchResults.innerHTML = "";
-    searchCount.textContent = "0 résultat";
-    searchHint.textContent  = "❌ Erreur serveur : " + (err?.message || err);
   }
+
+  // Si toutes les routes échouent :
+  searchResults.innerHTML = "";
+  searchCount.textContent = "0 résultat";
+  searchHint.textContent  = "❌ Recherche indisponible (route introuvable)";
+  if (lastErr) console.warn("[searchParticipants] fallback error:", lastErr);
 }
+
 
  // 👈 FIN DE searchParticipants
 
