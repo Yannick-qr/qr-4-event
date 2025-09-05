@@ -641,6 +641,9 @@ async function refreshCredits() {
 async function loadEvents() {
   const res = await fetchWithToken("/admin/events/list", { method: "POST", body: new URLSearchParams() });
   const data = await res.json();
+
+  console.log("📦 Réponse /admin/events/list :", data);  // <-- DEBUG
+
   if (!data.success) return alert(data.error || "Erreur événements");
 
 const tbody = document.querySelector("#eventsTable tbody");
