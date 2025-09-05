@@ -523,38 +523,43 @@
 
 // ====== Fetch wrapper spécial check-in ======
 async function fetchWithCheckinToken(url, options = {}) {
-  // Mode token si on en a un, sinon mode cookie (session)
   const storedToken = sessionStorage.getItem("checkin_token");
-  checkinToken = checkinToken || storedToken || null;
+  checkinToken = checkinToken || (storedToken && storedToken !== "undefined" ? storedToken : null);
 
-  // Toujours envoyer les cookies si le serveur les utilise
+  // Toujours envoyer les cookies si le serveur en met
   options.credentials = "include";
 
-  // Normalise le body selon qu'on a un token ou pas
+  const isFormData        = options.body instanceof FormData;
+  const isURLSearchParams = options.body instanceof URLSearchParams;
+
   if (checkinToken) {
-    if (options.body instanceof FormData) {
+    if (isFormData) {
       if (!options.body.has('token')) options.body.append('token', checkinToken);
-    } else {
-      const fd = new URLSearchParams(typeof options.body === 'string' ? options.body : '');
+    } else if (isURLSearchParams) {
+      if (!options.body.has('token')) options.body.append('token', checkinToken);
+      // ne pas toucher au header, le navigateur mettra le bon CT automatiquement
+    } else if (typeof options.body === 'string') {
+      const fd = new URLSearchParams(options.body);
       if (!fd.has('token')) fd.set('token', checkinToken);
       options.body = fd;
-      options.headers = { ...(options.headers||{}), 'Content-Type':'application/x-www-form-urlencoded' };
-    }
-  } else {
-    // Pas de token → ne rien forcer, mais si c'est une simple chaîne, garde-la
-    if (!(options.body instanceof FormData) && typeof options.body !== 'string') {
-      // Laisse options.body tel quel (null/undefined) sauf si tu dois envoyer autre chose
+      // inutile de fixer Content-Type manuellement : URLSearchParams le fait
+    } else if (!options.body) {
+      const fd = new URLSearchParams();
+      fd.set('token', checkinToken);
+      options.body = fd;
     }
   }
+  // ⚠️ ne mets pas de Content-Type à la main si body est FormData/URLSearchParams
 
   const res = await fetch(url, options);
   if (res.status === 401) {
     sessionStorage.clear();
     location.reload();
-    return Promise.reject(new Error("Session expirée. Veuillez vous reconnecter."));
+    throw new Error("Session expirée. Veuillez vous reconnecter.");
   }
   return res;
 }
+
 
 
 
@@ -598,19 +603,31 @@ const evTitle = data.event_title || data.title || "";
 checkinToken  = data.checkin_token || data.token || data.access_token;
 eventId       = data.event_id ?? data.eventId ?? data.id ?? null;
 
+// ⚠️ On enregistre le token seulement s'il existe vraiment
+if (checkinToken) {
+  sessionStorage.setItem("checkin_token", checkinToken);
+} else {
+  sessionStorage.removeItem("checkin_token"); // sécurité si pas de token renvoyé
+}
+
 // Pas de token ? -> on passera en mode cookie (credentials: 'include')
 const hasToken = !!checkinToken;
 sessionStorage.setItem("checkin_has_token", hasToken ? "1" : "0");
+
+// 🔹 Enregistre aussi l'eventId si dispo
+if (eventId != null) {
+  sessionStorage.setItem("checkin_event_id", String(eventId));
+}
+
+// 🔹 Et le titre de l'événement si dispo
+if (evTitle) {
+  sessionStorage.setItem("checkin_event_title", evTitle);
+}
 
 // UI
 eventTitle.textContent     = "🎟️ " + (evTitle || "Événement");
 eventInfoTag.textContent   = eventId ? ("ID: " + eventId) : "Session check-in active";
 headerSubtitle.textContent = evTitle ? `Scanner actif pour « ${evTitle} »` : "Scanner actif";
-
-// Session
-sessionStorage.setItem("checkin_token", checkinToken);
-if (eventId != null) sessionStorage.setItem("checkin_event_id", String(eventId));
-if (evTitle) sessionStorage.setItem("checkin_event_title", evTitle);
 
 // Bascule
 loginSection.classList.add("hidden");
