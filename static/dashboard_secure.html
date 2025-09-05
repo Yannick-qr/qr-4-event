@@ -709,8 +709,6 @@ data.events.forEach(ev => {
   document.getElementById("inactiveEvents").textContent = data.events.filter(e => !e.is_active).length;
   document.getElementById("participantCredits").textContent = data.participant_credits ?? 0;
 }
-loadEvents();
-refreshCredits();
 
 // ✅ Charger les inscriptions payées
 async function loadPaidRegistrations() {
