@@ -381,6 +381,7 @@
   <script>
     // ====== State ======
     let eventId = null;
+    let checkinToken = null; // token de session check-in
     let participantId = null;
     let qrScanner = null;
     let lastScanTime = 0;
@@ -437,8 +438,6 @@
     const beepChk        = document.getElementById("beepChk");
     const vibrateChk     = document.getElementById("vibrateChk");
     const autoclearChk   = document.getElementById("autoclearChk");
-    const adminToken = localStorage.getItem("token"); // token admin déjà posé par le dashboard
-
 
     // ====== Helpers UI ======
     function show(el){ el.style.display = "block"; }
@@ -495,6 +494,25 @@
       }
     }
 
+// ====== Fetch wrapper spécial check-in ======
+async function fetchWithCheckinToken(url, options = {}) {
+  if (!checkinToken) {
+    checkinToken = sessionStorage.getItem("checkin_token");
+  }
+  if (!checkinToken) throw new Error("Token check-in manquant (connectez-vous).");
+
+  if (options.body instanceof FormData) {
+    if (!options.body.has('token')) options.body.append('token', checkinToken);
+  } else {
+    const fd = new URLSearchParams(typeof options.body === 'string' ? options.body : '');
+    if (!fd.has('token')) fd.set('token', checkinToken);
+    options.body = fd;
+    options.headers = { ...(options.headers||{}), 'Content-Type':'application/x-www-form-urlencoded' };
+  }
+
+  return fetch(url, options);
+}
+
     // ====== Login ======
 togglePw.addEventListener("click", () => {
   if (passwordInput.type === "password") {
@@ -529,6 +547,8 @@ togglePw.addEventListener("click", () => {
         eventTitle.textContent = "🎟️ " + data.event_title;
         eventInfoTag.textContent = "ID: " + eventId;
         headerSubtitle.textContent = "Scanner actif pour « " + data.event_title + " »";
+        checkinToken = data.checkin_token;  // reçu du backend
+        sessionStorage.setItem("checkin_token", checkinToken);
 
         loginSection.classList.add("hidden");
         scanSection.classList.remove("hidden");
@@ -683,7 +703,7 @@ togglePw.addEventListener("click", () => {
     async function doScan(){
       clearMsgs();
       try{
-        const res = await fetch("/checkin/scan", {
+        const res = await fetchWithCheckinToken("/checkin/scan", {
           method:"POST",
           body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
         });
@@ -736,7 +756,7 @@ togglePw.addEventListener("click", () => {
     async function validateCheckin(){
       clearMsgs();
       try{
-        const res = await fetch("/checkin/validate", {
+        const res = await fetchWithCheckinToken("/checkin/validate", {
           method:"POST",
           body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
         });
@@ -787,19 +807,19 @@ async function searchParticipants(query){
     searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
     return;
   }
-  if (!adminToken){
-    searchHint.textContent = "Token admin manquant (ouvrir depuis le Dashboard).";
-    return;
-  }
+if (!checkinToken){
+  searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
+  return;
+}
 
   try{
     const form = new URLSearchParams({
-      token: adminToken,
+      token: checkinToken,
       event_id: String(eventId),
       q: query
     });
 
-    const res = await fetch("/admin/events/participants", {
+    const res = await fetchWithCheckinToken("/admin/events/participants", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: form
@@ -906,24 +926,5 @@ fpsVal.textContent = fpsRange.value;
 qrboxVal.textContent = qrboxRange.value;
 
 </script>
-<!-- Modal Token Admin -->
-<div id="tokenModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; width:min(520px,92%); border-radius:14px; padding:22px; box-shadow:0 12px 30px rgba(0,0,0,.25);">
-    <h3 style="margin:0 0 12px; font-size:20px;">Entrer le token administrateur</h3>
-    <p style="margin:0 0 14px; color:#555">Ouvre la page depuis ton Dashboard pour l’avoir automatiquement, ou colle-le ici.</p>
-    <input id="tokenInput" type="text" placeholder="colle ton token ici"
-           style="width:100%; padding:12px 14px; border:1px solid #cfd3d8; border-radius:10px; font-size:15px; outline:none;">
-    <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
-      <button id="tokenCancel" type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #d0d7de; background:#fff;">Annuler</button>
-      <button id="tokenSave" type="button" style="padding:10px 14px; border-radius:10px; border:0; background:#0ea5e9; color:#fff;">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- Petit badge d’état du token -->
-<div id="tokenBadge" style="position:fixed; right:10px; bottom:10px; background:#eef6ff; color:#0369a1; border:1px solid #bae6fd; border-radius:999px; padding:6px 10px; font-size:12px; z-index:9999;">
-  Token: non chargé
-</div>
-
 </body>
 </html>

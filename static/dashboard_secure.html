@@ -529,7 +529,7 @@ loadUserInfo();
 
 // ✅ Déconnexion
 document.getElementById("logoutBtn").addEventListener("click", () => {
-  localStorage.removeItem("token");
+  localStorage.removeItem("admin_token"); // on supprime bien le bon token
   window.location.href = "/static/login.html";
 });
 
@@ -1050,7 +1050,7 @@ let inactivityTimer;
 function resetInactivityTimer() {
   clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("admin_token");
 
     // ➕ Stocker la raison
     sessionStorage.setItem("logoutReason", "Vous avez été déconnecté pour cause d'inactivité.");
@@ -1117,24 +1117,23 @@ function togglePass(eventId, realPass) {
 }
 </script>
 
-<!-- Modal Token Admin -->
-<div id="tokenModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center;">
-  <div style="background:#fff; width:min(520px,92%); border-radius:14px; padding:22px; box-shadow:0 12px 30px rgba(0,0,0,.25);">
-    <h3 style="margin:0 0 12px; font-size:20px;">Entrer le token administrateur</h3>
-    <p style="margin:0 0 14px; color:#555">Ouvre la page depuis ton Dashboard pour l’avoir automatiquement, ou colle-le ici.</p>
-    <input id="tokenInput" type="text" placeholder="colle ton token ici"
-           style="width:100%; padding:12px 14px; border:1px solid #cfd3d8; border-radius:10px; font-size:15px; outline:none;">
-    <div style="display:flex; gap:10px; margin-top:16px; justify-content:flex-end;">
-      <button id="tokenCancel" type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #d0d7de; background:#fff;">Annuler</button>
-      <button id="tokenSave" type="button" style="padding:10px 14px; border-radius:10px; border:0; background:#0ea5e9; color:#fff;">Enregistrer</button>
-    </div>
-  </div>
-</div>
 
-<!-- Badge état du token -->
-<div id="tokenBadge" style="position:fixed; right:10px; bottom:10px; background:#eef6ff; color:#0369a1; border:1px solid #bae6fd; border-radius:999px; padding:6px 10px; font-size:12px; z-index:9999;">
-  Token: non chargé
-</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const token = localStorage.getItem("admin_token");
+  if (!token) {
+    alert(⚠️ Session expirée. Merci de vous reconnecter.");
+    window.location.href = "/static/login.html";
+    return;
+  }
+
+  // Charge les données de l'admin directement
+  loadEvents();
+  refreshCredits();
+  loadUserInfo();
+});
+</script>
+
 
 </body>
 </html>

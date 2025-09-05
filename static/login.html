@@ -282,22 +282,25 @@
         loginBtn.disabled = true;
         loginBtn.textContent = "Connexion…";
 
-        const response = await fetch("/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ email, password })
-        });
+const response = await fetch("/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: new URLSearchParams({ email, password })
+});
 
-        const data = await response.json();
+const data = await response.json();
 
-        if (data && data.success) {
-          showSuccess("Connexion réussie ✅");
-// (optionnel) si tu gardes encore l'ancien code ailleurs :
-localStorage.setItem("token", data.token);
-// Redirige en passant ?token=... pour que admin-token.js le capte et le stocke
-setTimeout(() => {
-window.location.href = "/static/dashboard_secure.html?token=" + encodeURIComponent(data.token);
-}, 500);
+if (data && data.success && data.token) {
+  showSuccess("Connexion réussie ✅");
+
+  // ✅ Stocke le token automatiquement
+  localStorage.setItem("admin_token", data.token);
+
+  // ✅ Redirige vers le Dashboard (plus besoin de ?token=…)
+  setTimeout(() => {
+    window.location.href = "/static/dashboard.html";
+  }, 500);
+
         } else {
           // ⚠️ UTILISER data.message (ton backend renvoie {success:false, message:"..."})
           const msg = data?.message || data?.detail || data?.error || "❌ Erreur lors de la connexion.";
