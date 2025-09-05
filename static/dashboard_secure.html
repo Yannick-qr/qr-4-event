@@ -519,11 +519,9 @@ const deletePaypalBtn = document.getElementById("deletePaypalBtn");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
-let token = null;  // ✅ global
-
 // ✅ Charger infos utilisateur
 async function loadUserInfo() {
-  const res = await fetch("/me", { method: "POST", body: new URLSearchParams({ token }) });
+  const res = await fetchWithToken("/me", { method: "POST", body: new URLSearchParams({ token }) });
   const data = await res.json();
   document.getElementById("userEmail").textContent = data.success ? data.email : "Non connecté";
 }
@@ -1119,26 +1117,11 @@ function togglePass(eventId, realPass) {
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  token = localStorage.getItem("admin_token");
-
-  //⬇️ si jamais l’URL contient déjà ?token=...
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has("token")) {
-    token = urlParams.get("token");
-    localStorage.setItem("admin_token", token); // on l’enregistre
-  }
-
-  if (!token) {
-    alert("⚠️ Session expirée. Merci de vous reconnecter.");
-    window.location.href = "/static/login.html";
-    return;
-  }
-
-  // ⚡ maintenant loadEvents() et loadUserInfo() ont accès au vrai token
   loadEvents();
   refreshCredits();
   loadUserInfo();
 });
+
 </script>
 
 
