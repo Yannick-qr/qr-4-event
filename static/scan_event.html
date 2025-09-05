@@ -880,39 +880,42 @@ await startCamera();
 });
 
 
+// ⬇️ Remplacer TOUTE la fonction searchParticipants par celle-ci
 async function searchParticipants(query){
-  const hasToken = !!(sessionStorage.getItem("checkin_token"));
   try{
-    let res, body, headers;
-    if (hasToken) {
-      body = JSON.stringify({ token: sessionStorage.getItem("checkin_token"), q: query });
-      headers = { "Content-Type": "application/json" };
-    } else {
-      body = JSON.stringify({ q: query }); // pas de token
-      headers = { "Content-Type": "application/json" };
-    }
+    const body = new URLSearchParams({ q: query });
+    if (eventId) body.set("event_id", String(eventId)); // beaucoup d'API filtrent par event
 
-    res = await fetch("/checkin/search", {
+    // utilise le même wrapper que scan/validate → form-urlencoded + token + credentials
+    const res = await fetchWithCheckinToken("/checkin/search", {
       method: "POST",
-      headers,
-      body,
-      credentials: "include"
+      body
     });
 
     const data = await parseJSONSafe(res);
-    if (!data.success) {
+    console.log("[/checkin/search] payload:", data);
+
+    // on accepte plusieurs schémas côté serveur
+    const list =
+      Array.isArray(data.results) ? data.results :
+      Array.isArray(data.participants) ? data.participants :
+      Array.isArray(data.items) ? data.items : [];
+
+    if (!data.success && list.length === 0){
       searchResults.innerHTML = "";
       searchCount.textContent = "0 résultat";
       searchHint.textContent  = data.error || "Aucun résultat";
       return;
     }
-    renderSearchResults(Array.isArray(data.results) ? data.results : []);
+
+    renderSearchResults(list);
   } catch(err){
     searchResults.innerHTML = "";
     searchCount.textContent = "0 résultat";
     searchHint.textContent  = "❌ Erreur serveur : " + (err?.message || err);
   }
 }
+
  // 👈 FIN DE searchParticipants
 
 function escapeHtml(s){
@@ -941,32 +944,34 @@ function renderSearchResults(list){
     return;
   }
 
-  const rowsHtml = list.map(p=>{
-    const id        = p.id;
-    const fullname  = p.name || "—";
-    const email     = p.email || "—";
-    const ticket    = p.ticket_id || "—";
-    const scanned   = !!p.scanned_at;
+const rowsHtml = list.map(p=>{
+  const id   = p.id ?? p.participant_id ?? p.user_id ?? "—";
+  const fn   = p.first_name || p.firstname || "";
+  const ln   = p.last_name  || p.lastname  || "";
+  const name = (p.name && p.name.trim()) || [fn, ln].filter(Boolean).join(" ") || "—";
+  const email  = p.email || p.mail || "—";
+  const ticket = p.ticket_id || p.ticket || p.qr_code || "—";
+  const scanned = !!(p.scanned_at || p.checked_in_at || p.is_scanned);
 
-    const statHtml = scanned
-      ? `<span class="stat-dot stat-ok"><i></i>✅</span>`
-      : `<span class="stat-dot stat-no"><i></i>❌</span>`;
+  const statHtml = scanned
+    ? `<span class="stat-dot stat-ok"><i></i>✅</span>`
+    : `<span class="stat-dot stat-no"><i></i>❌</span>`;
 
-    // On utilisera le ticket_id comme payload "qr" quand il existe, sinon l'id
-    const qr = ticket !== "—" ? ticket : String(id);
+  const qr = ticket !== "—" ? String(ticket) : String(id);
 
-    return `
-      <tr data-qr="${qr}">
-        <td>${escapeHtml(fullname)}</td>
-        <td>${escapeHtml(email)}</td>
-        <td>${escapeHtml(ticket)}</td>
-        <td>${statHtml}</td>
-        <td class="actions-cell">
-          <button class="btn-outline" data-action="afficher">Afficher</button>
-          <button class="btn" data-action="checkin"${scanned ? " disabled title='Déjà scanné'":""}>Check-in</button>
-        </td>
-      </tr>`;
-  }).join("");
+  return `
+    <tr data-qr="${qr}">
+      <td>${escapeHtml(name)}</td>
+      <td>${escapeHtml(email)}</td>
+      <td>${escapeHtml(String(ticket))}</td>
+      <td>${statHtml}</td>
+      <td class="actions-cell">
+        <button class="btn-outline" data-action="afficher">Afficher</button>
+        <button class="btn" data-action="checkin"${scanned ? " disabled title='Déjà scanné'":""}>Check-in</button>
+      </td>
+    </tr>`;
+}).join("");
+
 
   searchResults.classList.add("table-wrap");
   searchResults.innerHTML = `
