@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Inscription Événement</title>
   <style>
+/* ===== Base ===== */
 body {
   font-family: Arial, sans-serif;
   background: #f5f6fa;
@@ -13,144 +14,107 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
+  color: #1f2937;
 }
 
-/* 🎨 Header façon bannière */
+/* ===== Variables UI ===== */
+:root{
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #007bff;
+  --primary-dark:#0056b3;
+  --ring: 0 0 0 3px rgba(0,123,255,.18);
+
+  /* Largeur commune image + carte */
+  --card-max: 680px;          /* ⬅️ plus large qu’avant */
+  --card-side: 26px;          /* padding horizontal */
+}
+
+/* ===== Fond plein écran flouté depuis #event-image ===== */
+:root{ --event-bg-url: url("/static/img/placeholder.png"); }
+body::before{
+  content:"";
+  position: fixed; inset: 0; z-index: -2;
+  background-image: var(--event-bg-url);
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  filter: blur(14px); transform: scale(1.08);
+}
+body::after{
+  content:"";
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(0,0,0,.25), transparent 60%),
+    linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,.10) 30%, rgba(0,0,0,.25));
+  pointer-events: none;
+}
+
+/* ===== Header façon bannière (même largeur que .box) ===== */
 .event-header {
   position: relative;
-  max-width: 900px;
-  margin: 20px auto;
-  max-height: 400px;
+  width: 95%;
+  max-width: var(--card-max);
+  margin: 24px auto 10px;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.06);
 }
 .event-header img {
   width: 100%;
-  height: auto;
+  height: clamp(190px, 28vw, 260px); /* bandeau harmonieux */
   display: block;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 16px;
 }
-/* ✅ Dégradé sombre sous le titre */
+/* Dégradé sombre sous le titre */
 .event-header::after {
   content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: absolute; inset: auto 0 0 0;
   height: 140px;
   background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 16px 16px;
 }
-/* ✅ Titre superposé */
+/* Titre superposé */
 .event-header h2 {
   position: absolute;
-  bottom: 20px;
-  left: 25px;
+  bottom: 18px; left: 22px;
   margin: 0;
-  padding: 10px 15px;
+  padding: 10px 14px;
   color: #fff;
-  font-size: 2rem;
+  font-size: clamp(1.3rem, 3.6vw, 2rem);
   z-index: 2;
   text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  border-radius: 10px;
 }
 
-/* 🗂️ Box infos */
+/* ===== Carte principale (cadre blanc) ===== */
 .box {
-  background: white;
-  margin: 20px auto 40px auto;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 600px;
+  width: 95%;
+  max-width: var(--card-max);           /* ⬅️ même largeur que l’image */
+  background: rgba(255,255,255,.96);
+  margin: 10px auto 42px;
+  padding: 28px var(--card-side) 30px;  /* ⬅️ plus aéré */
+  border-radius: 16px;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  transition: transform .2s;
 }
+.box:hover { transform: translateY(-3px); }
 
-h3 { margin-top: 0; color: #007bff; text-align: center; }
+h3 { margin: 0 0 14px; color: var(--primary); text-align: center; font-weight: 700; letter-spacing: .2px; }
 p { margin: 8px 0; }
 
-.success { color: green; margin-top: 10px; }
-.error { color: red; margin-top: 10px; }
-
-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+/* Séparateur design */
+.box hr{
+  margin: 25px 0;
+  border: none; height: 2px;
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+  border-radius: 2px;
 }
 
-/* 🎯 Bouton bleu personnalisé */
-#custom-paypal-btn {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-  display: block;
-  margin: 20px auto 0;
-  position: relative;
-}
-#custom-paypal-btn:hover {
-  background: #0056b3;
-}
-#custom-paypal-btn.loading {
-  cursor: wait;
-  opacity: 0.8;
-}
-#custom-paypal-btn.loading::after {
-  content: "";
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  width: 16px;
-  height: 16px;
-  border: 2px solid white;
-  border-top: 2px solid transparent;
-  border-radius: 50%;
-  transform: translateY(-50%);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin {
-  0% { transform: translateY(-50%) rotate(0deg); }
-  100% { transform: translateY(-50%) rotate(360deg); }
-}
-
-/* 📱 Responsive */
-@media (max-width: 768px) {
-  .event-header {
-    max-width: 100%;
-    border-radius: 0;
-  }
-  .box {
-    width: 95%;
-    padding: 20px;
-  }
-  .event-header h2 {
-    font-size: 1.4rem;
-    left: 15px;
-    bottom: 10px;
-  }
-}
-/* 📦 Carte principale */
-.box {
-  background: white;
-  margin: 20px auto 40px auto;
-  padding: 25px;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-  width: 100%;
-  max-width: 600px;
-  transition: transform 0.2s;
-}
-.box:hover {
-  transform: translateY(-3px);
-}
-
-/* 📅 Infos événement */
+/* ===== Infos événement ===== */
 .event-details p {
   font-size: 16px;
   margin: 10px 0;
@@ -161,124 +125,19 @@ input {
 .event-details .icon {
   margin-right: 8px;
   font-size: 1.2rem;
-}
-
-/* 📝 Description */
-.description {
-  margin-top: 10px;
-  font-style: italic;
-  color: #666;
-}
-
-/* 🎯 Bouton inscription */
-#custom-paypal-btn {
-  background: linear-gradient(90deg, #007bff, #0056b3);
-  color: white;
-  border: none;
-  padding: 14px 25px;
-  border-radius: 30px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background 0.3s, transform 0.2s;
-  display: block;
-  margin: 20px auto 0;
-  position: relative;
-}
-#custom-paypal-btn:hover {
-  background: linear-gradient(90deg, #0056b3, #003f80);
-  transform: scale(1.05);
-}
-
-/* ✅ Messages succès/erreur */
-.success { color: green; margin-top: 10px; font-weight: bold; }
-.error { color: red; margin-top: 10px; font-weight: bold; }
-.about-title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #444;
-  text-align: left;
-}
-.description {
-  margin-top: 10px;
-  margin-bottom: 30px; /* ✅ espace sous la description */
-  font-style: italic;
-  color: #666;
-}
-/* 🆕 Séparateur design */
-.box hr {
-  margin-top: 25px;   /* espace après Prix */
-  margin-bottom: 25px; /* espace avant "Inscription" */
-  border: none;
-  height: 2px;
-  background: linear-gradient(to right, #007bff, #00c6ff); /* design */
-  border-radius: 2px;
-}
-/* ====== Patch UI propre & responsive (safe override) ====== */
-:root{
-  --bg: #f5f6fa;
-  --card: #ffffff;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --primary: #007bff;
-  --primary-dark:#0056b3;
-  --ring: 0 0 0 3px rgba(0,123,255,.18);
-}
-
-/* Page */
-body{
-  background: var(--bg);
-  color: var(--text);
-}
-
-/* ---------- Header/banner ---------- */
-.event-header{
-  box-shadow: 0 10px 24px rgba(0,0,0,.06);
-}
-.event-header img{
-  height: 260px;              /* garde une belle bandeau sur desktop */
-  object-fit: cover;
-}
-@media (max-width: 768px){
-  .event-header img{ height: 220px; }
-}
-.event-header h2{
-  letter-spacing: .2px;
-  line-height: 1.2;
-  backdrop-filter: blur(2px);
-  border-radius: 10px;
-}
-
-/* ---------- Card principale ---------- */
-.box{
-  background: var(--card);
-  border: 1px solid #eef2f7;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
-}
-.box h3{
-  margin: 0 0 14px;
-  color: var(--primary);
-  font-weight: 700;
-  letter-spacing: .2px;
-}
-
-/* Séparateur plus doux en fallback si gradient non supporté */
-.box hr{
-  background: linear-gradient(90deg, var(--primary), #00c6ff);
-}
-
-/* ---------- Détails événement ---------- */
-.event-details p{
-  margin: 8px 0;
-  color: #374151;
-}
-.event-details .icon{
   width: 22px; display:inline-flex; align-items:center; justify-content:center;
 }
 
 /* Description */
+.about-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; color: #444; text-align: left; position: relative; }
+.about-title::after{
+  content:"";
+  position:absolute; left:0; bottom:-6px; width:42px; height:3px;
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+  border-radius: 2px;
+}
 .description{
+  margin: 10px 0 30px;
   background: #fafbff;
   border: 1px solid #eef2f7;
   padding: 12px 14px;
@@ -287,7 +146,7 @@ body{
   font-style: normal;
 }
 
-/* ---------- Formulaire (grid + champs) ---------- */
+/* ===== Formulaire ===== */
 #registerForm{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -295,10 +154,11 @@ body{
   margin-top: 8px;
 }
 #registerForm input{
-  margin: 0;                             /* retire l’ancien margin pour le grid */
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
-  padding: 12px 14px;
   font-size: 1rem;
   background: #fff;
   transition: border-color .2s, box-shadow .2s, background .2s;
@@ -310,103 +170,79 @@ body{
   box-shadow: var(--ring);
   background: #ffffff;
 }
-/* États simples (HTML5) */
+/* États simples */
 #registerForm input:invalid:focus{ border-color:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.16); }
 #registerForm input:valid:focus  { border-color:#10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.16); }
 
-@media (max-width: 680px){
-  #registerForm{ grid-template-columns: 1fr; }
+/* Champs hors grid éventuels */
+input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-/* ---------- Bouton custom PayPal ---------- */
+/* ===== Bouton d'inscription (custom PayPal) ===== */
 #custom-paypal-btn{
   width: 100%;
-  max-width: 420px;
-  border-radius: 12px;
-  letter-spacing: .2px;
+  max-width: 520px;                /* ⬅️ plus large mais contenu */
+  background: linear-gradient(90deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  padding: 14px 25px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background .3s, transform .2s, box-shadow .2s;
+  display: block;
+  margin: 20px auto 0;
+  position: relative;
   box-shadow: 0 8px 18px rgba(0,123,255,.25);
 }
-#custom-paypal-btn:hover{ box-shadow: 0 10px 22px rgba(0,86,179,.28); }
-#custom-paypal-btn.loading{ opacity:.85; }
-
-/* Espace/centrage des conteneurs de boutons */
-#paypal-button-container{
-  margin-top: 14px;
-  display: flex; justify-content: center;
+#custom-paypal-btn:hover {
+  background: linear-gradient(90deg, #0056b3, #003f80);
+  transform: scale(1.03);
+  box-shadow: 0 10px 22px rgba(0,86,179,.28);
 }
+#custom-paypal-btn.loading { cursor: wait; opacity: .85; }
+#custom-paypal-btn.loading::after {
+  content: "";
+  position: absolute; right: 15px; top: 50%;
+  width: 16px; height: 16px;
+  border: 2px solid white; border-top: 2px solid transparent;
+  border-radius: 50%; transform: translateY(-50%);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+#paypal-button-container{ margin-top: 14px; display:flex; justify-content:center; }
 #cancel-container{ margin-top: 10px; }
 
-/* ---------- Messages feedback ---------- */
+/* ===== Messages ===== */
 #message{ margin-top: 10px; }
-#message .success,
 .success{
-  color:#065f46;
-  background:#ecfdf5;
-  border:1px solid #a7f3d0;
-  padding:10px 12px;
-  border-radius:10px;
-  font-weight:600;
+  color:#065f46; background:#ecfdf5; border:1px solid #a7f3d0;
+  padding:10px 12px; border-radius:10px; font-weight:600; margin-top: 10px;
 }
-#message .error,
 .error{
-  color:#7f1d1d;
-  background:#fee2e2;
-  border:1px solid #fecaca;
-  padding:10px 12px;
-  border-radius:10px;
-  font-weight:600;
+  color:#7f1d1d; background:#fee2e2; border:1px solid #fecaca;
+  padding:10px 12px; border-radius:10px; font-weight:600; margin-top: 10px;
 }
 
-/* ---------- Micro animations ---------- */
-.about-title{ position: relative; }
-.about-title::after{
-  content:"";
-  position:absolute; left:0; bottom:-6px; width:42px; height:3px;
-  background: linear-gradient(90deg, var(--primary), #00c6ff);
-  border-radius: 2px;
-}
-
-/* ---------- Petits affinages mobiles ---------- */
+/* ===== Responsive ===== */
 @media (max-width: 768px){
-  .box{ width: 94%; padding: 20px; }
+  .event-header { width: 94%; border-radius: 14px; }
+  .event-header img{ height: 220px; border-radius: 14px; }
+  .event-header h2 { font-size: 1.4rem; left: 14px; bottom: 10px; }
+
+  .box{ width: 94%; padding: 22px 18px 24px; background: rgba(255,255,255,.98); }
+  #registerForm{ grid-template-columns: 1fr; }
   #custom-paypal-btn{ max-width: none; }
   .description{ padding: 10px 12px; }
 }
+</style>
 
-/* === Fond plein écran flouté à partir de #event-image === */
-:root{
-  --event-bg-url: url("/static/img/placeholder.png"); /* fallback */
-}
-body::before{
-  content:"";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  background-image: var(--event-bg-url);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  filter: blur(14px);
-  transform: scale(1.08); /* évite les bords après blur */
-}
-body::after{
-  content:"";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(0,0,0,.25), transparent 60%),
-    linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,.10) 30%, rgba(0,0,0,.25));
-  pointer-events: none;
-}
-/* légère opacité pour la carte au-dessus du fond sombre */
-.box{ background: rgba(255,255,255,.96); }
-@media (max-width:768px){
-  body::before{ filter: blur(12px); }
-  .box{ background: rgba(255,255,255,.98); }
-}
-
-  </style>
 </head>
 <body>
 
