@@ -1342,7 +1342,7 @@ let inactivityTimer;
 function resetInactivityTimer() {
   clearTimeout(inactivityTimer);
   inactivityTimer = setTimeout(() => {
-    localStorage.removeItem("admin_token");
+    localStorage.removeItem("qr4event_admin_token");
 
     // ➕ Stocker la raison
     sessionStorage.setItem("logoutReason", "Vous avez été déconnecté pour cause d'inactivité.");
