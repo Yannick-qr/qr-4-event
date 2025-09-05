@@ -365,12 +365,16 @@
           </div>
         </div>
 
-        <div class="box">
-          <h3>Liens utiles</h3>
-          <div class="row">
-            <a class="btn-outline" href="/static/login.html" style="text-decoration:none; display:inline-block; text-align:center">⬅ Retour à la connexion</a>
-          </div>
-        </div>
+<div class="box">
+  <h3>Liens utiles</h3>
+  <div class="row" style="gap:8px; flex-wrap:wrap">
+    <button class="btn-outline" id="backToLogin">⬅ Retour à la connexion</button>
+
+    <button class="btn-outline" id="logoutBtn">🚪 Se déconnecter</button>
+  </div>
+</div>
+
+
       </div>
     </div>
   </div>
@@ -440,21 +444,26 @@
     const autoclearChk   = document.getElementById("autoclearChk");
 
 // Restaure la session si déjà connecté
+
 (function restoreSession(){
-  const t = sessionStorage.getItem("checkin_token");
-  const e = sessionStorage.getItem("checkin_event_id");
+  const t     = sessionStorage.getItem("checkin_token");
+  const e     = sessionStorage.getItem("checkin_event_id");
   const title = sessionStorage.getItem("checkin_event_title") || "";
-  if (t && e) {
+
+  if (t) {
     checkinToken = t;
-    eventId = Number(e);
+    eventId = e ? Number(e) : null;
+
     loginSection.classList.add("hidden");
     scanSection.classList.remove("hidden");
-    eventTitle.textContent = "🎟️ " + title;
-    eventInfoTag.textContent = "ID: " + eventId;
-    // optionnel: pré-charger les caméras
+
+    eventTitle.textContent = "🎟️ " + (title || "Événement");
+    eventInfoTag.textContent = e ? ("ID: " + eventId) : "Session check-in active";
+
     populateCameras().then(startCamera).catch(()=>{});
   }
 })();
+
 
 
     // ====== Helpers UI ======
@@ -514,9 +523,7 @@
 
 // ====== Fetch wrapper spécial check-in ======
 async function fetchWithCheckinToken(url, options = {}) {
-  if (!checkinToken) {
-    checkinToken = sessionStorage.getItem("checkin_token");
-  }
+  if (!checkinToken) checkinToken = sessionStorage.getItem("checkin_token");
   if (!checkinToken) throw new Error("Token check-in manquant (connectez-vous).");
 
   if (options.body instanceof FormData) {
@@ -528,8 +535,15 @@ async function fetchWithCheckinToken(url, options = {}) {
     options.headers = { ...(options.headers||{}), 'Content-Type':'application/x-www-form-urlencoded' };
   }
 
-  return fetch(url, options);
+  const res = await fetch(url, options);
+  if (res.status === 401) {
+    sessionStorage.clear();
+    location.reload(); // renvoie à l'écran de login
+    return Promise.reject(new Error("Session expirée. Veuillez vous reconnecter."));
+  }
+  return res;
 }
+
 
     // ====== Login ======
 togglePw.addEventListener("click", () => {
@@ -561,35 +575,38 @@ async function doLogin(){
       })
     });
 
-    const data = await parseJSONSafe(res);
-    if (!data.success) throw new Error(data.error || "Mauvais identifiants");
+const data = await parseJSONSafe(res);
+console.log("LOGIN KEYS:", Object.keys(data));
 
-    // ✅ Récupère les bonnes clés, peu importe leur nom exact
-    eventId       = data.event_id || data.eventId || data.id;
-    const evTitle = data.event_title || data.title || "";
-    checkinToken  = data.checkin_token || data.token;
+if (!data.success) throw new Error(data.error || "Mauvais identifiants");
 
-    if (!eventId || !checkinToken) {
-      throw new Error("Réponse de login incomplète.");
-    }
+// lis souplement les champs
+const evTitle = data.event_title || data.title || "";
+checkinToken  = data.checkin_token || data.token || data.access_token;
+eventId       = data.event_id ?? data.eventId ?? data.id ?? null;
 
-    // ✅ Met à jour l'UI
-    eventTitle.textContent     = "🎟️ " + evTitle;
-    eventInfoTag.textContent   = "ID: " + eventId;
-    headerSubtitle.textContent = "Scanner actif pour « " + evTitle + " »";
+if (!checkinToken) {
+  // (Optionnel) aide debug
+  console.log("LOGIN RESPONSE:", data);
+  throw new Error("Réponse de login incomplète (token manquant).");
+}
 
-    // ✅ Sauvegarde dans la session (important pour la recherche)
-    sessionStorage.setItem("checkin_token", checkinToken);
-    sessionStorage.setItem("checkin_event_id", String(eventId));
-    sessionStorage.setItem("checkin_event_title", evTitle);
+// UI
+eventTitle.textContent     = "🎟️ " + (evTitle || "Événement");
+eventInfoTag.textContent   = eventId ? ("ID: " + eventId) : "Session check-in active";
+headerSubtitle.textContent = evTitle ? `Scanner actif pour « ${evTitle} »` : "Scanner actif";
 
-    // ✅ Passe en mode scanner
-    loginSection.classList.add("hidden");
-    scanSection.classList.remove("hidden");
+// Session
+sessionStorage.setItem("checkin_token", checkinToken);
+if (eventId != null) sessionStorage.setItem("checkin_event_id", String(eventId));
+if (evTitle) sessionStorage.setItem("checkin_event_title", evTitle);
 
-    // ✅ Prépare les caméras
-    await populateCameras();
-    await startCamera();
+// Bascule
+loginSection.classList.add("hidden");
+scanSection.classList.remove("hidden");
+await populateCameras();
+await startCamera();
+
 
   } catch (err) {
     loginError.textContent = "❌ " + (err?.message || "Erreur serveur");
@@ -741,11 +758,16 @@ async function doLogin(){
     async function doScan(){
       clearMsgs();
       try{
+        const paramsScan = new URLSearchParams({ qr_code: participantId });
+        if (eventId) paramsScan.set("event_id", eventId);
+
         const res = await fetchWithCheckinToken("/checkin/scan", {
-          method:"POST",
-          body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
-        });
+                        method:"POST",
+                        body: paramsScan
+                   });
+
         const data = await parseJSONSafe(res);
+
         if(data.success && data.participant){
           const p = data.participant;
 
@@ -794,10 +816,15 @@ async function doLogin(){
     async function validateCheckin(){
       clearMsgs();
       try{
-        const res = await fetchWithCheckinToken("/checkin/validate", {
-          method:"POST",
-          body:new URLSearchParams({ event_id: eventId, qr_code: participantId })
-        });
+     const paramsVal = new URLSearchParams({ qr_code: participantId });
+     if (eventId) paramsVal.set("event_id", eventId);
+
+     const res = await fetchWithCheckinToken("/checkin/validate", {
+                 method:"POST",
+                 body: paramsVal
+           });
+
+
         const data = await parseJSONSafe(res);
         if(data.success){
           showSuccess("✅ " + (data.message || "Check-in validé") + "<br>Vous pouvez scanner un nouveau participant…");
@@ -833,15 +860,19 @@ async function doLogin(){
     });
 
     // Entrée = ouvrir la 1ère ligne s'il y en a
+
     searchInput.addEventListener("keydown", (e)=>{
-      if (e.key === "Enter"){
-        const firstBtn = searchResults.querySelector(".result-item button[data-action='afficher']");
-        if (firstBtn) firstBtn.click();
-      }
-    });
+  if (e.key === "Enter"){
+    const firstBtn =
+      document.querySelector(".results-table tbody tr button[data-action='afficher']");
+    if (firstBtn) firstBtn.click();
+  }
+});
+
 
 async function searchParticipants(query){
-  if (!checkinToken || !eventId){
+  if (!checkinToken) checkinToken = sessionStorage.getItem("checkin_token");
+  if (!checkinToken){
     searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
     return;
   }
@@ -866,6 +897,11 @@ async function searchParticipants(query){
   }
 } // 👈 FIN DE searchParticipants
 
+function escapeHtml(s){
+  return (s || "").replace(/[&<>"']/g, m => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]
+  ));
+}
 
 function renderSearchResults(list){
   const count = Array.isArray(list) ? list.length : 0;
@@ -954,6 +990,16 @@ function renderSearchResults(list){
 fpsVal.textContent = fpsRange.value;
 qrboxVal.textContent = qrboxRange.value;
 
-</script>
+document.getElementById("logoutBtn")?.addEventListener("click", () => {
+  sessionStorage.clear();
+  location.reload();
+});
+
+document.getElementById("backToLogin")?.addEventListener("click", () => {
+  sessionStorage.clear(); // Efface le token check-in
+  window.location.href = "/static/scan_event.html"; // Renvoie à la page login du scan
+});
+
+ </script>
 </body>
 </html>
