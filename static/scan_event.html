@@ -228,6 +228,35 @@
 .stat-no i { background: #e74c3c; }
 .actions-cell { display: flex; gap: 8px; }
 
+/* Pour les écrans mobiles */
+@media (max-width: 768px) {
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+  }
+
+  th, td {
+    text-align: center;
+    padding: 10px;
+    white-space: nowrap;
+  }
+
+  /* Centrer les boutons "Afficher" et "Check-in" */
+  td button, td a {
+    display: inline-block;
+    margin: 5px auto;
+    text-align: center;
+  }
+
+  /* Centrer les colonnes */
+  .results-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
   </style>
 </head>
 <body>
