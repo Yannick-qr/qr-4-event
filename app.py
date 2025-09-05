@@ -1293,6 +1293,7 @@ def list_events(token: str = Form(...), db: Session = Depends(get_db)):
     return {
         "success": True,
         "participant_credits": getattr(user, "participant_credits", 0),
+        "email": user.email,   # 👈 pour debug
         "events": [
             {
                 "id": e.id,
