@@ -53,6 +53,7 @@
       options.body = fd;
       options.headers = { ...(options.headers || {}), 'Content-Type': 'application/x-www-form-urlencoded' };
     }
+      console.log("➡️ fetchWithToken envoie le token:", token, "vers", url);
 
     return fetch(url, options);
   }
