@@ -524,6 +524,9 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 async function loadUserInfo() {
   const res = await fetchWithToken("/me", { method: "POST", body: new URLSearchParams() });
   const data = await res.json();
+
+console.log("👤 Réponse /me :", data);  // <-- DEBUG
+
   document.getElementById("userEmail").textContent = data.success ? data.email : "Non connecté";
 }
 
