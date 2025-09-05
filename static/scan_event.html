@@ -439,6 +439,24 @@
     const vibrateChk     = document.getElementById("vibrateChk");
     const autoclearChk   = document.getElementById("autoclearChk");
 
+// Restaure la session si déjà connecté
+(function restoreSession(){
+  const t = sessionStorage.getItem("checkin_token");
+  const e = sessionStorage.getItem("checkin_event_id");
+  const title = sessionStorage.getItem("checkin_event_title") || "";
+  if (t && e) {
+    checkinToken = t;
+    eventId = Number(e);
+    loginSection.classList.add("hidden");
+    scanSection.classList.remove("hidden");
+    eventTitle.textContent = "🎟️ " + title;
+    eventInfoTag.textContent = "ID: " + eventId;
+    // optionnel: pré-charger les caméras
+    populateCameras().then(startCamera).catch(()=>{});
+  }
+})();
+
+
     // ====== Helpers UI ======
     function show(el){ el.style.display = "block"; }
     function hide(el){ el.style.display = "none"; }
@@ -529,39 +547,59 @@ togglePw.addEventListener("click", () => {
     loginInput.addEventListener("input", clearLoginError);
     passwordInput.addEventListener("input", clearLoginError);
 
-    async function doLogin(){
-      clearLoginError();
-      loginBtn.disabled = true; loginBtn.textContent = "Connexion…";
-      try{
-        const res = await fetch("/checkin/login", {
-          method:"POST",
-          body:new URLSearchParams({
-            login: loginInput.value.trim(),
-            password: passwordInput.value
-          })
-        });
-        const data = await parseJSONSafe(res);
-        if(!data.success) throw new Error(data.error || "Mauvais identifiants");
+async function doLogin(){
+  clearLoginError();
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Connexion…";
 
-        eventId = data.event_id;
-        eventTitle.textContent = "🎟️ " + data.event_title;
-        eventInfoTag.textContent = "ID: " + eventId;
-        headerSubtitle.textContent = "Scanner actif pour « " + data.event_title + " »";
-        checkinToken = data.checkin_token;  // reçu du backend
-        sessionStorage.setItem("checkin_token", checkinToken);
+  try {
+    const res = await fetch("/checkin/login", {
+      method: "POST",
+      body: new URLSearchParams({
+        login: loginInput.value.trim(),
+        password: passwordInput.value
+      })
+    });
 
-        loginSection.classList.add("hidden");
-        scanSection.classList.remove("hidden");
+    const data = await parseJSONSafe(res);
+    if (!data.success) throw new Error(data.error || "Mauvais identifiants");
 
-        await populateCameras();
-        await startCamera();
-      }catch(err){
-        loginError.textContent = "❌ " + (err?.message || "Erreur serveur");
-        show(loginError);
-      }finally{
-        loginBtn.disabled = false; loginBtn.textContent = "Se connecter";
-      }
+    // ✅ Récupère les bonnes clés, peu importe leur nom exact
+    eventId       = data.event_id || data.eventId || data.id;
+    const evTitle = data.event_title || data.title || "";
+    checkinToken  = data.checkin_token || data.token;
+
+    if (!eventId || !checkinToken) {
+      throw new Error("Réponse de login incomplète.");
     }
+
+    // ✅ Met à jour l'UI
+    eventTitle.textContent     = "🎟️ " + evTitle;
+    eventInfoTag.textContent   = "ID: " + eventId;
+    headerSubtitle.textContent = "Scanner actif pour « " + evTitle + " »";
+
+    // ✅ Sauvegarde dans la session (important pour la recherche)
+    sessionStorage.setItem("checkin_token", checkinToken);
+    sessionStorage.setItem("checkin_event_id", String(eventId));
+    sessionStorage.setItem("checkin_event_title", evTitle);
+
+    // ✅ Passe en mode scanner
+    loginSection.classList.add("hidden");
+    scanSection.classList.remove("hidden");
+
+    // ✅ Prépare les caméras
+    await populateCameras();
+    await startCamera();
+
+  } catch (err) {
+    loginError.textContent = "❌ " + (err?.message || "Erreur serveur");
+    show(loginError);
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Se connecter";
+  }
+}
+
 
     // ====== Camera control ======
     async function populateCameras(){
@@ -802,38 +840,32 @@ togglePw.addEventListener("click", () => {
       }
     });
 
+
 async function searchParticipants(query){
-  if (!checkinToken){
+  if (!checkinToken || !eventId){
     searchHint.textContent = "Veuillez d'abord vous connecter à l'événement.";
     return;
   }
-
   try{
     const res = await fetch("/checkin/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: checkinToken, q: query })
     });
-
     const data = await parseJSONSafe(res);
-
-    if (!data.success){
+    if (!data.success) {
       searchResults.innerHTML = "";
       searchCount.textContent = "0 résultat";
       searchHint.textContent  = data.error || "Aucun résultat";
       return;
     }
-
-    const list = Array.isArray(data.results) ? data.results : [];
-    renderSearchResults(list);
-
+    renderSearchResults(Array.isArray(data.results) ? data.results : []);
   } catch(err){
     searchResults.innerHTML = "";
     searchCount.textContent = "0 résultat";
     searchHint.textContent  = "❌ Erreur serveur : " + (err?.message || err);
   }
-}
- // 👈 FIN DE searchParticipants
+} // 👈 FIN DE searchParticipants
 
 
 function renderSearchResults(list){
