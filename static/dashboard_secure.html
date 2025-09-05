@@ -527,7 +527,6 @@ async function loadUserInfo() {
   const data = await res.json();
   document.getElementById("userEmail").textContent = data.success ? data.email : "Non connecté";
 }
-loadUserInfo();
 
 // ✅ Déconnexion
 document.getElementById("logoutBtn").addEventListener("click", () => {
