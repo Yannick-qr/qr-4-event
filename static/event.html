@@ -5,6 +5,10 @@
   <title>Inscription Événement</title>
   <style>
 /* ===== Base ===== */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
 body {
   font-family: Arial, sans-serif;
   background: #f5f6fa;
@@ -28,8 +32,8 @@ body {
   --ring: 0 0 0 3px rgba(0,123,255,.18);
 
   /* Largeur commune image + carte */
-  --card-max: 680px;          /* ⬅️ plus large qu’avant */
-  --card-side: 26px;          /* padding horizontal */
+  --card-max: 680px;
+  --card-side: 26px;
 }
 
 /* ===== Fond plein écran flouté depuis #event-image ===== */
@@ -62,7 +66,7 @@ body::after{
 }
 .event-header img {
   width: 100%;
-  height: clamp(190px, 28vw, 260px); /* bandeau harmonieux */
+  height: clamp(190px, 28vw, 260px);
   display: block;
   object-fit: cover;
   border-radius: 16px;
@@ -92,10 +96,10 @@ body::after{
 /* ===== Carte principale (cadre blanc) ===== */
 .box {
   width: 95%;
-  max-width: var(--card-max);           /* ⬅️ même largeur que l’image */
+  max-width: var(--card-max);
   background: rgba(255,255,255,.96);
   margin: 10px auto 42px;
-  padding: 28px var(--card-side) 30px;  /* ⬅️ plus aéré */
+  padding: 28px var(--card-side) 30px;
   border-radius: 16px;
   border: 1px solid #eef2f7;
   box-shadow: 0 10px 30px rgba(0,0,0,.08);
@@ -149,11 +153,15 @@ p { margin: 8px 0; }
 /* ===== Formulaire ===== */
 #registerForm{
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr); /* robuste, pas de débordement */
+  grid-auto-rows: auto;
   gap: 12px;
   margin-top: 8px;
 }
+
+/* Champs communs */
 #registerForm input{
+  display: block;
   width: 100%;
   margin: 0;
   padding: 12px 14px;
@@ -174,18 +182,15 @@ p { margin: 8px 0; }
 #registerForm input:invalid:focus{ border-color:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.16); }
 #registerForm input:valid:focus  { border-color:#10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.16); }
 
-/* Champs hors grid éventuels */
-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
+/* Placement précis pour éviter tout chevauchement */
+#first_name{ grid-column: 1; }
+#last_name { grid-column: 2; }
+#email     { grid-column: 1 / -1; } /* email sur toute la ligne */
 
 /* ===== Bouton d'inscription (custom PayPal) ===== */
 #custom-paypal-btn{
   width: 100%;
-  max-width: 520px;                /* ⬅️ plus large mais contenu */
+  max-width: 520px;
   background: linear-gradient(90deg, #007bff, #0056b3);
   color: white;
   border: none;
@@ -237,11 +242,21 @@ input {
   .event-header h2 { font-size: 1.4rem; left: 14px; bottom: 10px; }
 
   .box{ width: 94%; padding: 22px 18px 24px; background: rgba(255,255,255,.98); }
-  #registerForm{ grid-template-columns: 1fr; }
+
+  /* Grille 1 colonne sur mobile + spans corrects */
+  #registerForm{
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  #first_name{ grid-column: 1; }
+  #last_name { grid-column: 1; }
+  #email     { grid-column: 1; }
+
   #custom-paypal-btn{ max-width: none; }
   .description{ padding: 10px 12px; }
 }
 </style>
+
 
 </head>
 <body>
