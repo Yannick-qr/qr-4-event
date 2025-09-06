@@ -22,7 +22,7 @@
 <!-- ✅ cache-busting pour éviter une vieille version -->
 <script src="/static/js/admin-token.js?v=2025-09-05" defer></script>
 
-  <style>
+<style>
   
 /* ====== RESET & BASE ====== */
 *,
@@ -73,30 +73,26 @@ header img {
   top: 60px;
   left: 0;
   height: calc(100vh - 60px);
-  width: 60px;
+  width: 220px; /* ✅ largeur fixe */
   background: #fff;
   border-right: 1px solid #e5e7eb;
   box-shadow: 2px 0 6px rgba(0,0,0,0.08);
-  overflow: hidden;
-  transition: width 0.3s ease;
-}
-
-.sidebar:hover {
-  width: 220px;
+  overflow: auto;
+  transition: none; /* ✅ pas d’animation */
 }
 
 .layout {
   display: flex;
   margin-top: 60px; /* compense uniquement la hauteur du header */
-  height: calc(100vh - 60px); /* prend tout l’espace sous le header */
+  height: calc(100vh - 60px);
 }
 main {
   flex: 1;
-  margin-left: 0px;   /* largeur sidebar fermée */
-  transition: margin-left 0.3s ease;
-  padding: 20px;       /* contenu aéré */
+  margin-left: 220px;  /* ✅ colle le contenu après la sidebar */
+  padding: 20px;
   background: #f4f7fb;
-  min-height: calc(100vh - 60px); /* évite espace blanc */
+  min-height: calc(100vh - 60px);
+  transition: none;
 }
 
 .sidebar:hover ~ main {
@@ -486,6 +482,8 @@ tbody tr:hover {
 
   </style>
 </head>
+
+
 <body>
     
 <header>
