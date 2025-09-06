@@ -1891,3 +1891,77 @@ def checkin_search(
 
     return {"success": True, "participants": results}
 
+# ========================
+# ADMIN : AJOUT PARTICIPANTS
+# ========================
+@app.post("/api/manual-registration")
+def manual_registration(
+    background_tasks: BackgroundTasks,
+    data: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    token = data.get("token")
+    if not token:
+        return {"success": False, "message": "Token manquant"}
+
+    # 1) Vérifier l’admin via token
+    admin = db.query(AdminUser).filter(AdminUser.token == token).first()
+    if not check_token_valid(admin, db):
+        return {"success": False, "message": "Session invalide"}
+
+    # 2) Vérifier mot de passe admin
+    if not bcrypt.verify(data.get("admin_password", ""), admin.password_hash):
+        return {"success": False, "message": "Mot de passe admin incorrect"}
+
+    # 3) Vérifier l’événement
+    event = db.query(Event).filter(Event.id == data["event_id"], Event.is_active == True).first()
+    if not event:
+        return {"success": False, "message": "Événement introuvable ou inactif"}
+
+    # 4) Vérifier crédits
+    if admin.participant_credits <= 0:
+        return {"success": False, "message": "⚠️ Pas assez de crédits disponibles"}
+
+    # 5) Vérifier quota
+    participants_count = db.query(Participant).filter(Participant.event_id == event.id).count()
+    if event.max_participants and participants_count >= event.max_participants:
+        return {"success": False, "message": "⚠️ Événement complet"}
+
+    # 6) Créer le participant
+    safe_first = html.escape(data["first_name"].strip())
+    safe_last = html.escape(data["last_name"].strip())
+    safe_name = f"{safe_first} {safe_last}".strip() or "Participant"
+    safe_email = html.escape(data["email"].strip().lower())
+
+    qr_code_value = str(uuid.uuid4())
+    participant = Participant(
+        name=safe_name,
+        email=safe_email,
+        event_id=event.id,
+        amount=float(data["amount"]),
+        transaction_id=f"manual-{uuid.uuid4()}",
+        qr_code=qr_code_value,
+        created_at=utcnow()
+    )
+    db.add(participant)
+
+    # Décrément crédits
+    admin.participant_credits -= 1
+    db.commit()
+    db.refresh(participant)
+
+    # 7) Générer QR data
+    qr_token = participant.qr_code or str(participant.id)
+    qr_data = f"{BASE_PUBLIC_URL}/api/event/{event.id}?participant={qr_token}"
+
+    # 8) Envoi email confirmation (async)
+    background_tasks.add_task(
+        send_confirmation_email,
+        recipient_email=safe_email,
+        subject=f"Confirmation inscription - {event.title}",
+        participant=participant,
+        event=event,
+        qr_data=qr_data
+    )
+
+    return {"success": True, "message": "✅ Participant ajouté manuellement et email envoyé"}
