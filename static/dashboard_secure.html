@@ -214,6 +214,8 @@ h2 {
   gap: 20px;
   margin: 25px 0;
 }
+.subsection { display: none; }
+.subsection.active { display: block; }
 
 .stat {
   background: #fff;
@@ -610,7 +612,7 @@ tbody tr:hover {
     </div>
 
     <!-- Sous-section Ajouter un événement -->
-    <div id="addEventSection" class="subsection" style="display:none;">
+  <div id="addEventSection" class="subsection">
       <form id="addEventForm" enctype="multipart/form-data" 
             style="max-width:600px;margin:40px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
 
