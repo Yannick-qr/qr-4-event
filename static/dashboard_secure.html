@@ -808,33 +808,35 @@ const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 
 // ✅ Charger infos utilisateur
 async function loadUserInfo() {
-  const res = await fetchWithToken("/api/me", {
-    method: "POST",
-    body: new URLSearchParams() // le token sera injecté automatiquement
-  });
-  const data = await res.json();
+  try {
+    const res = await fetchWithToken("/api/me", {
+      method: "POST",
+      body: new URLSearchParams()
+    });
+    const data = await res.json();
 
-  console.log("👤 Réponse /api/me :", data);
+    console.log("👤 Réponse /api/me :", data);
 
-  if (res.ok) {
-    // Email
-    document.getElementById("userEmail").textContent = data.email || "—";
+    if (res.ok) {
+      // Nom complet
+      const fullname = [data.first_name, data.last_name].filter(Boolean).join(" ");
+      document.getElementById("userName").textContent = fullname || "Utilisateur";
 
-    // Nom complet
-    const fullname = [data.first_name, data.last_name].filter(Boolean).join(" ");
-    document.getElementById("userName").textContent = fullname || "Utilisateur";
-
-    // Avatar
-    if (data.avatar_url) {
-      document.querySelectorAll(".avatar, .avatar-large").forEach(img => {
-        img.src = data.avatar_url;
-      });
+      // Avatar si dispo
+      if (data.avatar_url) {
+        document.querySelectorAll(".avatar, .avatar-large").forEach(img => {
+          img.src = data.avatar_url;
+        });
+      }
+    } else {
+      document.getElementById("userName").textContent = "Utilisateur";
     }
-  } else {
-    document.getElementById("userEmail").textContent = "Session expirée";
+  } catch (err) {
+    console.error("Erreur loadUserInfo:", err);
     document.getElementById("userName").textContent = "Utilisateur";
   }
 }
+
 
 
 
