@@ -1608,15 +1608,15 @@ async function loadEventsForManualAdd() {
 document.getElementById("manualForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const payload = {
-    token: localStorage.getItem("qr4event_admin_token"), // 👈 ajouté
-    event_id: document.getElementById("eventSelect").value,
-    first_name: document.getElementById("firstName").value,
-    last_name: document.getElementById("lastName").value,
-    email: document.getElementById("email").value,
-    amount: document.getElementById("amount").value,
-    admin_password: document.getElementById("adminPassword").value,
-  };
+const payload = {
+  token: localStorage.getItem("qr4event_admin_token"),
+  event_id: parseInt(document.getElementById("eventSelect").value), // 👈 cast en int
+  first_name: document.getElementById("firstName").value,
+  last_name: document.getElementById("lastName").value,
+  email: document.getElementById("email").value,
+  amount: parseFloat(document.getElementById("amount").value), // 👈 cast en float
+  admin_password: document.getElementById("adminPassword").value,
+};
 
   const resp = await fetchWithToken("/api/manual-registration", {
     method: "POST",
