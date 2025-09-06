@@ -1618,20 +1618,20 @@ const payload = {
   admin_password: document.getElementById("adminPassword").value,
 };
 
-  const resp = await fetchWithToken("/api/manual-registration", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const resp = await fetch("/api/manual-registration", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)  // 👈 en JSON
+});
 
-  const result = await resp.json();
-  if (result.success) {
-    alert("✅ Participant ajouté avec succès !");
-    manualModal.style.display = "none";
-    loadPaidRegistrations(); // refresh table
-  } else {
-    alert("❌ Erreur : " + (result.message || "Impossible d’ajouter"));
-  }
+const result = await resp.json();
+if (result.success) {
+  alert("✅ Participant ajouté avec succès !");
+  manualModal.style.display = "none";
+  loadPaidRegistrations(); // refresh table
+} else {
+  alert("❌ Erreur : " + (result.message || "Impossible d’ajouter"));
+}
 });
 
 // Charger les events dès qu’on ouvre la section Paid
@@ -1639,6 +1639,7 @@ paidEventsBtn.addEventListener("click", () => {
   loadPaidRegistrations();
   loadEventsForManualAdd(); // ⚡ charge aussi la liste pour le select
 });
+
 </script>
 
 </body>
