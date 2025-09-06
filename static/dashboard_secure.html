@@ -487,6 +487,7 @@ tbody tr:hover {
   </style>
 </head>
 <body>
+    
 <header>
   <div style="display:flex; align-items:center; gap:6px;">
     <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/file_00000000aa10622fa1b5358f2877d5c082.png" 
@@ -498,14 +499,19 @@ tbody tr:hover {
   <!-- ===== User Menu ===== -->
   <div class="user-menu">
     <div class="user-trigger">
-      <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Avatar.png" alt="Avatar" class="avatar">
-      <span id="userEmail">Chargement...</span>
+      <!-- 👉 Avatar seul dans le header -->
+      <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Avatar.png" 
+           alt="Avatar" class="avatar">
     </div>
     
     <div class="user-dropdown">
       <div class="user-info">
-        <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Avatar.png" alt="Avatar" class="avatar-large">
-        <p><strong id="userName">Admin</strong></p>
+        <img src="https://luqmxczcojngdjwjaeod.supabase.co/storage/v1/object/public/event-images/Avatar.png" 
+             alt="Avatar" class="avatar-large">
+        
+        <!-- 👉 Nom + Prénom depuis l’API -->
+        <p><strong id="userName">Chargement...</strong></p>
+        
         <button class="btn-profile">Voir Profil</button>
       </div>
       <hr>
@@ -517,6 +523,8 @@ tbody tr:hover {
     </div>
   </div>
 </header>
+
+
 
 <!-- WRAPPER -->
 <div class="layout">
