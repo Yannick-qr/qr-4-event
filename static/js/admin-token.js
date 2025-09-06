@@ -1,9 +1,7 @@
-// static/js/admin-token.js
-
 // 🔑 Récupère le token depuis localStorage
 let token = localStorage.getItem("qr4event_admin_token");
 
-// ✅ wrapper fetch qui ajoute automatiquement le token
+// ✅ wrapper fetch qui ajoute automatiquement le token (FormData, URLSearchParams, JSON)
 async function fetchWithToken(url, options = {}) {
   if (!token) {
     token = localStorage.getItem("qr4event_admin_token");
@@ -20,15 +18,32 @@ async function fetchWithToken(url, options = {}) {
 
   let body = options.body;
 
-  if (body instanceof URLSearchParams) {
+  // ✅ Cas JSON (Content-Type: application/json)
+  if (options.headers && options.headers["Content-Type"] === "application/json") {
+    try {
+      const obj = typeof body === "string" ? JSON.parse(body) : body || {};
+      obj.token = token; // injecte le token
+      body = JSON.stringify(obj);
+    } catch (e) {
+      console.error("❌ Impossible de parser le body JSON", e);
+    }
+  }
+  // ✅ Cas URLSearchParams
+  else if (body instanceof URLSearchParams) {
     body.append("token", token);
-  } else if (body instanceof FormData) {
+  }
+  // ✅ Cas FormData
+  else if (body instanceof FormData) {
     body.append("token", token);
-  } else if (typeof body === "string") {
+  }
+  // ✅ Cas string brute (par ex: "a=1&b=2")
+  else if (typeof body === "string") {
     const params = new URLSearchParams(body);
     params.append("token", token);
     body = params;
-  } else if (!body) {
+  }
+  // ✅ Cas aucun body → on injecte directement le token
+  else if (!body) {
     body = new URLSearchParams({ token });
   }
 

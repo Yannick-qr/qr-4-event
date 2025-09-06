@@ -20,7 +20,7 @@
   </script>
 
 <!-- ✅ cache-busting pour éviter une vieille version -->
-<script src="/static/js/admin-token.js?v=2025-09-05" defer></script>
+<script src="/static/js/admin-token.js?v=2025-09-06" defer></script>
 
 <style>
   
@@ -1618,19 +1618,41 @@ const payload = {
   admin_password: document.getElementById("adminPassword").value,
 };
 
-  const resp = await fetch("/api/manual-registration", {
+  const resp = await fetchWithToken("/api/manual-registration", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(payload)  // 👈 en JSON
 });
 
 const result = await resp.json();
+const form = document.getElementById("manualForm");
+
+// 🔄 Nettoyer les anciens messages
+form.querySelectorAll(".status-msg").forEach(el => el.remove());
+
+const msg = document.createElement("p");
+msg.className = "status-msg";
+msg.style.marginTop = "10px";
+
 if (result.success) {
-  alert("✅ Participant ajouté avec succès !");
-  manualModal.style.display = "none";
-  loadPaidRegistrations(); // refresh table
+  msg.textContent = "✅ Participant ajouté avec succès !";
+  msg.style.color = "green";
+  form.appendChild(msg);
+
+  // Reset + fermer après 1.5s
+  setTimeout(() => {
+    form.reset();
+    manualModal.style.display = "none";
+    loadPaidRegistrations();
+    msg.remove();
+  }, 1500);
 } else {
-  alert("❌ Erreur : " + (result.message || "Impossible d’ajouter"));
+  msg.textContent = "❌ Erreur : " + (result.message || "Impossible d’ajouter le participant");
+  msg.style.color = "red";
+  form.appendChild(msg);
+
+  // Effacer après 4s
+  setTimeout(() => msg.remove(), 4000);
 }
 });
 
