@@ -556,7 +556,6 @@ tbody tr:hover {
   <aside class="sidebar">
       <button id="homeBtn">🏠 Accueil</button>
     <button id="eventsBtn" class="active">📅 Événements</button>
-    <button id="paidRegistrationsBtn">📋 Inscriptions Payées</button>
     <button id="buyCreditsBtn">💳 Acheter des crédits</button>
     <button id="paypalConfigBtn">⚙️ Mon PayPal</button>
     <button id="logsBtn">📜 Historique</button>
@@ -587,6 +586,7 @@ tbody tr:hover {
   <div class="subnav">
     <button id="myEventsBtn" class="active">📋 Mes événements</button>
     <button id="addEventBtn">➕ Ajouter un événement</button>
+  <button id="paidEventsBtn">💰 Inscriptions payées</button>
   </div>
 
     <!-- Sous-section Mes événements -->
@@ -661,13 +661,10 @@ tbody tr:hover {
         </button>
       </form>
     </div>
-  </section>
     
-    <!-- ======================== -->
-<!-- SECTION INSCRIPTIONS PAYÉES -->
-<!-- ======================== -->
-<section id="paidRegistrations">
-  <h2>Liste des Inscriptions Payées ✅</h2>
+    <!-- Sous-section Inscriptions Payées -->
+<div id="paidEventsSection" class="subsection">
+  <h3>Liste des Inscriptions Payées ✅</h3>
   <button class="btn" onclick="exportCSV()">📂 Exporter en CSV</button>
   <table>
     <thead>
@@ -682,7 +679,9 @@ tbody tr:hover {
     </thead>
     <tbody id="registrationsTable"></tbody>
   </table>
-</section>
+</div>
+  </section>
+
    
    <!-- ======================== -->
 <!-- SECTION ACHETER DES CRÉDITS -->
@@ -846,7 +845,6 @@ const eventsBtn = document.getElementById("eventsBtn");
 const paypalConfigBtn = document.getElementById("paypalConfigBtn");
 const logsBtn = document.getElementById("logsBtn");
 const buyCreditsBtn = document.getElementById("buyCreditsBtn"); // ✅ ajouté
-const paidRegistrationsBtn = document.getElementById("paidRegistrationsBtn");
 const deletePaypalBtn = document.getElementById("deletePaypalBtn");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
@@ -1222,7 +1220,6 @@ function showSection(id) {
   if (id === "paypalConfig") paypalConfigBtn.classList.add("active");
   if (id === "logs") logsBtn.classList.add("active");
   if (id === "buyCredits") buyCreditsBtn.classList.add("active");
-  if (id === "paidRegistrations") paidRegistrationsBtn.classList.add("active");
   if (id === "home") homeBtn.classList.add("active");
 
 }
@@ -1232,10 +1229,6 @@ eventsBtn.addEventListener("click", () => showSection("events"));
 paypalConfigBtn.addEventListener("click", () => { showSection("paypalConfig"); loadPaypalStatus(); });
 logsBtn.addEventListener("click", () => { showSection("logs"); loadLogs(); });
 buyCreditsBtn.addEventListener("click", () => { showSection("buyCredits"); loadConfig(); setupManualCreditAdder(); refreshCredits(); });
-paidRegistrationsBtn.addEventListener("click", () => { 
-  showSection("paidRegistrations"); 
-  loadPaidRegistrations(); 
-});
 
 // ========================
 // Vérifier statut PayPal
@@ -1499,33 +1492,46 @@ const checkPaypal = setInterval(() => {
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // Navigation principale
-homeBtn.addEventListener("click", () => showSection("home"));
-eventsBtn.addEventListener("click", () => showSection("events"));
+  // Navigation principale
+  homeBtn.addEventListener("click", () => showSection("home"));
+  eventsBtn.addEventListener("click", () => showSection("events"));
 
-// Navigation sous-sections Événements
-const myEventsBtn = document.getElementById("myEventsBtn");
-const addEventBtn = document.getElementById("addEventBtn");
+  // Navigation sous-sections Événements
+  const myEventsBtn   = document.getElementById("myEventsBtn");
+  const addEventBtn   = document.getElementById("addEventBtn");
+  const paidEventsBtn = document.getElementById("paidEventsBtn"); // ✅ nouveau
 
-myEventsBtn.addEventListener("click", () => {
-  document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
-  document.getElementById("myEventsSection").classList.add("active");
-  myEventsBtn.classList.add("active");
-  addEventBtn.classList.remove("active");
-});
+  myEventsBtn.addEventListener("click", () => {
+    document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
+    document.getElementById("myEventsSection").classList.add("active");
+    myEventsBtn.classList.add("active");
+    addEventBtn.classList.remove("active");
+    paidEventsBtn.classList.remove("active");
+  });
 
-addEventBtn.addEventListener("click", () => {
-  document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
-  document.getElementById("addEventSection").classList.add("active");
-  addEventBtn.classList.add("active");
-  myEventsBtn.classList.remove("active");
-});
+  addEventBtn.addEventListener("click", () => {
+    document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
+    document.getElementById("addEventSection").classList.add("active");
+    addEventBtn.classList.add("active");
+    myEventsBtn.classList.remove("active");
+    paidEventsBtn.classList.remove("active");
+  });
+
+  paidEventsBtn.addEventListener("click", () => {
+    document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
+    document.getElementById("paidEventsSection").classList.add("active");
+    paidEventsBtn.classList.add("active");
+    myEventsBtn.classList.remove("active");
+    addEventBtn.classList.remove("active");
+
+    loadPaidRegistrations(); // ⚡ charge la liste des inscriptions payées
+  });
 
   loadEvents();
   loadUserInfo();
 });
-
 </script>
+
 
 
 </body>
