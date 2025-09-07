@@ -506,6 +506,47 @@ tbody tr:hover {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Cartes Événements (accordéon) ===== */
+.event-card{
+  background:#fff; border-radius:12px;
+  box-shadow:0 3px 10px rgba(0,0,0,.08);
+  margin:12px 0; overflow:hidden;
+}
+.event-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px; gap:12px;
+}
+.event-main{ display:flex; align-items:center; gap:12px; min-width:0; }
+.event-thumb{
+  width:56px; height:56px; border-radius:10px; overflow:hidden; flex:0 0 auto;
+  background:#eef2ff; display:flex; align-items:center; justify-content:center;
+  font-weight:700;
+}
+.event-thumb img{ width:100%; height:100%; object-fit:cover; }
+.event-title{ font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.event-meta{ font-size:13px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.event-price{ font-weight:700; }
+.badge{
+  font-size:12px; padding:4px 8px; border-radius:999px; background:#eef6ff; color:#1d4ed8; margin-left:8px;
+}
+.chevron{
+  cursor:pointer; user-select:none; font-size:18px; line-height:1; padding:4px 6px;
+  transform: rotate(0deg); transition: transform .18s ease;
+}
+.event-card.open .chevron{ transform: rotate(90deg); } /* ► devient ▼ */
+.event-details{
+  display:none; border-top:1px solid #e5e7eb; padding:12px 16px;
+  animation: detailsIn .2s ease;
+}
+.event-card.open .event-details{ display:block; }
+.event-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+@keyframes detailsIn{ from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:translateY(0)} }
+
+@media (max-width:640px){
+  .event-row{ flex-wrap:wrap; }
+  .chevron{ margin-left:auto; }
+}
+
   </style>
 </head>
 
@@ -586,30 +627,15 @@ tbody tr:hover {
   <div class="subnav">
     <button id="myEventsBtn" class="active">📋 Mes événements</button>
     <button id="addEventBtn">➕ Ajouter un événement</button>
-  <button id="paidEventsBtn">💰 Inscriptions payées</button>
+  <button id="paidEventsBtn">💰 Gestion des participants</button>
   </div>
 
     <!-- Sous-section Mes événements -->
-    <div id="myEventsSection" class="subsection">
-      <table id="eventsTable">
-        <thead>
-          <tr>
-            <th data-i18n="title">Titre</th>
-            <th data-i18n="description">Description</th>
-            <th data-i18n="date">Date</th>
-            <th data-i18n="location">Lieu</th>
-            <th data-i18n="price">Prix</th>
-            <th>Max participants</th>
-            <th>Identifiants Check-in</th>
-            <th>Login Check-in</th>
-            <th>Image</th>
-            <th data-i18n="publicLink">Lien public</th>
-            <th data-i18n="actions">Actions</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+<div id="myEventsSection" class="subsection">
+  <!-- ✅ conteneur des cartes -->
+  <div id="eventsList"></div>
+</div>
+
 
     <!-- Sous-section Ajouter un événement -->
   <div id="addEventSection" class="subsection">
@@ -670,6 +696,7 @@ tbody tr:hover {
 </p>
   <h3>Liste des Inscriptions Payées ✅</h3>
   <button class="btn" onclick="exportCSV()">📂 Exporter en CSV</button>
+
   <table>
     <thead>
       <tr>
@@ -1000,103 +1027,112 @@ async function refreshCredits() {
 }
 
 // ✅ Charger événements et stats
+// ✅ Rend la liste en cartes accordéon
 async function loadEvents() {
   try {
     const res = await fetchWithToken("/admin/events/list", {
       method: "POST",
       body: new URLSearchParams()
     });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    }
-
-    let data;
-    try {
-      data = await res.json();
-    } catch (e) {
-      throw new Error("Réponse backend non-JSON");
-    }
-
-    console.log("📦 /admin/events/list →", data);
-
-    if (!data || data.success === false) {
-      const msg = data?.message || data?.error || "Backend a renvoyé success:false";
-      throw new Error(msg);
-    }
-
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data || data.success === false) throw new Error(data?.message || "Erreur backend");
     const events = Array.isArray(data.events) ? data.events : [];
 
-    // --- KPIs ---
+    // KPIs
     document.getElementById("totalEvents").textContent    = events.length;
     document.getElementById("activeEvents").textContent   = events.filter(e => !!e.is_active).length;
     document.getElementById("inactiveEvents").textContent = events.filter(e => !e.is_active).length;
     document.getElementById("participantCredits").textContent = data.participant_credits ?? 0;
 
-    // --- Table ---
-    const tbody = document.querySelector("#eventsTable tbody");
-    tbody.innerHTML = "";
+    // Cartes
+    const list = document.getElementById("eventsList");
+    list.innerHTML = "";
 
-    const safe   = v => (v ?? "");
+    const safe = v => (v ?? "");
     const asText = v => String(v ?? "");
 
     events.forEach(ev => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${safe(ev.title)}</td>
-        <td>${safe(ev.description)}</td>
-        <td>${safe(ev.date)}</td>
-        <td>${safe(ev.location)}</td>
-        <td>${ev.price != null ? asText(ev.price) + " €" : "—"}</td>
-        <td>${ev.max_participants ?? "∞"}</td>
+      const card = document.createElement("div");
+      card.className = "event-card";
 
-        <td>
-          <b>Login :</b> ${safe(ev.checkin_login) || "—"}<br>
-          <b>Pass :</b> <span class="pass" id="pass-${ev.id}">••••••</span>
-          <button class="btn-showpass" data-id="${ev.id}">👁️</button>
-        </td>
+      const priceTxt = (ev.price != null) ? `${asText(ev.price)} €` : "Gratuit";
+      const statusBadge = `<span class="badge">${ev.is_active ? "Actif" : "Inactif"}</span>`;
+      const thumb = ev.image_url
+        ? `<img src="${safe(ev.image_url)}" alt="">`
+        : `<span>${(safe(ev.title).charAt(0) || "E").toUpperCase()}</span>`;
 
-        <td>${safe(ev.checkin_login) || "—"}</td>
+      card.innerHTML = `
+        <div class="event-row">
+          <div class="event-main">
+            <div class="event-thumb">${thumb}</div>
+            <div style="min-width:0">
+              <div class="event-title">${safe(ev.title)} ${statusBadge}</div>
+              <div class="event-meta">📅 ${safe(ev.date)} · 📍 ${safe(ev.location)}</div>
+            </div>
+          </div>
 
-        <td>
-          ${ev.image_url
-            ? `<img src="${safe(ev.image_url)}" style="max-height:50px;border-radius:6px;">`
-            : "—"}
-        </td>
+          <div class="event-price">${priceTxt}</div>
 
-        <td>
-          <a href="${safe(ev.public_url) || ("/static/event.html?id=" + ev.id)}" target="_blank" rel="noopener">
-            <button class="action-btn link-btn">🔗 Voir</button>
-          </a>
-        </td>
+          <div class="chevron" aria-label="Afficher les détails" title="Afficher les détails">►</div>
+        </div>
 
-        <td>
-          <button class="btn btn-primary btn-edit"  data-id="${ev.id}">✏️ Modifier</button>
-          <button class="btn btn-danger  btn-del"   data-id="${ev.id}">🗑️ Supprimer</button>
-          <button class="btn btn-warning btn-toggle" data-id="${ev.id}">
-            ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
-          </button>
-        </td>
+        <div class="event-details">
+          <div style="color:#334155; font-size:14px; margin-bottom:8px;">
+            ${safe(ev.description) || "<em>Aucune description</em>"}
+          </div>
+
+          <div style="font-size:14px; color:#475569;">
+            <div><b>Max participants :</b> ${ev.max_participants ?? "∞"}</div>
+            <div><b>Login Check-in :</b> ${safe(ev.checkin_login) || "—"}</div>
+            <div><b>Pass Check-in :</b> <span class="pass" id="pass-${ev.id}">••••••</span>
+              <button class="btn btn-warning btn-showpass" data-id="${ev.id}" style="padding:4px 8px; font-size:12px; margin-left:6px;">👁️</button>
+            </div>
+            <div><b>Lien public :</b> 
+              <a href="${safe(ev.public_url) || ("/static/event.html?id=" + ev.id)}" target="_blank" rel="noopener">ouvrir</a>
+            </div>
+          </div>
+
+          <div class="event-actions">
+            <button class="btn btn-primary btn-edit"  data-id="${ev.id}">✏️ Modifier</button>
+            <button class="btn btn-danger  btn-del"   data-id="${ev.id}">🗑️ Supprimer</button>
+            <button class="btn btn-warning btn-toggle" data-id="${ev.id}">
+              ${ev.is_active ? "⏸️ Désactiver" : "▶ Activer"}
+            </button>
+          </div>
+        </div>
       `;
-      tbody.appendChild(row);
 
-      // branchements sans inline JS
-      row.querySelector(".btn-edit")   ?.addEventListener("click", () => openEditModal(ev.id));
-      row.querySelector(".btn-del")    ?.addEventListener("click", () => deleteEvent(ev.id));
-      row.querySelector(".btn-toggle") ?.addEventListener("click", () => toggleEvent(ev.id));
-      row.querySelector(".btn-showpass")?.addEventListener("click", () => {
+      // Interactions
+      const chevron = card.querySelector(".chevron");
+      chevron.addEventListener("click", () => {
+        card.classList.toggle("open");
+      });
+
+      card.querySelector(".btn-edit")   ?.addEventListener("click", () => openEditModal(ev.id));
+      card.querySelector(".btn-del")    ?.addEventListener("click", () => deleteEvent(ev.id));
+      card.querySelector(".btn-toggle") ?.addEventListener("click", () => toggleEvent(ev.id));
+      card.querySelector(".btn-showpass")?.addEventListener("click", () => {
         const el = document.getElementById("pass-" + ev.id);
         if (!el) return;
         const real = ev.checkin_password ?? "";
         el.textContent = el.textContent.includes("•") ? real : "••••••";
       });
+
+      list.appendChild(card);
     });
+
+    // Si aucun événement
+    if (!events.length) {
+      list.innerHTML = `<div style="padding:20px; color:#64748b;">Aucun événement pour l’instant.</div>`;
+    }
 
   } catch (err) {
     console.error("loadEvents() →", err);
     alert("Erreur événements : " + err.message);
   }
 }
+
 
 // ✅ Charger les inscriptions payées
 async function loadPaidRegistrations() {
