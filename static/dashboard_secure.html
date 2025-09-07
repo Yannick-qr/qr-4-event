@@ -1103,11 +1103,16 @@ async function loadEvents() {
         </div>
       `;
 
-      // Interactions
-      const chevron = card.querySelector(".chevron");
-      chevron.addEventListener("click", () => {
-        card.classList.toggle("open");
-      });
+  // ✅ Clique sur toute la carte pour déplier/replier
+card.querySelector(".event-row").addEventListener("click", () => {
+  card.classList.toggle("open");
+});
+
+// ✅ Empêche les boutons internes d'ouvrir/fermer la carte
+card.querySelectorAll(".btn, button").forEach(btn => {
+  btn.addEventListener("click", e => e.stopPropagation());
+});
+
 
       card.querySelector(".btn-edit")   ?.addEventListener("click", () => openEditModal(ev.id));
       card.querySelector(".btn-del")    ?.addEventListener("click", () => deleteEvent(ev.id));
