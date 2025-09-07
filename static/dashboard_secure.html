@@ -664,9 +664,12 @@ tbody tr:hover {
     
     <!-- Sous-section Inscriptions Payées -->
 <div id="paidEventsSection" class="subsection">
+      <button id="addParticipantBtn" class="btn btn-success">➕ Ajouter un participant</button>
+      <p style="margin: 4px 0 12px 0; font-size: 13px; color: #6b7280;">
+  Ajouter manuellement un participant pour les paiements reçus <strong>en espèces</strong> ou <strong>par virement</strong>.
+</p>
   <h3>Liste des Inscriptions Payées ✅</h3>
   <button class="btn" onclick="exportCSV()">📂 Exporter en CSV</button>
-  <button id="addParticipantBtn" class="btn btn-success">➕ Ajouter un participant</button>
   <table>
     <thead>
       <tr>
@@ -1509,6 +1512,13 @@ document.addEventListener("DOMContentLoaded", () => {
     addEventBtn.classList.remove("active");
     paidEventsBtn.classList.remove("active");
   });
+
+// ✅ Affiche par défaut "Mes événements" quand on arrive sur la page
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
+  document.getElementById("myEventsSection").classList.add("active");
+  myEventsBtn.classList.add("active");
+});
 
   addEventBtn.addEventListener("click", () => {
     document.querySelectorAll("#events .subsection").forEach(s => s.classList.remove("active"));
