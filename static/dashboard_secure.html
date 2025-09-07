@@ -547,24 +547,6 @@ tbody tr:hover {
   .chevron{ margin-left:auto; }
 }
 
-.event-row {
-  display: flex;
-  justify-content: space-between; /* pousse le prix à droite */
-  align-items: center;
-}
-
-.event-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.event-price {
-  font-weight: 600;
-  min-width: 70px;   /* largeur identique pour tous les prix */
-  text-align: right; /* texte bien calé à droite */
-}
-
   </style>
 </head>
 
@@ -1080,17 +1062,15 @@ async function loadEvents() {
         ? `<img src="${safe(ev.image_url)}" alt="">`
         : `<span>${(safe(ev.title).charAt(0) || "E").toUpperCase()}</span>`;
 
-card.innerHTML = `
-  <div class="event-row">
-    <div class="event-main">
-      <div class="event-thumb">${thumb}</div>
-      <div style="min-width:0">
-        <div class="event-title">${safe(ev.title)} ${statusBadge}</div>
-        <div class="event-meta">📅 ${safe(ev.date)} · 📍 ${safe(ev.location)}</div>
-      </div>
-    </div>
-    <div class="event-price">${safe(ev.price)} €</div>
-  </div>
+      card.innerHTML = `
+        <div class="event-row">
+          <div class="event-main">
+            <div class="event-thumb">${thumb}</div>
+            <div style="min-width:0">
+              <div class="event-title">${safe(ev.title)} ${statusBadge}</div>
+              <div class="event-meta">📅 ${safe(ev.date)} · 📍 ${safe(ev.location)}</div>
+            </div>
+          </div>
 
           <div class="event-price">${priceTxt}</div>
 
