@@ -1049,11 +1049,13 @@ footer a:hover {
   text-decoration: underline;
 }
 
-/* ✅ Mobile : le footer prend toute la largeur */
-@media (max-width: 640px) {
+/* ✅ Version responsive mobile */
+@media (max-width: 768px) {
   footer {
+    position: relative; /* 👉 le footer devient normal */
     left: 0;
     width: 100%;
+    margin-top: 30px; /* petit espace avant le footer */
   }
 }
 </style>
