@@ -329,6 +329,59 @@ html, body { overflow-x: hidden; }
   font-weight: 500;
   backdrop-filter: blur(4px);
 }
+
+/* === FIX cartes événements mobile === */
+
+/* Grille plus souple par défaut */
+.event-showcase{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* <= 240px mini */
+  gap: clamp(12px, 3vw, 24px);
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  padding: 0 clamp(12px, 4vw, 20px);
+}
+
+/* Carte + image */
+.event-card{
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  transition: transform .3s ease;
+}
+
+/* ⚠️ Force le bon comportement de l'image (écrase le height:100%) */
+.event-card img{
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 16 / 10;       /* ratio propre et stable */
+}
+
+/* Badge */
+.event-card span{
+  position: absolute;
+  left: 16px; bottom: 16px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  font-size: .95rem;
+  backdrop-filter: blur(4px);
+}
+
+/* Mobile: 1 colonne pleine largeur */
+@media (max-width: 640px){
+  .event-showcase{ grid-template-columns: 1fr; gap: 14px; }
+}
+
+/* Désactive les gros effets hover sur mobile */
+@media (hover:none){
+  .event-card:hover{ transform: none; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+}
+
   </style>
 </head>
 
