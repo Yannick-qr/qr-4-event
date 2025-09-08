@@ -30,6 +30,9 @@
     h1, h2, h3 {
       color: #111827;
     }
+      h1 {
+      color:#FFFFFF;
+    }
     h1 { font-size: 28px; }
     h2 { font-size: 20px; margin-top: 25px; }
     p { margin: 10px 0; }
@@ -69,7 +72,7 @@
     <p>Vos données sont hébergées et traitées au sein de l’Union Européenne :</p>
     <ul>
       <li>Base de données : Render (Francfort, Allemagne – EU Central)</li>
-      <li>Stockage des fichiers (images d’événements) : Supabase (Paris, France – eu-west-3)</li>
+      <li>Stockage des fichiers (images d’événements, logos, avatars) : Supabase (Paris, France – eu-west-3)</li>
     </ul>
 
     <h2>4. Partage des données</h2>
@@ -93,10 +96,17 @@
     <p>Pour exercer vos droits, vous pouvez nous contacter à l’adresse suivante : <a href="mailto:contact@qr4event.com">contact@qr4event.com</a></p>
 
     <h2>7. Cookies</h2>
-    <p>Notre site utilise des cookies à des fins techniques et analytiques (via CookieBot) afin d’améliorer l’expérience utilisateur. Vous pouvez gérer vos préférences de cookies via la bannière prévue à cet effet.</p>
+    <p>Notre site utilise des cookies à des fins techniques et analytiques (via Axeptio, Google Analytics ou équivalent) afin d’améliorer l’expérience utilisateur. Vous pouvez gérer vos préférences de cookies via la bannière prévue à cet effet.</p>
 
     <h2>8. Sécurité</h2>
-    <p>Nous mettons en œuvre des mesures de sécurité (chiffrement, protocoles sécurisés, contrôles d’accès) pour protéger vos données contre tout accès, modification ou divulgation non autorisée.</p>
+    <p>La sécurité de vos données est une priorité. Nous mettons en œuvre plusieurs mesures de protection :</p>
+    <ul>
+      <li><strong>Chiffrement :</strong> toutes les communications entre votre navigateur et nos serveurs utilisent le protocole HTTPS (TLS). Les mots de passe sont stockés uniquement sous forme de hash sécurisé (bcrypt).</li>
+      <li><strong>Authentification :</strong> l’accès aux comptes est protégé par un système de jetons (tokens) avec expiration automatique. Les sessions inactives sont automatiquement déconnectées.</li>
+      <li><strong>Accès limité :</strong> seuls les administrateurs autorisés ont accès aux données via un contrôle strict des permissions.</li>
+      <li><strong>Sauvegardes :</strong> des sauvegardes régulières de la base de données sont effectuées pour prévenir toute perte de données.</li>
+      <li><strong>Protection contre les attaques :</strong> des mécanismes sont en place pour limiter les attaques courantes (ex. brute-force, injections SQL, XSS).</li>
+    </ul>
 
     <h2>9. Contact</h2>
     <p>Pour toute question concernant cette Politique de Confidentialité, vous pouvez nous écrire à : <a href="mailto:contact@qr4event.com">contact@qr4event.com</a></p>
