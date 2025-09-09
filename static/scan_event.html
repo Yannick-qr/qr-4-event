@@ -358,20 +358,26 @@
   .results-table tbody td:nth-child(5) { width: 14%; }
 }
 
-/* ===== Forcer l’alignement des actions ===== */
+/* Cellule Actions */
 .results-table td.actions-cell {
   display: flex;
-  justify-content: flex-end;   /* ou center si tu veux centrer */
+  justify-content: flex-end;   /* aligne à droite */
   align-items: center;
-  gap: 10px;                   /* espace constant entre les boutons */
-  flex-wrap: nowrap;           /* pas de retour à la ligne sauf sur mobile */
+  gap: 8px;                    /* espace entre les boutons */
+  flex-wrap: wrap;             /* permet le retour à la ligne si pas assez de place */
 }
 
+/* Boutons dans Actions */
 .results-table td.actions-cell button {
-  min-width: 90px;             /* garde la même largeur */
-  padding: 6px 12px;
-  font-size: 14px;
+  flex: 1 1 auto;              /* prend la largeur disponible */
+  min-width: 80px;             /* largeur mini pour rester lisible */
+  max-width: 110px;            /* évite d’être trop large */
+  padding: 6px 10px;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;         /* évite les retours de texte */
 }
+
 
 </style>
 
