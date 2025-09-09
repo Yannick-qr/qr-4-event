@@ -1456,44 +1456,58 @@ def checkin_scan(
     qr_code: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # compat: accepte qr_code = participant.qr_code (si dispo) OU l'id
-    participant = db.query(Participant).filter(
-        Participant.event_id == event_id
-    ).filter(
-        (Participant.id == qr_code) | (getattr(Participant, "qr_code", None) == qr_code)  # SQLAlchemy ne supporte pas getattr ici, on fait deux requêtes
-    ).first()
+    try:
+        print(f"📥 [SCAN] Reçu event_id={event_id}, qr_code={qr_code}")
 
-    if not participant:
-        # fallback en 2 temps si la colonne qr_code existe
+        participant = None
+
+        # 1) Chercher par qr_code si la colonne existe
         if hasattr(Participant, "qr_code"):
+            print("🔎 Recherche par Participant.qr_code…")
             participant = db.query(Participant).filter(
                 Participant.event_id == event_id,
                 Participant.qr_code == qr_code
             ).first()
+
+        # 2) Fallback par id (souvent UUID string)
         if not participant:
+            print("🔎 Recherche par Participant.id…")
             participant = db.query(Participant).filter(
                 Participant.event_id == event_id,
                 Participant.id == qr_code
             ).first()
 
-    if not participant:
-        return {"success": False, "message": "QR code invalide ou participant introuvable"}
+        if not participant:
+            print("⚠️ Aucun participant trouvé pour ce QR code.")
+            return {"success": False, "message": "QR code invalide ou participant introuvable"}
 
-    event = db.query(Event).filter(Event.id == event_id).first()
+        # Récupérer l’event
+        event = db.query(Event).filter(Event.id == event_id).first()
+        if not event:
+            print(f"⚠️ Aucun event trouvé avec id={event_id}")
 
-    return {
-        "success": True,
-        "participant": {
-            "first_name": participant.name.split(" ")[0] if participant.name else "",
-            "last_name": " ".join(participant.name.split(" ")[1:]) if participant.name else "",
-            "email": participant.email,
-            "amount_paid": participant.amount,
-            "event_title": event.title if event else "",
-            "date": event.date if event else "",
-            "location": event.location if event else "",
-            "scanned": participant.scanned
+        # Construire réponse
+        response = {
+            "success": True,
+            "participant": {
+                "first_name": (participant.name.split(" ")[0] if participant.name else ""),
+                "last_name": (" ".join(participant.name.split(" ")[1:]) if participant.name and " " in participant.name else ""),
+                "email": getattr(participant, "email", ""),
+                "amount_paid": getattr(participant, "amount", 0),
+                "event_title": getattr(event, "title", ""),
+                "date": getattr(event, "date", ""),
+                "location": getattr(event, "location", ""),
+                "scanned": getattr(participant, "scanned", False)
+            }
         }
-    }
+
+        print(f"✅ Scan réussi: {response}")
+        return response
+
+    except Exception as e:
+        print("❌ Erreur checkin_scan:", repr(e))
+        raise HTTPException(status_code=500, detail="Erreur interne du serveur")
+
 
 
 @app.post("/checkin/validate")
