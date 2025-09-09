@@ -1448,7 +1448,6 @@ def checkin_login(
         "event_title": event.title
     }
 
-
 # ========================
 # CHECK-IN (Scan Event)
 # ========================
