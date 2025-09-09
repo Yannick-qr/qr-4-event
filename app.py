@@ -1433,23 +1433,6 @@ def export_paid_registrations_csv(token: str = Form(...), db: Session = Depends(
 # ========================
 # CHECK-IN (Scan Event)
 # ========================
-@app.post("/checkin/login")
-def checkin_login(
-    login: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
-    event = db.query(Event).filter(Event.checkin_login == login, Event.checkin_password == password).first()
-    if not event:
-        return {"success": False, "message": "Identifiants invalides"}
-
-    return {
-        "success": True,
-        "event_id": event.id,
-        "event_title": event.title
-    }
-
-
 @app.post("/checkin/scan")
 def checkin_scan(
     event_id: int = Form(...),
@@ -1469,12 +1452,12 @@ def checkin_scan(
                 Participant.qr_code == qr_code
             ).first()
 
-        # 2) Fallback par id (souvent UUID string)
-        if not participant:
-            print("🔎 Recherche par Participant.id…")
+        # 2) Fallback par id uniquement si qr_code est bien un entier
+        if not participant and qr_code.isdigit():
+            print("🔎 Recherche par Participant.id (entier)…")
             participant = db.query(Participant).filter(
                 Participant.event_id == event_id,
-                Participant.id == qr_code
+                Participant.id == int(qr_code)
             ).first()
 
         if not participant:
@@ -1508,8 +1491,9 @@ def checkin_scan(
         print("❌ Erreur checkin_scan:", repr(e))
         raise HTTPException(status_code=500, detail="Erreur interne du serveur")
 
-
-
+# ========================
+# CHECK-IN (Validate)
+# ========================
 @app.post("/checkin/validate")
 def checkin_validate(
     event_id: int = Form(...),
@@ -1517,28 +1501,40 @@ def checkin_validate(
     db: Session = Depends(get_db)
 ):
     participant = None
+
+    # 1) Essai par qr_code si la colonne existe
     if hasattr(Participant, "qr_code"):
         participant = db.query(Participant).filter(
             Participant.event_id == event_id,
             Participant.qr_code == qr_code
         ).first()
-    if not participant:
+
+    # 2) Fallback par id uniquement si qr_code est bien un entier
+    if not participant and qr_code.isdigit():
         participant = db.query(Participant).filter(
             Participant.event_id == event_id,
-            Participant.id == qr_code
+            Participant.id == int(qr_code)
         ).first()
 
     if not participant:
         return {"success": False, "message": "Participant introuvable"}
 
     if participant.scanned:
-        return {"success": False, "message": "⚠️ Déjà scanné à " + str(participant.scanned_at)}
+        return {
+            "success": False,
+            "message": f"⚠️ Déjà scanné à {participant.scanned_at}"
+        }
 
     participant.scanned = True
     participant.scanned_at = utcnow()
     db.commit()
 
-    return {"success": True, "message": f"✅ Check-in validé pour {participant.name}"}
+    return {
+        "success": True,
+        "message": f"✅ Check-in validé pour {participant.name}"
+    }
+
+
 
 # ========================
 # WEBHOOK PAYPAL (CAPTURE ONLY)
