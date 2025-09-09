@@ -358,6 +358,21 @@
   .results-table tbody td:nth-child(5) { width: 14%; }
 }
 
+/* ===== Forcer l’alignement des actions ===== */
+.results-table td.actions-cell {
+  display: flex;
+  justify-content: flex-end;   /* ou center si tu veux centrer */
+  align-items: center;
+  gap: 10px;                   /* espace constant entre les boutons */
+  flex-wrap: nowrap;           /* pas de retour à la ligne sauf sur mobile */
+}
+
+.results-table td.actions-cell button {
+  min-width: 90px;             /* garde la même largeur */
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
 </style>
 
 </head>
