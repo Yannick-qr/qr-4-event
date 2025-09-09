@@ -1368,7 +1368,6 @@ def admin_search_participants(
 # ========================
 # ADMIN : INSCRIPTIONS PAYÉES
 # ========================
-
 @app.post("/admin/paid-registrations")
 def get_paid_registrations(token: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.token == token).first()
@@ -1428,6 +1427,26 @@ def export_paid_registrations_csv(token: str = Form(...), db: Session = Depends(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=inscriptions_payees.csv"}
     )
+
+
+# ========================
+# CHECK-IN (Login)
+# ========================
+@app.post("/checkin/login")
+def checkin_login(
+    login: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    event = db.query(Event).filter(Event.checkin_login == login, Event.checkin_password == password).first()
+    if not event:
+        return {"success": False, "message": "Identifiants invalides"}
+
+    return {
+        "success": True,
+        "event_id": event.id,
+        "event_title": event.title
+    }
 
 
 # ========================
