@@ -53,13 +53,10 @@ async function loadTinyMceSdk() {
         }
 
         // 🔹 Fermer aussi la toolbar flottante (menu contextuel sur sélection)
-        document.querySelectorAll(".tox-pop").forEach(pop => {
-          const insidePop = pop.contains(e.target);
-          const insideEditor = e.target.closest(".tox-tinymce");
-          if (!insidePop && !insideEditor) {
-            pop.style.display = "none";
-          }
-        });
+if (tinymce.activeEditor && !e.target.closest(".tox-tinymce")) {
+  tinymce.activeEditor.fire("blur"); // ferme proprement le mini-toolbar
+}
+
       });
     };
 
