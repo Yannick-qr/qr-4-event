@@ -21,15 +21,33 @@ async function loadTinyMceSdk() {
     script.referrerPolicy = "origin";
 
     script.onload = () => {
-      tinymce.init({
-        selector: '#description, #edit_description',
-        plugins: 'lists link image table code',
-        toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
-        menubar: false,
-        height: 300,
-        branding: false,
-        placeholder: "Décrivez votre événement..."
-      });
+tinymce.init({
+  selector: '#description, #edit_description',
+  plugins: 'lists link image table code',
+  toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
+  menubar: false,
+  height: 300,
+  branding: false,
+  placeholder: "Décrivez votre événement...",
+  setup: (editor) => {
+    // Quand on clique dans l’éditeur → fermer le menu More s’il est ouvert
+    editor.on('click', () => {
+      const openMenu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
+      if (openMenu) {
+        openMenu.style.display = "none";
+      }
+    });
+
+    // Quand une commande est exécutée (ex: bold, italic, align...) → fermer le menu
+    editor.on('ExecCommand', () => {
+      const openMenu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
+      if (openMenu) {
+        openMenu.style.display = "none";
+      }
+    });
+  }
+});
+
   
   document.addEventListener("click", function(e) {
     const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
