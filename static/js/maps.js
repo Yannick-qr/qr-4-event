@@ -21,8 +21,7 @@ function initAutocomplete() {
     if (!input) return;
 
     const autocomplete = new google.maps.places.Autocomplete(input, {
-      types: ["geocode"],
-      componentRestrictions: { country: ["fr"] }
+ 
     });
 
     const mapContainer = document.getElementById(mapId);
