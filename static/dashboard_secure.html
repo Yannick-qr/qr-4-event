@@ -1529,6 +1529,8 @@ document.getElementById("paypalForm").addEventListener("submit", async (e) => {
 document.getElementById("editEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
+ tinymce.triggerSave(); // ✅ récupère le HTML TinyMCE
+
   const editForm = new FormData();
   editForm.append("event_id", document.getElementById("edit_id").value);
   editForm.append("title", document.getElementById("edit_title").value);
@@ -1652,6 +1654,8 @@ data.logs.forEach(log => {
 // ✅ Création d’un nouvel événement
 document.getElementById("addEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+tinymce.triggerSave(); // ✅ met à jour <textarea> avec le contenu TinyMC
 
   const form = new FormData();
   form.append("title", document.getElementById("title").value);
