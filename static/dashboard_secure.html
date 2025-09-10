@@ -30,7 +30,20 @@ async function loadTinyMceSdk() {
         branding: false,
         placeholder: "Décrivez votre événement..."
       });
-    };
+  
+  document.addEventListener("click", function(e) {
+    const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
+    if (!menu) return;
+
+    const insideMenu = menu.contains(e.target);
+    const button = document.querySelector(".tox-tbtn[aria-label='More...']");
+    const insideButton = button && button.contains(e.target);
+
+    if (!insideMenu && !insideButton) {
+      menu.style.display = "none"; // force la fermeture
+    }
+  });
+};
 
     document.head.appendChild(script);
   } catch (err) {
