@@ -1346,6 +1346,19 @@ function openEditModal(id) {
       document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
       document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
 
+      // ✅ Ré-initialiser TinyMCE pour l’éditeur d’édition
+      if (tinymce.get("edit_description")) {
+        tinymce.get("edit_description").remove();
+      }
+      tinymce.init({
+        selector: "#edit_description",
+        plugins: "lists link image table code",
+        toolbar: "undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code",
+        menubar: false,
+        height: 300,
+        branding: false
+      })
+	  
       // ✅ Nouveau : latitude / longitude
       document.getElementById("edit_latitude").value = ev.latitude || "";
       document.getElementById("edit_longitude").value = ev.longitude || "";

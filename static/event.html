@@ -332,7 +332,7 @@ p { margin: 8px 0; }
       const imgUrl = pick(ev, "image_url", "image", "cover", "banner_url");
 
       document.getElementById("event-title").textContent = title;
-      document.getElementById("event-description").textContent = desc;
+      document.getElementById("event-description").innerHTML = desc;
       document.getElementById("event-date").textContent = date;
       document.getElementById("event-location").textContent = place;
       document.getElementById("event-price").textContent = price;
