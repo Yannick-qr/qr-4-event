@@ -1338,7 +1338,6 @@ function openEditModal(id) {
 
       document.getElementById("edit_id").value = ev.id;
       document.getElementById("edit_title").value = ev.title || "";
-      document.getElementById("edit_description").value = ev.description || "";
       document.getElementById("edit_date").value = ev.date || "";
       document.getElementById("edit_location").value = ev.location || "";
       document.getElementById("edit_price").value = ev.price || 0;
@@ -1346,11 +1345,10 @@ function openEditModal(id) {
       document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
       document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
 
-      // ✅ Gestion TinyMCE pour éviter le texte qui reste d’un autre event
-  if (tinymce.get("edit_description")) {
-  tinymce.get("edit_description").setContent(ev.description || "");
-}
-
+    // ✅ Injecter la description UNIQUEMENT via TinyMCE
+      if (tinymce.get("edit_description")) {
+        tinymce.get("edit_description").setContent(ev.description || "");
+      }
 
       // ✅ Nouveau : latitude / longitude
       document.getElementById("edit_latitude").value = ev.latitude || "";
