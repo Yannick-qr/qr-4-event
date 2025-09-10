@@ -21,47 +21,41 @@ async function loadTinyMceSdk() {
     script.referrerPolicy = "origin";
 
     script.onload = () => {
-tinymce.init({
-  selector: '#description, #edit_description',
-  plugins: 'lists link image table code',
-  toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
-  menubar: false,
-  height: 300,
-  branding: false,
-  placeholder: "Décrivez votre événement...",
-  setup: (editor) => {
-    // Quand on clique dans l’éditeur → fermer le menu More s’il est ouvert
-    editor.on('click', () => {
-      const openMenu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
-      if (openMenu) {
-        openMenu.style.display = "none";
-      }
-    });
+      tinymce.init({
+        selector: '#description, #edit_description',
+        plugins: 'lists link image table code',
+        toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
+        menubar: false,
+        height: 300,
+        branding: false,
+        placeholder: "Décrivez votre événement...",
+        setup: (editor) => {
+          // Quand on clique dans l’éditeur → fermer le menu More s’il est ouvert
+          editor.on('click', () => {
+            editor.execCommand('mceToggleMenu');
+          });
 
-    // Quand une commande est exécutée (ex: bold, italic, align...) → fermer le menu
-    editor.on('ExecCommand', () => {
-      const openMenu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
-      if (openMenu) {
-        openMenu.style.display = "none";
-      }
-    });
-  }
-});
+          // Quand une commande est exécutée (ex: bold, italic, align...) → fermer le menu
+          editor.on('ExecCommand', () => {
+            editor.execCommand('mceToggleMenu');
+          });
+        }
+      });
 
-  
-  document.addEventListener("click", function(e) {
-    const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
-    if (!menu) return;
+      // ✅ Fermeture si clic à l’extérieur
+      document.addEventListener("click", function(e) {
+        const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
+        if (!menu) return;
 
-    const insideMenu = menu.contains(e.target);
-    const button = document.querySelector(".tox-tbtn[aria-label='More...']");
-    const insideButton = button && button.contains(e.target);
+        const insideMenu = menu.contains(e.target);
+        const button = document.querySelector(".tox-tbtn[aria-label='More...']");
+        const insideButton = button && button.contains(e.target);
 
-    if (!insideMenu && !insideButton) {
-      menu.style.display = "none"; // force la fermeture
-    }
-  });
-};
+        if (!insideMenu && !insideButton) {
+          menu.style.display = "none"; // force la fermeture si clic dehors
+        }
+      });
+    };
 
     document.head.appendChild(script);
   } catch (err) {
@@ -71,6 +65,7 @@ tinymce.init({
 
 loadTinyMceSdk();
 </script>
+
 
   
   <script>
@@ -1576,12 +1571,10 @@ document.getElementById("paypalForm").addEventListener("submit", async (e) => {
 document.getElementById("editEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
- tinymce.triggerSave(); // ✅ récupère le HTML TinyMCE
-
   const editForm = new FormData();
   editForm.append("event_id", document.getElementById("edit_id").value);
   editForm.append("title", document.getElementById("edit_title").value);
-  editForm.append("description", document.getElementById("edit_description").value);
+  editForm.append("description", tinymce.get("edit_description")?.getContent() || ""); // ✅ TinyMCE
   editForm.append("date", document.getElementById("edit_date").value);
   editForm.append("location", document.getElementById("edit_location").value);
   editForm.append("latitude", document.getElementById("edit_latitude").value);
@@ -1607,6 +1600,9 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
     alert("✅ Événement modifié");
     document.getElementById("editModal").style.display = "none";
 
+    // ✅ Réinitialiser aussi TinyMCE après enregistrement
+    tinymce.get("edit_description")?.setContent("");
+
     // ✅ Réinitialiser aussi la carte Google Maps de la modale
     const editMapPreview = document.getElementById("editMapPreview");
     if (editMapPreview) {
@@ -1619,6 +1615,7 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
     alert("❌ Erreur modification : " + (data.error || ""));
   }
 });
+
 
 
 // ========================
@@ -1702,11 +1699,9 @@ data.logs.forEach(log => {
 document.getElementById("addEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-tinymce.triggerSave(); // ✅ met à jour <textarea> avec le contenu TinyMC
-
   const form = new FormData();
   form.append("title", document.getElementById("title").value);
-  form.append("description", document.getElementById("description").value);
+  form.append("description", tinymce.get("description")?.getContent() || ""); // ✅ TinyMCE
   form.append("date", document.getElementById("date").value);
   form.append("location", document.getElementById("location").value);
   form.append("price", document.getElementById("price").value);
@@ -1734,6 +1729,9 @@ tinymce.triggerSave(); // ✅ met à jour <textarea> avec le contenu TinyMC
     alert("✅ Événement créé !");
     document.getElementById("addEventForm").reset();
     
+    // ✅ Réinitialiser aussi TinyMCE
+    tinymce.get("description")?.setContent("");
+
     // ✅ Réinitialiser aussi la carte Google Maps
     const mapPreview = document.getElementById("mapPreview");
     if (mapPreview) {
@@ -1746,6 +1744,7 @@ tinymce.triggerSave(); // ✅ met à jour <textarea> avec le contenu TinyMC
     alert("❌ Erreur création : " + (data.error || "Impossible de créer l’événement"));
   }
 });
+
 
 
 // ========================
