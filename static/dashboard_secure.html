@@ -1347,25 +1347,10 @@ function openEditModal(id) {
       document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
 
       // ✅ Gestion TinyMCE pour éviter le texte qui reste d’un autre event
-      if (tinymce.get("edit_description")) {
-        // si TinyMCE existe déjà → on met à jour le contenu
-        tinymce.get("edit_description").setContent(ev.description || "");
-      } else {
-        // sinon → on initialise TinyMCE
-        tinymce.init({
-          selector: "#edit_description",
-          plugins: "lists link image table code",
-          toolbar: "undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code",
-          menubar: false,
-          height: 300,
-          branding: false,
-          setup: (editor) => {
-            editor.on("init", () => {
-              editor.setContent(ev.description || "");
-            });
-          }
-        });
-      }
+  if (tinymce.get("edit_description")) {
+  tinymce.get("edit_description").setContent(ev.description || "");
+}
+
 
       // ✅ Nouveau : latitude / longitude
       document.getElementById("edit_latitude").value = ev.latitude || "";
