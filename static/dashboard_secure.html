@@ -1346,19 +1346,27 @@ function openEditModal(id) {
       document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
       document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
 
-      // ✅ Ré-initialiser TinyMCE pour l’éditeur d’édition
+      // ✅ Gestion TinyMCE pour éviter le texte qui reste d’un autre event
       if (tinymce.get("edit_description")) {
-        tinymce.get("edit_description").remove();
+        // si TinyMCE existe déjà → on met à jour le contenu
+        tinymce.get("edit_description").setContent(ev.description || "");
+      } else {
+        // sinon → on initialise TinyMCE
+        tinymce.init({
+          selector: "#edit_description",
+          plugins: "lists link image table code",
+          toolbar: "undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code",
+          menubar: false,
+          height: 300,
+          branding: false,
+          setup: (editor) => {
+            editor.on("init", () => {
+              editor.setContent(ev.description || "");
+            });
+          }
+        });
       }
-      tinymce.init({
-        selector: "#edit_description",
-        plugins: "lists link image table code",
-        toolbar: "undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code",
-        menubar: false,
-        height: 300,
-        branding: false
-      })
-	  
+
       // ✅ Nouveau : latitude / longitude
       document.getElementById("edit_latitude").value = ev.latitude || "";
       document.getElementById("edit_longitude").value = ev.longitude || "";
@@ -1388,6 +1396,7 @@ function openEditModal(id) {
       alert("❌ Impossible de charger l’événement : " + err.message);
     });
 }
+
 
 
 function closeEditModal() {
@@ -2015,17 +2024,6 @@ footer a:hover {
 </style>
 <script src="/static/js/maps.js"></script>
 
-<script>
-tinymce.init({
-  selector: '#description',
-  plugins: 'lists link image table code',
-  toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
-  menubar: false,
-  height: 300,
-  branding: false,
-  placeholder: "Décrivez votre événement..."
-});
-</script>
 
 </body>
 </html>
