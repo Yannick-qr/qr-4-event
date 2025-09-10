@@ -4,8 +4,43 @@
   <meta charset="UTF-8">
   <title>Dashboard Admin</title>
   
-  <!-- TinyMCE -->
-  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- TinyMCE (chargé dynamiquement avec clé API depuis backend) -->
+<script>
+async function loadTinyMceSdk() {
+  try {
+    const res = await fetch("/api/tinymce-key");
+    const data = await res.json();
+    if (!data.key) {
+      console.error("❌ Pas de clé TinyMCE trouvée !");
+      return;
+    }
+
+    // Injecter le script TinyMCE avec la clé
+    const script = document.createElement("script");
+    script.src = `https://cdn.tiny.cloud/1/${data.key}/tinymce/6/tinymce.min.js`;
+    script.referrerPolicy = "origin";
+
+    script.onload = () => {
+      tinymce.init({
+        selector: '#description, #edit_description',
+        plugins: 'lists link image table code',
+        toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
+        menubar: false,
+        height: 300,
+        branding: false,
+        placeholder: "Décrivez votre événement..."
+      });
+    };
+
+    document.head.appendChild(script);
+  } catch (err) {
+    console.error("Erreur chargement TinyMCE:", err);
+  }
+}
+
+loadTinyMceSdk();
+</script>
+
   
   <script>
     async function loadPayPalSdk() {

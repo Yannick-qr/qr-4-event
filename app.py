@@ -2006,3 +2006,9 @@ def manual_registration(
 @app.get("/api/config/maps-key")
 def get_maps_key():
     return JSONResponse({"key": os.getenv("GOOGLE_MAPS_API_KEY")})
+
+
+@app.get("/api/tinymce-key")
+async def get_tinymce_key():
+    key = os.getenv("TINYMCE_API_KEY", "")
+    return JSONResponse({"key": key})
