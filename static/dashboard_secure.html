@@ -610,7 +610,7 @@ tbody tr:hover {
 .event-thumb img{ width:100%; height:100%; object-fit:cover; }
 .event-title{ font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .event-meta{ font-size:13px; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.event-price{ font-weight:700; }
+.event-price{ font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .badge{
   font-size:12px; padding:4px 8px; border-radius:999px; background:#eef6ff; color:#1d4ed8; margin-left:8px;
 }
@@ -1248,10 +1248,10 @@ async function loadEvents() {
             <div style="min-width:0">
               <div class="event-title">${safe(ev.title)} ${statusBadge}</div>
               <div class="event-meta">📅 ${safe(ev.date)} · 📍 ${safe(ev.location)}</div>
+			  <div class="event-price">${priceTxt}</div>
             </div>
           </div>
 
-          <div class="event-price">${priceTxt}</div>
 
           <div class="chevron" aria-label="Afficher les détails" title="Afficher les détails">►</div>
         </div>
