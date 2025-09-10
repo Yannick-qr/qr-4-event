@@ -331,8 +331,10 @@ p { margin: 8px 0; }
   new google.maps.marker.AdvancedMarkerElement({
     position: loc,
     map: map
+      });
+    }
   });
-}
+}  // ✅ ferme bien la fonction
   
   async function loadEvent() {
     const message = document.getElementById("message");
