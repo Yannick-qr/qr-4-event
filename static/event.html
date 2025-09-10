@@ -277,6 +277,13 @@ p { margin: 8px 0; }
     <p><span class="icon">📍</span> <b>Lieu :</b>&nbsp;<span id="event-location"></span></p>
     <p><span class="icon">💶</span> <b>Prix :</b>&nbsp;<span id="event-price"></span> €</p>
   </div>
+  
+  <!-- Carte affichée en permanence -->
+<div id="map-container"
+     style="width:95%;max-width:680px;height:320px;margin:0 auto 40px;
+            border-radius:16px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.1);">
+</div>
+
 
   <hr>
 
@@ -305,6 +312,27 @@ p { margin: 8px 0; }
     return undefined;
   };
 
+
+  // ✅ Afficher la carte
+  function showMap(place) {
+    const mapDiv = document.getElementById("map-container");
+    if (!mapDiv || !window.google || !google.maps) return;
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: place }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        const loc = results[0].geometry.location;
+        const map = new google.maps.Map(mapDiv, {
+          center: loc,
+          zoom: 15
+        });
+        new google.maps.Marker({ map, position: loc });
+      } else {
+        console.error("❌ Geocoding échoué :", status);
+      }
+    });
+  }
+  
   async function loadEvent() {
     const message = document.getElementById("message");
     const setFatal = (txt) => {
@@ -335,6 +363,17 @@ p { margin: 8px 0; }
       document.getElementById("event-description").innerHTML = desc;
       document.getElementById("event-date").textContent = date;
       document.getElementById("event-location").textContent = place;
+      
+      // ✅ Afficher la carte dès que l’adresse est connue
+      if (place && place !== "—") {
+        const waitForGoogle = setInterval(() => {
+          if (window.google && google.maps) {
+            clearInterval(waitForGoogle);
+            showMap(place);
+          }
+        }, 300);
+      }
+      
       document.getElementById("event-price").textContent = price;
       const img = document.getElementById("event-image");
       img.src = imgUrl || "/static/img/placeholder.png";
@@ -486,6 +525,28 @@ img.onerror = () => setPageBg("/static/img/placeholder.png"); // fallback
   loadEvent();
 </script>
 
+<script>
+// Charger Google Maps dynamiquement avec la clé du backend
+async function loadGoogleMaps() {
+  try {
+    const res = await fetch("/api/config/maps-key");
+    const data = await res.json();
+    if (!data.key) {
+      console.error("❌ Pas de clé Google Maps");
+      return;
+    }
 
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  } catch (err) {
+    console.error("Erreur chargement Google Maps:", err);
+  }
+}
+
+loadGoogleMaps();
+</script>
 </body>
 </html>
