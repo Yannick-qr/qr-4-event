@@ -41,16 +41,26 @@ setup: (editor) => {
 
       // ✅ Fermeture si clic à l’extérieur
       document.addEventListener("click", function(e) {
+        // 🔹 Fermer les menus classiques TinyMCE
         const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
-        if (!menu) return;
+        if (menu) {
+          const insideMenu = menu.contains(e.target);
+          const button = document.querySelector(".tox-tbtn[aria-label='More...']");
+          const insideButton = button && button.contains(e.target);
 
-        const insideMenu = menu.contains(e.target);
-        const button = document.querySelector(".tox-tbtn[aria-label='More...']");
-        const insideButton = button && button.contains(e.target);
-
-        if (!insideMenu && !insideButton) {
-          menu.style.display = "none"; // force la fermeture si clic dehors
+          if (!insideMenu && !insideButton) {
+            menu.style.display = "none"; // force la fermeture si clic dehors
+          }
         }
+
+        // 🔹 Fermer aussi la toolbar flottante (menu contextuel sur sélection)
+        document.querySelectorAll(".tox-pop").forEach(pop => {
+          const insidePop = pop.contains(e.target);
+          const insideEditor = e.target.closest(".tox-tinymce");
+          if (!insidePop && !insideEditor) {
+            pop.style.display = "none";
+          }
+        });
       });
     };
 
@@ -61,6 +71,7 @@ setup: (editor) => {
 }
 
 loadTinyMceSdk();
+
 </script>
 
 
