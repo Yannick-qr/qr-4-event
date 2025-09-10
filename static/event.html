@@ -543,7 +543,7 @@ async function loadGoogleMaps() {
 
     const script = document.createElement("script");
     // ✅ ajout de &loading=async
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places,marker&loading=async`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
