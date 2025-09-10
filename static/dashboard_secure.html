@@ -30,13 +30,12 @@ async function loadTinyMceSdk() {
         branding: false,
         placeholder: "Décrivez votre événement...",
         
-setup: (editor) => {
-  editor.on('click', () => {
-    const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
-    if (menu) menu.style.display = "none";
-  });
-}
-
+        setup: (editor) => {
+          editor.on('click', () => {
+            const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
+            if (menu) menu.style.display = "none";
+          });
+        }
       });
 
       // ✅ Fermeture si clic à l’extérieur
@@ -71,8 +70,8 @@ setup: (editor) => {
 }
 
 loadTinyMceSdk();
-
 </script>
+
 
 
   
@@ -1424,7 +1423,6 @@ function openEditModal(id) {
       alert("❌ Impossible de charger l’événement : " + err.message);
     });
 }
-
 
 
 function closeEditModal() {
