@@ -2001,3 +2001,8 @@ def manual_registration(
     )
 
     return {"success": True, "message": "✅ Participant ajouté manuellement et email envoyé"}
+
+
+@app.get("/api/config/maps-key")
+def get_maps_key():
+    return JSONResponse({"key": os.getenv("GOOGLE_MAPS_API_KEY")})

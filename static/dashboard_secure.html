@@ -547,6 +547,68 @@ tbody tr:hover {
   .chevron{ margin-left:auto; }
 }
 
+/* ===== Accordéons pleine largeur ===== */
+#addEventForm {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.accordion-item {
+  margin-bottom: 12px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb; /* fine séparation */
+}
+
+.accordion-header {
+  width: 100%;
+  padding: 16px 20px;
+  background: #f9fafb;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.accordion-header:hover {
+  background: #f1f5f9;
+}
+
+.accordion-header::after {
+  content: "➕";
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.accordion-item.active .accordion-header::after {
+  content: "➖";
+}
+
+.accordion-content {
+  display: none;
+  padding: 18px 20px;
+  background: #fff;
+}
+
+.accordion-item.active .accordion-content {
+  display: block;
+  animation: fadeIn 0.25s ease;
+}
+#addEventForm {
+  padding-bottom: 60px; /* espace pour ne pas être caché par le footer */
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
   </style>
 </head>
 
@@ -637,56 +699,80 @@ tbody tr:hover {
 </div>
 
 
-    <!-- Sous-section Ajouter un événement -->
-  <div id="addEventSection" class="subsection">
-      <form id="addEventForm" enctype="multipart/form-data" 
-            style="max-width:600px;margin:40px auto;background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 10px rgba(0,0,0,0.1);">
+  <!-- Sous-section Ajouter un événement -->
+<div id="addEventSection" class="subsection">
+  <form id="addEventForm" enctype="multipart/form-data">
+    <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;color:#007bff;">
+      🗓️ Ajouter un nouvel événement
+    </h2>
 
-        <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:10px;color:#007bff;">
-          🗓️ Ajouter un nouvel événement
-        </h2>
+    <div class="accordion">
 
-        <!-- Infos générales -->
-        <h3 style="margin:15px 0;color:#333;">Informations générales</h3>
+      <div class="accordion-item">
+        <button type="button" class="accordion-header">📋 Informations générales</button>
+        <div class="accordion-content">
+          <label for="title">Titre de l’événement</label>
+          <input type="text" id="title" placeholder="Ex: Conférence Paris 2025" class="input" required>
 
-        <label for="title">Titre de l’événement</label>
-        <input type="text" id="title" placeholder="Ex: Conférence Paris 2025" class="input" required>
+          <label for="description">Description</label>
+          <textarea id="description" placeholder="Décrivez votre événement..." class="input"></textarea>
 
-        <label for="description">Description</label>
-        <textarea id="description" placeholder="Décrivez votre événement..." class="input"></textarea>
+          <label for="image">Photo de l’événement</label>
+          <input type="file" id="image" name="image" accept="image/*" class="input">
+        </div>
+      </div>
 
-        <label for="date">Date</label>
-        <input type="date" id="date" class="input" required>
+      <div class="accordion-item">
+        <button type="button" class="accordion-header">📅 Date & 📍 Lieu</button>
+        <div class="accordion-content">
+          <label for="date">Date</label>
+          <input type="date" id="date" class="input" required>
 
-        <label for="location">Lieu</label>
-        <input type="text" id="location" placeholder="Ex: Paris, Salle X" class="input" required>
+          <label for="location">Lieu</label>
+          <input type="text" id="location" placeholder="Ex: Paris, Salle X" class="input" required autocomplete="off">
+		      <!-- ✅ Champs cachés pour stocker les coordonnées -->
+    <input type="hidden" id="latitude" name="latitude">
+    <input type="hidden" id="longitude" name="longitude">
+        </div>
+      </div>
 
-        <label for="price">Prix (€)</label>
-        <input type="number" id="price" placeholder="Ex: 50" class="input" required step="0.01">
+      <div class="accordion-item">
+        <button type="button" class="accordion-header">💰 Prix</button>
+        <div class="accordion-content">
+          <label for="price">Prix (€)</label>
+          <input type="number" id="price" placeholder="Ex: 50" class="input" required step="0.01">
+        </div>
+      </div>
 
-        <!-- Participants -->
-        <h3 style="margin:20px 0;color:#333;">Participants</h3>
+      <div class="accordion-item">
+        <button type="button" class="accordion-header">👥 Participants</button>
+        <div class="accordion-content">
+          <label for="max_participants">Nombre maximum</label>
+          <input type="number" id="max_participants" placeholder="100" class="input">
+          <small style="color:#666;">Par défaut fixé à <b>100 participants</b> si laissé vide.</small>
+        </div>
+      </div>
 
-        <label for="max_participants">Nombre maximum</label>
-        <input type="number" id="max_participants" placeholder="100" class="input">
-        <small style="color:#666;">Par défaut fixé à <b>100 participants</b> si laissé vide.<br><br></small>
+      <div class="accordion-item">
+        <button type="button" class="accordion-header">🔑 Identifiants Check-in</button>
+        <div class="accordion-content">
+          <label for="checkin_login">Login Check-in (ScanEvent)</label>
+          <input type="text" id="checkin_login" class="input">
 
-        <label for="checkin_login">Login Check-in (ScanEvent)</label>
-        <input type="text" id="checkin_login" class="input">
+          <label for="checkin_password">Password Check-in (ScanEvent)</label>
+          <input type="password" id="checkin_password" class="input">
+        </div>
+      </div>
 
-        <label for="checkin_password">Password Check-in (ScanEvent)</label>
-        <input type="password" id="checkin_password" class="input">
-
-        <label for="image">Photo de l’événement</label>
-        <input type="file" id="image" name="image" accept="image/*" class="input">
-
-        <!-- Bouton -->
-        <button type="submit" data-i18n="createEvent" 
-          style="margin-top:25px;width:100%;padding:12px;background:#007bff;color:white;font-size:16px;border:none;border-radius:8px;cursor:pointer;">
-          ➕ Créer l’événement
-        </button>
-      </form>
     </div>
+
+    <button type="submit" class="btn" style="margin-top:25px;width:100%;font-size:16px;">
+      ➕ Créer l’événement
+    </button>
+  </form>
+</div>
+
+
     
     <!-- Sous-section Inscriptions Payées -->
 <div id="paidEventsSection" class="subsection">
@@ -825,7 +911,10 @@ tbody tr:hover {
       <label data-i18n="title">Titre :</label><input type="text" id="edit_title" required>
       <label data-i18n="description">Description :</label><textarea id="edit_description" required></textarea>
       <label data-i18n="date">Date :</label><input type="date" id="edit_date" required>
-      <label data-i18n="location">Lieu :</label><input type="text" id="edit_location" required>
+      <label data-i18n="location">Lieu :</label>
+      <input type="text" id="edit_location" required>
+      <input type="hidden" id="edit_latitude" name="edit_latitude">
+      <input type="hidden" id="edit_longitude" name="edit_longitude">
       <label data-i18n="price">Prix (€) :</label><input type="number" id="edit_price" step="0.01" required>
       <label>Max participants :</label>
       <input type="number" id="edit_max_participants" placeholder="100">
@@ -1208,6 +1297,29 @@ function openEditModal(id) {
       document.getElementById("edit_checkin_login").value = ev.checkin_login || "";
       document.getElementById("edit_checkin_password").value = ev.checkin_password || "";
 
+      // ✅ Nouveau : latitude / longitude
+      document.getElementById("edit_latitude").value = ev.latitude || "";
+      document.getElementById("edit_longitude").value = ev.longitude || "";
+
+      // ✅ Si on a déjà des coordonnées → afficher la carte directement
+      const lat = parseFloat(ev.latitude);
+      const lng = parseFloat(ev.longitude);
+      const mapContainer = document.getElementById("editMapPreview");
+
+      if (!isNaN(lat) && !isNaN(lng) && mapContainer) {
+        const map = new google.maps.Map(mapContainer, {
+          center: { lat, lng },
+          zoom: 15
+        });
+        new google.maps.Marker({
+          position: { lat, lng },
+          map: map
+        });
+        mapContainer.style.display = "block";
+      } else if (mapContainer) {
+        mapContainer.style.display = "none"; // pas de coordonnées → cacher la carte
+      }
+
       document.getElementById("editModal").style.display = "flex";
     })
     .catch(err => {
@@ -1215,10 +1327,19 @@ function openEditModal(id) {
     });
 }
 
+
 function closeEditModal() {
   document.getElementById("editModal").style.display = "none";
+
+  // ✅ Réinitialiser aussi la carte Google Maps de la modale
+  const editMapPreview = document.getElementById("editMapPreview");
+  if (editMapPreview) {
+    editMapPreview.style.display = "none";
+    editMapPreview.innerHTML = ""; // vide le conteneur
+  }
 }
 document.getElementById("cancelEditBtn").addEventListener("click", closeEditModal);
+
 
 
 async function deleteEvent(id) {
@@ -1231,7 +1352,13 @@ async function deleteEvent(id) {
     body: form
   });
   const data = await res.json();
-  if (data.success) loadEvents(); else alert("Erreur suppression : " + (data.error || ""));
+  if (data.success) {
+    // ✅ Fermer la modale et reset carte si elle était ouverte
+    closeEditModal();
+    loadEvents();
+  } else {
+    alert("Erreur suppression : " + (data.error || ""));
+  }
 }
 
 
@@ -1244,8 +1371,17 @@ async function toggleEvent(id) {
     body: form
   });
   const data = await res.json();
-  if (data.success) loadEvents(); else alert("Erreur activation/désactivation : " + (data.error || ""));
+  if (data.success) {
+    // ✅ Fermer la modale et reset carte si elle était ouverte
+    closeEditModal();
+    loadEvents();
+  } else {
+    alert("Erreur activation/désactivation : " + (data.error || ""));
+  }
 }
+
+
+
 
 // ========================
 // Navigation entre sections
@@ -1350,6 +1486,8 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
   editForm.append("description", document.getElementById("edit_description").value);
   editForm.append("date", document.getElementById("edit_date").value);
   editForm.append("location", document.getElementById("edit_location").value);
+  editForm.append("latitude", document.getElementById("edit_latitude").value);
+  editForm.append("longitude", document.getElementById("edit_longitude").value);
   editForm.append("price", document.getElementById("edit_price").value);
   editForm.append("max_participants", document.getElementById("edit_max_participants").value);
   editForm.append("checkin_login", document.getElementById("edit_checkin_login").value);
@@ -1366,14 +1504,24 @@ document.getElementById("editEventForm").addEventListener("submit", async (e) =>
     body: editForm
   });
   const data = await res.json();
+
   if (data.success) {
     alert("✅ Événement modifié");
     document.getElementById("editModal").style.display = "none";
-    loadEvents();
+
+    // ✅ Réinitialiser aussi la carte Google Maps de la modale
+    const editMapPreview = document.getElementById("editMapPreview");
+    if (editMapPreview) {
+      editMapPreview.style.display = "none";
+      editMapPreview.innerHTML = ""; // vide le conteneur
+    }
+
+    loadEvents(); // recharge la liste
   } else {
-    alert("❌ Erreur modification : " + (data.error || "")); 
+    alert("❌ Erreur modification : " + (data.error || ""));
   }
 });
+
 
 // ========================
 // Suppression PayPal sécurisée
@@ -1466,6 +1614,10 @@ document.getElementById("addEventForm").addEventListener("submit", async (e) => 
   form.append("checkin_login", document.getElementById("checkin_login").value);
   form.append("checkin_password", document.getElementById("checkin_password").value);
 
+  // ✅ Ajout coordonnées Google Maps si dispo
+  form.append("latitude", document.getElementById("latitude").value);
+  form.append("longitude", document.getElementById("longitude").value);
+  
   // ✅ Ajout de l'image si un fichier est choisi
   const imageFile = document.getElementById("image").files[0];
   if (imageFile) {
@@ -1481,11 +1633,20 @@ document.getElementById("addEventForm").addEventListener("submit", async (e) => 
   if (data.success) {
     alert("✅ Événement créé !");
     document.getElementById("addEventForm").reset();
+    
+    // ✅ Réinitialiser aussi la carte Google Maps
+    const mapPreview = document.getElementById("mapPreview");
+    if (mapPreview) {
+      mapPreview.style.display = "none";
+      mapPreview.innerHTML = ""; // vide le conteneur
+    }
+
     loadEvents(); // rafraîchit la liste et les stats
   } else {
     alert("❌ Erreur création : " + (data.error || "Impossible de créer l’événement"));
   }
 });
+
 
 // ========================
 // ⏰ Déconnexion auto après 15 min d’inactivité
@@ -1734,6 +1895,14 @@ paidEventsBtn.addEventListener("click", () => {
   loadEventsForManualAdd(); // ⚡ charge aussi la liste pour le select
 });
 
+// Accordéons
+document.querySelectorAll(".accordion-header").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const item = btn.parentElement;
+    item.classList.toggle("active");
+  });
+});
+
 </script>
 
 <!-- ===== FOOTER ===== -->
@@ -1778,6 +1947,9 @@ footer a:hover {
   }
 }
 </style>
-
+<script src="/static/js/maps.js"></script>
 </body>
 </html>
+
+
+
