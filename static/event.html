@@ -322,8 +322,6 @@ p { margin: 8px 0; }
     geocoder.geocode({ address: place }, (results, status) => {
       if (status === "OK" && results[0]) {
         const loc = results[0].geometry.location;
-  }
-});  // ✅ bien fermé
 
 const map = new google.maps.Map(mapDiv, {
   center: loc,
