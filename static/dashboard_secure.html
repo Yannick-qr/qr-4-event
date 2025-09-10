@@ -92,7 +92,6 @@ main {
   padding: 20px;
   background: #f4f7fb;
   min-height: calc(100vh - 60px);
-  padding-bottom: 80px; /* espace pour le footer */
 }
 
 
@@ -215,8 +214,13 @@ h2 {
   gap: 20px;
   margin: 25px 0;
 }
-.subsection { display: none; }
-.subsection.active { display: block; }
+.subsection {
+display: none; 
+}
+
+.subsection.active {
+display: block;
+}
 
 .stat {
   background: #fff;
@@ -609,6 +613,10 @@ tbody tr:hover {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+
+.eventsList {
+  padding-bottom: 60px; /* espace pour ne pas être caché par le footer */
+}
 
   </style>
 </head>
