@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Dashboard Admin</title>
+  
+  <!-- TinyMCE -->
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+  
   <script>
     async function loadPayPalSdk() {
       const res = await fetch("/api/paypal-client-id");
@@ -658,7 +662,7 @@ tbody tr:hover {
       <button id="logoutBtn" class="btn-logout">🚪 Déconnexion</button>
     </div>
   </div>
-</header>
+  </header>
 
 
 
@@ -723,8 +727,9 @@ tbody tr:hover {
           <label for="title">Titre de l’événement</label>
           <input type="text" id="title" placeholder="Ex: Conférence Paris 2025" class="input" required>
 
-          <label for="description">Description</label>
-          <textarea id="description" placeholder="Décrivez votre événement..." class="input"></textarea>
+         <label for="description">Description</label>
+         <textarea id="description" name="description" class="input"></textarea>
+
 
           <label for="image">Photo de l’événement</label>
           <input type="file" id="image" name="image" accept="image/*" class="input">
@@ -1957,6 +1962,19 @@ footer a:hover {
 }
 </style>
 <script src="/static/js/maps.js"></script>
+
+<script>
+tinymce.init({
+  selector: '#description',
+  plugins: 'lists link image table code',
+  toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | alignleft aligncenter alignright | code',
+  menubar: false,
+  height: 300,
+  branding: false,
+  placeholder: "Décrivez votre événement..."
+});
+</script>
+
 </body>
 </html>
 
