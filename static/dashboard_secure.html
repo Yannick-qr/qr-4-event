@@ -29,17 +29,14 @@ async function loadTinyMceSdk() {
         height: 300,
         branding: false,
         placeholder: "Décrivez votre événement...",
-        setup: (editor) => {
-          // Quand on clique dans l’éditeur → fermer le menu More s’il est ouvert
-          editor.on('click', () => {
-            editor.execCommand('mceToggleMenu');
-          });
+        
+setup: (editor) => {
+  editor.on('click', () => {
+    const menu = document.querySelector(".tox-menu.tox-collection--list[aria-hidden='false']");
+    if (menu) menu.style.display = "none";
+  });
+}
 
-          // Quand une commande est exécutée (ex: bold, italic, align...) → fermer le menu
-          editor.on('ExecCommand', () => {
-            editor.execCommand('mceToggleMenu');
-          });
-        }
       });
 
       // ✅ Fermeture si clic à l’extérieur
@@ -995,7 +992,7 @@ tbody tr:hover {
     <form id="editEventForm" enctype="multipart/form-data">
       <input type="hidden" id="edit_id">
       <label data-i18n="title">Titre :</label><input type="text" id="edit_title" required>
-      <label data-i18n="description">Description :</label><textarea id="edit_description" required></textarea>
+      <label data-i18n="description">Description :</label><textarea id="edit_description"></textarea>
       <label data-i18n="date">Date :</label><input type="date" id="edit_date" required>
       <label data-i18n="location">Lieu :</label>
       <input type="text" id="edit_location" required>
@@ -1570,6 +1567,12 @@ document.getElementById("paypalForm").addEventListener("submit", async (e) => {
 // ✅ Sauvegarde modification (avec upload image)
 document.getElementById("editEventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const content = tinymce.get("edit_description")?.getContent({ format: "text" }).trim();
+  if (!content) {
+    alert("⚠️ Merci de remplir la description.");
+    return;
+  }
 
   const editForm = new FormData();
   editForm.append("event_id", document.getElementById("edit_id").value);
