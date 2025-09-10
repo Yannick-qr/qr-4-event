@@ -327,6 +327,12 @@ p { margin: 8px 0; }
           zoom: 15
         });
 
+const map = new google.maps.Map(mapDiv, {
+  center: loc,
+  zoom: 15,
+  mapId: "7cfc3f3b2bd280bbb9fe24ef"  // ✅ ton Map ID
+})
+
   // ✅ Nouveau Marker recommandé
   new google.maps.marker.AdvancedMarkerElement({
     position: loc,
@@ -541,7 +547,7 @@ async function loadGoogleMaps() {
 
     const script = document.createElement("script");
     // ✅ ajout de &loading=async
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places,marker&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
