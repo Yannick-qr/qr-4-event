@@ -998,25 +998,39 @@ tbody tr:hover {
     <h3 data-i18n="editEvent">Éditer l'événement</h3>
     <form id="editEventForm" enctype="multipart/form-data">
       <input type="hidden" id="edit_id">
-      <label data-i18n="title">Titre :</label><input type="text" id="edit_title" required>
-      <label data-i18n="description">Description :</label><textarea id="edit_description"></textarea>
-      <label data-i18n="date">Date :</label><input type="date" id="edit_date" required>
-      <label data-i18n="location">Lieu :</label>
+      
+	  <label data-i18n="title">Titre :</label><input type="text" id="edit_title" required>
+      
+	  <label data-i18n="description">Description :</label><textarea id="edit_description"></textarea>
+      
+	  <label data-i18n="date">Date :</label><input type="date" id="edit_date" required>
+      
+	  <label data-i18n="location">Lieu :</label>
       <input type="text" id="edit_location" required>
       <input type="hidden" id="edit_latitude" name="edit_latitude">
       <input type="hidden" id="edit_longitude" name="edit_longitude">
-      <label data-i18n="price">Prix (€) :</label><input type="number" id="edit_price" step="0.01" required>
+	  
+	  <!-- ✅ Conteneur pour la carte -->
+  <div id="editMapPreview" style="width:100%; height:250px; border-radius:8px; margin-top:10px; display:none;"></div>
+	  
+      <label data-i18n="price">Prix (€) :</label>
+	  <input type="number" id="edit_price" step="0.01" required>
+	  
       <label>Max participants :</label>
       <input type="number" id="edit_max_participants" placeholder="100">
       <small style="color:gray; display:block; margin-top:4px;">
         Par défaut, fixé à <b>100 participants</b> si laissé vide.
       </small>
+	  
       <label>Login Check-in :</label>
       <input type="text" id="edit_checkin_login">
+	  
       <label>Mot de passe Check-in :</label>
       <input type="password" id="edit_checkin_password">
+	  
       <label for="edit_image">Photo de l’événement</label>
       <input type="file" id="edit_image" name="edit_image" accept="image/*">
+	  
       <button type="submit" id="saveEditBtn">💾 <span data-i18n="save">Enregistrer</span></button>
       <button type="button" id="cancelEditBtn">❌ <span data-i18n="cancel">Annuler</span></button>
     </form>
@@ -1395,6 +1409,7 @@ function openEditModal(id) {
       document.getElementById("edit_latitude").value = ev.latitude || "";
       document.getElementById("edit_longitude").value = ev.longitude || "";
 
+
       // ✅ Si on a déjà des coordonnées → afficher la carte directement
       const lat = parseFloat(ev.latitude);
       const lng = parseFloat(ev.longitude);
@@ -1409,11 +1424,19 @@ function openEditModal(id) {
           position: { lat, lng },
           map: map
         });
+		
         mapContainer.style.display = "block";
+		
+    // ⚡ Fix affichage carte dans une modale
+        setTimeout(() => {
+          google.maps.event.trigger(map, "resize");
+          map.setCenter({ lat, lng });
+        }, 200);
       } else if (mapContainer) {
-        mapContainer.style.display = "none"; // pas de coordonnées → cacher la carte
+        mapContainer.style.display = "none";
       }
 
+      // ✅ Afficher la modale
       document.getElementById("editModal").style.display = "flex";
     })
     .catch(err => {
