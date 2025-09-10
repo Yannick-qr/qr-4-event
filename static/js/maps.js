@@ -40,7 +40,8 @@ function initAutocomplete() {
           center: { lat, lng },
           zoom: 15
         });
-        marker = new google.maps.Marker({
+		
+        marker = new google.maps.marker.AdvancedMarkerElement({
           position: { lat, lng },
           map: map
         });

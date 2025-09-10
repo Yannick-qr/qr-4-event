@@ -326,12 +326,13 @@ p { margin: 8px 0; }
           center: loc,
           zoom: 15
         });
-        new google.maps.Marker({ map, position: loc });
-      } else {
-        console.error("❌ Geocoding échoué :", status);
-      }
-    });
-  }
+
+  // ✅ Nouveau Marker recommandé
+  new google.maps.marker.AdvancedMarkerElement({
+    position: { lat, lng },
+    map: map
+  });
+}
   
   async function loadEvent() {
     const message = document.getElementById("message");
@@ -548,5 +549,6 @@ async function loadGoogleMaps() {
 
 loadGoogleMaps();
 </script>
+
 </body>
 </html>
