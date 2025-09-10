@@ -20,9 +20,11 @@ function initAutocomplete() {
     const input = document.getElementById(inputId);
     if (!input) return;
 
-    const autocomplete = new google.maps.places.Autocomplete(input, {
- 
-    });
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+  // pas de restriction types → adresses + lieux
+  });
+  autocomplete.setFields(["geometry", "name", "formatted_address", "place_id"]);
+
 
     const mapContainer = document.getElementById(mapId);
     let map, marker;
