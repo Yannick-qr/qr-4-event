@@ -329,7 +329,7 @@ p { margin: 8px 0; }
 
   // ✅ Nouveau Marker recommandé
   new google.maps.marker.AdvancedMarkerElement({
-    position: { lat, lng },
+    position: loc,
     map: map
   });
 }
@@ -538,7 +538,8 @@ async function loadGoogleMaps() {
     }
 
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places`;
+    // ✅ ajout de &loading=async
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places&loading=async`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
