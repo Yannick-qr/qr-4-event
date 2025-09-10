@@ -1430,6 +1430,12 @@ function openEditModal(id) {
 function closeEditModal() {
   document.getElementById("editModal").style.display = "none";
 
+  // ✅ Réinitialiser TinyMCE de la modale pour fermer toolbars/menus
+  if (tinymce.get("edit_description")) {
+    tinymce.get("edit_description").hide();       // cache proprement
+    tinymce.get("edit_description").setContent(""); // optionnel : vider le champ
+  }
+
   // ✅ Réinitialiser aussi la carte Google Maps de la modale
   const editMapPreview = document.getElementById("editMapPreview");
   if (editMapPreview) {
