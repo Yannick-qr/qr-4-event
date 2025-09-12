@@ -1,219 +1,234 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>Inscription Événement</title>
-  <style>
-/* ===== Base ===== */
+<style>
+/* ===== Reset & Base ===== */
 *,
 *::before,
 *::after { box-sizing: border-box; }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #f5f6fa;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: var(--bg);
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  color: #1f2937;
+  color: var(--text);
+  line-height: 1.5;
 }
 
 /* ===== Variables UI ===== */
-:root{
+:root {
   --bg: #f5f6fa;
   --card: #ffffff;
   --text: #1f2937;
   --muted: #6b7280;
   --primary: #007bff;
-  --primary-dark:#0056b3;
+  --primary-dark: #0056b3;
   --ring: 0 0 0 3px rgba(0,123,255,.18);
 
-  /* Largeur commune image + carte */
-  --card-max: 680px;
-  --card-side: 26px;
+  --card-max: 720px;
+  --card-side: 28px;
 }
 
-/* ===== Fond plein écran flouté depuis #event-image ===== */
-:root{ --event-bg-url: url("/static/img/placeholder.png"); }
-body::before{
-  content:"";
+/* ===== Fond dynamique (flou) ===== */
+:root { --event-bg-url: url("/static/img/placeholder.png"); }
+body::before {
+  content: "";
   position: fixed; inset: 0; z-index: -2;
   background-image: var(--event-bg-url);
-  background-size: cover; background-position: center; background-repeat: no-repeat;
-  filter: blur(14px); transform: scale(1.08);
+  background-size: cover; background-position: center;
+  filter: blur(16px); transform: scale(1.1);
 }
-body::after{
-  content:"";
+body::after {
+  content: "";
   position: fixed; inset: 0; z-index: -1;
-  background:
-    radial-gradient(1200px 600px at 50% -10%, rgba(0,0,0,.25), transparent 60%),
-    linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,.10) 30%, rgba(0,0,0,.25));
+  background: linear-gradient(to bottom, rgba(0,0,0,.3), rgba(0,0,0,.15) 30%, rgba(0,0,0,.3));
   pointer-events: none;
 }
 
-/* ===== Header façon bannière (même largeur que .box) ===== */
+/* ===== Header (bannière) ===== */
 .event-header {
   position: relative;
   width: 95%;
   max-width: var(--card-max);
-  margin: 24px auto 10px;
+  margin: 28px auto 14px;
   overflow: hidden;
-  border-radius: 16px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.06);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.08);
 }
 .event-header img {
   width: 100%;
-  height: clamp(190px, 28vw, 260px);
-  display: block;
+  height: clamp(200px, 30vw, 260px);
   object-fit: cover;
-  border-radius: 16px;
+  display: block;
+  border-radius: 18px;
 }
-/* Dégradé sombre sous le titre */
 .event-header::after {
   content: "";
   position: absolute; inset: auto 0 0 0;
   height: 140px;
-  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  border-radius: 0 0 16px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+  border-radius: 0 0 18px 18px;
 }
-/* Titre superposé */
 .event-header h2 {
   position: absolute;
-  bottom: 18px; left: 22px;
+  bottom: 20px; left: 22px;
   margin: 0;
   padding: 10px 14px;
   color: #fff;
-  font-size: clamp(1.3rem, 3.6vw, 2rem);
+  font-size: clamp(1.4rem, 3.8vw, 2.2rem);
+  font-weight: 700;
+  text-shadow: 0 3px 8px rgba(0,0,0,.6);
   z-index: 2;
-  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
   border-radius: 10px;
 }
 
-/* ===== Carte principale (cadre blanc) ===== */
+/* ===== Carte principale (cadre) ===== */
 .box {
   width: 95%;
   max-width: var(--card-max);
-  background: rgba(255,255,255,.96);
-  margin: 10px auto 42px;
-  padding: 28px var(--card-side) 30px;
-  border-radius: 16px;
-  border: 1px solid #eef2f7;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
-  transition: transform .2s;
+  background: rgba(255,255,255,.97);
+  margin: 12px auto 46px;
+  padding: 30px var(--card-side);
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 32px rgba(0,0,0,.09);
+  transition: transform .25s;
 }
 .box:hover { transform: translateY(-3px); }
 
-h3 { margin: 0 0 14px; color: var(--primary); text-align: center; font-weight: 700; letter-spacing: .2px; }
+h3 {
+  margin: 0 0 16px;
+  color: var(--primary);
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: .3px;
+}
 p { margin: 8px 0; }
 
-/* Séparateur design */
-.box hr{
-  margin: 25px 0;
+/* Séparateur dégradé */
+.box hr {
+  margin: 26px 0;
   border: none; height: 2px;
   background: linear-gradient(90deg, var(--primary), #00c6ff);
   border-radius: 2px;
 }
 
-/* ===== Infos événement ===== */
-.event-details p {
-  font-size: 16px;
-  margin: 10px 0;
-  color: #333;
+/* ===== Infos événement (version row moderne) ===== */
+.event-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.detail-row {
   display: flex;
   align-items: center;
+  background: #fafafa;
+  border-radius: 14px;
+  padding: 12px 16px;
+  gap: 12px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.05);
 }
-.event-details .icon {
-  margin-right: 8px;
+.detail-row .icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.2rem;
-  width: 22px; display:inline-flex; align-items:center; justify-content:center;
+  color: white;
 }
+.icon.date { background: #007bff; }
+.icon.location { background: #ef4444; }
+.icon.price { background: #8b5cf6; }
 
 /* Description */
-.about-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; color: #444; text-align: left; position: relative; }
-.about-title::after{
-  content:"";
-  position:absolute; left:0; bottom:-6px; width:42px; height:3px;
-  background: linear-gradient(90deg, var(--primary), #00c6ff);
-  border-radius: 2px;
+.about-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #374151;
+  text-align: left;
+  position: relative;
 }
-.description{
-  margin: 10px 0 30px;
+.about-title::after {
+  content: "";
+  position: absolute; left: 0; bottom: -6px;
+  width: 46px; height: 3px;
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+  border-radius: 3px;
+}
+.description {
+  margin: 12px 0 30px;
   background: #fafbff;
   border: 1px solid #eef2f7;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
   color: #4b5563;
-  font-style: normal;
 }
 
 /* ===== Formulaire ===== */
-#registerForm{
-  display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr); /* robuste, pas de débordement */
-  grid-auto-rows: auto;
+#registerForm {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
-
-/* Champs communs */
-#registerForm input{
-  display: block;
+#registerForm input {
   width: 100%;
-  margin: 0;
   padding: 12px 14px;
   border: 1px solid #d1d5db;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 1rem;
   background: #fff;
-  transition: border-color .2s, box-shadow .2s, background .2s;
+  transition: border-color .2s, box-shadow .2s;
 }
-#registerForm input::placeholder{ color:#94a3b8; }
-#registerForm input:focus{
+#registerForm input::placeholder { color:#94a3b8; }
+#registerForm input:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: var(--ring);
-  background: #ffffff;
 }
-/* États simples */
-#registerForm input:invalid:focus{ border-color:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.16); }
-#registerForm input:valid:focus  { border-color:#10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.16); }
+#registerForm input:invalid:focus { border-color:#ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.16); }
+#registerForm input:valid:focus { border-color:#10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.16); }
 
-/* Placement précis pour éviter tout chevauchement */
-#first_name{ grid-column: 1; }
-#last_name { grid-column: 2; }
-#email     { grid-column: 1 / -1; } /* email sur toute la ligne */
-
-/* ===== Bouton d'inscription (custom PayPal) ===== */
-#custom-paypal-btn{
+/* ===== Bouton inscription ===== */
+#custom-paypal-btn {
   width: 100%;
   max-width: 520px;
-  background: linear-gradient(90deg, #007bff, #0056b3);
-  color: white;
+  background: linear-gradient(90deg, #007bff, #7b2ff7);
+  color: #fff;
   border: none;
-  padding: 14px 25px;
-  border-radius: 30px;
+  padding: 14px 26px;
+  border-radius: 14px;
   font-size: 1.1rem;
-  cursor: pointer;
   font-weight: bold;
-  transition: background .3s, transform .2s, box-shadow .2s;
+  cursor: pointer;
+  transition: all .3s;
+  margin: 22px auto 0;
   display: block;
-  margin: 20px auto 0;
   position: relative;
-  box-shadow: 0 8px 18px rgba(0,123,255,.25);
+  box-shadow: 0 8px 20px rgba(0,123,255,.28);
 }
 #custom-paypal-btn:hover {
-  background: linear-gradient(90deg, #0056b3, #003f80);
-  transform: scale(1.03);
-  box-shadow: 0 10px 22px rgba(0,86,179,.28);
+  transform: scale(1.04);
+  box-shadow: 0 12px 28px rgba(0,86,179,.3);
 }
 #custom-paypal-btn.loading { cursor: wait; opacity: .85; }
 #custom-paypal-btn.loading::after {
   content: "";
-  position: absolute; right: 15px; top: 50%;
+  position: absolute; right: 16px; top: 50%;
   width: 16px; height: 16px;
   border: 2px solid white; border-top: 2px solid transparent;
   border-radius: 50%; transform: translateY(-50%);
@@ -221,76 +236,79 @@ p { margin: 8px 0; }
 }
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-#paypal-button-container{ margin-top: 14px; display:flex; justify-content:center; }
-#cancel-container{ margin-top: 10px; }
+#paypal-button-container { margin-top: 16px; display:flex; justify-content:center; }
+#cancel-container { margin-top: 12px; }
 
 /* ===== Messages ===== */
-#message{ margin-top: 10px; }
-.success{
-  color:#065f46; background:#ecfdf5; border:1px solid #a7f3d0;
-  padding:10px 12px; border-radius:10px; font-weight:600; margin-top: 10px;
+#message { margin-top: 12px; }
+.success {
+  color: #065f46;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-top: 12px;
 }
-.error{
-  color:#7f1d1d; background:#fee2e2; border:1px solid #fecaca;
-  padding:10px 12px; border-radius:10px; font-weight:600; margin-top: 10px;
+.error {
+  color: #7f1d1d;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-top: 12px;
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 768px){
+@media (max-width: 768px) {
   .event-header { width: 94%; border-radius: 14px; }
-  .event-header img{ height: 220px; border-radius: 14px; }
-  .event-header h2 { font-size: 1.4rem; left: 14px; bottom: 10px; }
+  .event-header img { height: 220px; border-radius: 14px; }
+  .event-header h2 { font-size: 1.5rem; left: 14px; bottom: 12px; }
 
-  .box{ width: 94%; padding: 22px 18px 24px; background: rgba(255,255,255,.98); }
+  .box { width: 94%; padding: 24px 18px 26px; }
 
-  /* Grille 1 colonne sur mobile + spans corrects */
-  #registerForm{
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  #first_name{ grid-column: 1; }
-  #last_name { grid-column: 1; }
-  #email     { grid-column: 1; }
-
-  #custom-paypal-btn{ max-width: none; }
-  .description{ padding: 10px 12px; }
+  #custom-paypal-btn { max-width: none; }
+  .description { padding: 12px; }
 }
 </style>
-
-
 </head>
 <body>
 
   <!-- ✅ Header -->
   <div class="event-header">
     <img id="event-image" src="/static/img/placeholder.png" alt="Image de l'événement">
-   
- <h2 id="event-title">Chargement...</h2>
+    <h2 id="event-title">Chargement...</h2>
   </div>
 
-<!-- ✅ Box infos améliorée -->
-<div class="box">
-<h3 class="about-title">À propos de l’événement</h3> <!-- ✅ Nouveau titre -->
+  <!-- ✅ Box infos améliorée -->
+  <div class="box">
+    <h3 class="about-title">À propos de l’événement</h3>
+    <p id="event-description" class="description"></p>
 
-<p id="event-description" class="description"></p> <!-- ✅ description restaurée -->
+    <!-- ✅ Détails modernes -->
+    <div class="event-details">
+      <div class="detail-row">
+        <div class="icon date">📅</div>
+        <span id="event-date"></span>
+      </div>
+      <div class="detail-row">
+        <div class="icon location">📍</div>
+        <span id="event-location"></span>
+      </div>
+      <div class="detail-row">
+        <div class="icon price">💶</div>
+        <span id="event-price"></span> €
+      </div>
+    </div>
 
-  <div class="event-details">
-    <p><span class="icon">📅</span> <b>Date :</b>&nbsp;<span id="event-date"></span></p>
-    <p><span class="icon">📍</span> <b>Lieu :</b>&nbsp;<span id="event-location"></span></p>
-  </div>
-  
-  <!-- Carte affichée en permanence -->
-<div id="map-container"
-     style="width:95%;max-width:680px;height:320px;margin:0 auto 40px;
-            border-radius:16px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.1);">
-</div>
+    <!-- ✅ Carte -->
+    <div id="map-container"
+         style="width:95%;max-width:680px;height:320px;margin:0 auto 40px;
+                border-radius:16px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.1);">
+    </div>
 
-
-  <div class="event-details">
-    <p><span class="icon">💶</span> <b>Prix :</b>&nbsp;<span id="event-price"></span> €</p>
-  </div>
-  
-  <hr>
+    <hr>
 
     <h3>Inscription</h3>
     <div id="message"></div>
@@ -300,263 +318,92 @@ p { margin: 8px 0; }
       <input type="email" id="email" placeholder="Votre email" required>
     </form>
 
-    <!-- ✅ Ton bouton bleu -->
     <button id="custom-paypal-btn">M’inscrire</button>
     <div id="paypal-button-container"></div>
-    <div id="cancel-container" style="text-align:center; margin-top:10px;"></div> <!-- ✅ ICI -->
+    <div id="cancel-container" style="text-align:center; margin-top:10px;"></div>
   </div>
 
 <script>
-  let eventId = new URLSearchParams(location.search).get("id");
-  if (!eventId) {
-    document.body.innerHTML = "<h2>⚠️ Aucun événement sélectionné.</h2>";
-  }
+  let eventId = new URLSearchParams(location.search).get("id"); // si vide → mode mock
 
   const pick = (o, ...keys) => {
     for (const k of keys) if (o && o[k] != null && o[k] !== "") return o[k];
     return undefined;
   };
 
-
   // ✅ Afficher la carte
   function showMap(place) {
     const mapDiv = document.getElementById("map-container");
     if (!mapDiv || !window.google || !google.maps) return;
-
     const geocoder = new google.maps.Geocoder();
     geocoder.geocode({ address: place }, (results, status) => {
       if (status === "OK" && results[0]) {
         const loc = results[0].geometry.location;
+        const map = new google.maps.Map(mapDiv, {
+          center: loc,
+          zoom: 15,
+          mapId: "7cfc3f3b2bd280bbb9fe24ef"
+        });
+        new google.maps.marker.AdvancedMarkerElement({ position: loc, map: map });
+      }
+    });
+  }
 
-const map = new google.maps.Map(mapDiv, {
-  center: loc,
-  zoom: 15,
-  mapId: "7cfc3f3b2bd280bbb9fe24ef"  // ✅ ton Map ID
-})
-
-  // ✅ Nouveau Marker recommandé
-  new google.maps.marker.AdvancedMarkerElement({
-    position: loc,
-    map: map
-      });
-    }
-  });
-}  // ✅ ferme bien la fonction
-  
   async function loadEvent() {
-    const message = document.getElementById("message");
-    const setFatal = (txt) => {
-      document.getElementById("event-title").textContent = "Événement";
-      document.getElementById("event-description").textContent = "❌ Impossible de charger l’événement.";
-      if (message) message.innerHTML = `<p class="error">${txt}</p>`;
-    };
+    // Mode MOCK si pas d'eventId
+    if (!eventId) {
+      const fakeEvent = {
+        title: "Conférence Paris 2025",
+        description: "Un grand rassemblement professionnel avec des invités internationaux.",
+        date: "2025-09-06",
+        location: "Eiffel Tower, Paris, France",
+        price: "25",
+        image_url: "https://via.placeholder.com/800x400.png?text=Conf%C3%A9rence+Paris+2025"
+      };
+      document.getElementById("event-title").textContent = fakeEvent.title;
+      document.getElementById("event-description").textContent = fakeEvent.description;
+      document.getElementById("event-date").textContent = fakeEvent.date;
+      document.getElementById("event-location").textContent = fakeEvent.location;
+      document.getElementById("event-price").textContent = fakeEvent.price;
+      document.getElementById("event-image").src = fakeEvent.image_url;
+      return;
+    }
 
+    // Sinon mode API normal
     try {
-      // --- Appel direct vers l'endpoint JSON ---
       const resEvent = await fetch(`/api/event/${encodeURIComponent(eventId)}`, {
         headers: { "Accept": "application/json" }
       });
-      if (!resEvent.ok) { setFatal(`HTTP ${resEvent.status}`); return; }
-
+      if (!resEvent.ok) return;
       const dataEvent = await resEvent.json();
-      const ev = dataEvent.event || dataEvent; // ← garder UNE SEULE FOIS
+      const ev = dataEvent.event || dataEvent;
 
-      // --- Remplissage UI ---
-      const title  = pick(ev, "title", "name") || "Événement";
-      const desc   = pick(ev, "description", "desc") || "Pas de description disponible.";
-      const date   = pick(ev, "date", "event_date", "start_date") || "—";
-      const place  = pick(ev, "location", "place", "city", "venue") || "—";
-      const price  = pick(ev, "price", "amount", "price_eur") ?? 0;
+      document.getElementById("event-title").textContent = pick(ev, "title", "name") || "Événement";
+      document.getElementById("event-description").innerHTML = pick(ev, "description", "desc") || "Pas de description disponible.";
+      document.getElementById("event-date").textContent = pick(ev, "date", "event_date", "start_date") || "—";
+      document.getElementById("event-location").textContent = pick(ev, "location", "place", "city", "venue") || "—";
+      document.getElementById("event-price").textContent = pick(ev, "price", "amount", "price_eur") ?? 0;
       const imgUrl = pick(ev, "image_url", "image", "cover", "banner_url");
-
-      document.getElementById("event-title").textContent = title;
-      document.getElementById("event-description").innerHTML = desc;
-      document.getElementById("event-date").textContent = date;
-      document.getElementById("event-location").textContent = place;
-      
-      // ✅ Afficher la carte dès que l’adresse est connue
-      if (place && place !== "—") {
-        const waitForGoogle = setInterval(() => {
-          if (window.google && google.maps) {
-            clearInterval(waitForGoogle);
-            showMap(place);
-          }
-        }, 300);
-      }
-      
-      document.getElementById("event-price").textContent = price;
-      const img = document.getElementById("event-image");
-      img.src = imgUrl || "/static/img/placeholder.png";
-      img.onerror = () => { img.src = "/static/img/placeholder.png"; };
-
-// ---- pousse l'URL de #event-image dans le fond flouté
-const setPageBg = (url) =>
-  document.documentElement.style.setProperty('--event-bg-url', `url("${url}")`);
-
-setPageBg(imgUrl || "/static/img/placeholder.png");  // immédiat
-img.onload  = () => setPageBg(img.currentSrc || img.src); // sûreté après chargement
-img.onerror = () => setPageBg("/static/img/placeholder.png"); // fallback
-
-
-      // 🔒 Crédits (non bloquant)
-      try {
-        const rC = await fetch(`/api/license/credits?event_id=${encodeURIComponent(eventId)}`);
-        if (rC.ok) {
-          const credits = await rC.json();
-          if (typeof credits?.remaining_participant_credits === "number" &&
-              credits.remaining_participant_credits <= 0) {
-            document.getElementById("custom-paypal-btn").outerHTML =
-              "<p style='color:red;font-weight:bold;'>❌ Inscriptions closes (crédits épuisés)</p>";
-            return;
-          }
-        }
-      } catch {}
-
-      if ((ev.participants_count ?? 0) >= (ev.max_participants ?? Infinity)) {
-        document.getElementById("custom-paypal-btn").outerHTML =
-          "<p style='color:red;font-weight:bold;'>❌ Inscriptions closes (événement complet)</p>";
-        return;
-      }
-
-      // 💳 PayPal
-      const res = await fetch(`/api/paypal-client-id?event_id=${encodeURIComponent(eventId)}`);
-      const data = await res.json();
-      if (!data.client_id) return;
-
-      const script = document.createElement("script");
-      script.src = `https://www.paypal.com/sdk/js?client-id=${data.client_id}&currency=EUR`;
-      document.head.appendChild(script);
-
-      script.onload = () => {
-        const customBtn = document.getElementById("custom-paypal-btn");
-        const msg = document.getElementById("message");
-        let paypalRendered = false;
-
-        // reset si l'utilisateur modifie un champ
-        ["first_name","last_name","email"].forEach(id => {
-          const input = document.getElementById(id);
-          if (input) input.addEventListener("input", () => { restoreBtn(); msg.innerHTML = ""; });
-        });
-
-        customBtn.addEventListener("click", () => {
-          const firstName = document.getElementById("first_name").value.trim();
-          const lastName  = document.getElementById("last_name").value.trim();
-          const email     = document.getElementById("email").value.trim();
-
-          if (!firstName || !lastName || !email) { msg.innerHTML = "<p class='error'>⚠️ Veuillez renseigner tous les champs.</p>"; return; }
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.innerHTML = "<p class='error'>⚠️ Email invalide</p>"; return; }
-          if (paypalRendered) { msg.innerHTML = "<p class='error'>⚠️ Le bouton PayPal est déjà actif.</p>"; return; }
-
-          customBtn.classList.add("loading");
-          customBtn.disabled = true;
-          customBtn.textContent = "Chargement...";
-          document.getElementById("paypal-button-container").innerHTML = "";
-
-          paypal.Buttons({
-            createOrder() {
-              return fetch(`/event/${eventId}/pay`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ firstName, lastName, email })
-              })
-              .then(r => r.json())
-              .then(order => {
-                if (!order?.id) {
-                  msg.innerHTML = "<p class='error'>❌ " + (order.message || "Impossible de créer la commande PayPal") + "</p>";
-                  restoreBtn();
-                  throw new Error(order.message || "createOrder");
-                }
-                return order.id;
-              })
-              .catch(err => { console.error("❌ Erreur PayPal:", err); restoreBtn(); throw err; });
-            },
-            onApprove(data, actions) {
-              return actions.order.capture().then(details => {
-                const transactionId = details.id;
-                const amount = details.purchase_units[0].amount.value;
-                return fetch("/register_participant", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                  body: new URLSearchParams({
-                    first_name: firstName,
-                    last_name: lastName,
-                    email,
-                    event_id: eventId,
-                    amount,
-                    transaction_id: transactionId
-                  })
-                })
-                .then(r => r.json())
-                .then(res => {
-                  msg.innerHTML = "<p class='" + (res.success ? "success" : "error") + "'>" + (res.message || res.error || "Erreur inconnue") + "</p>";
-                  restoreBtn();
-                  if (res.success) document.getElementById("registerForm").reset();
-                })
-                .catch(err => {
-                  console.error("❌ Enregistrement:", err);
-                  msg.innerHTML = "<p class='error'>❌ Paiement validé mais enregistrement impossible.</p>";
-                  restoreBtn();
-                });
-              });
-            },
-            onError(err) { msg.innerHTML = "<p class='error'>❌ Erreur PayPal : " + err.message + "</p>"; restoreBtn(); },
-            onCancel()   { msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé le paiement.</p>"; restoreBtn(); }
-          }).render("#paypal-button-container");
-
-          // bouton Annuler
-          document.getElementById("cancel-container").innerHTML =
-            "<button id='cancel-btn' style='background:none;border:none;color:#ff4444;font-size:1.2rem;cursor:pointer;'>❌ Annuler</button>";
-          document.getElementById("cancel-btn").addEventListener("click", () => {
-            msg.innerHTML = "<p class='success'>ℹ️ Vous avez annulé l’inscription.</p>";
-            restoreBtn();
-            document.getElementById("cancel-container").innerHTML = "";
-          });
-
-          paypalRendered = true;
-          customBtn.style.display = "none";
-
-          function restoreBtn() {
-            customBtn.classList.remove("loading");
-            customBtn.disabled = false;
-            customBtn.textContent = "M’inscrire";
-            customBtn.style.display = "block";
-            paypalRendered = false;
-            document.getElementById("paypal-button-container").innerHTML = "";
-            document.getElementById("cancel-container").innerHTML = "";
-          }
-        });
-      };
-    } catch (e) {
-      console.error(e);
-      setFatal(String(e));
-    }
+      document.getElementById("event-image").src = imgUrl || "/static/img/placeholder.png";
+    } catch (e) { console.error(e); }
   }
 
   loadEvent();
 </script>
 
 <script>
-// Charger Google Maps dynamiquement avec la clé du backend
 async function loadGoogleMaps() {
   try {
     const res = await fetch("/api/config/maps-key");
     const data = await res.json();
-    if (!data.key) {
-      console.error("❌ Pas de clé Google Maps");
-      return;
-    }
-
+    if (!data.key) return;
     const script = document.createElement("script");
-    // ✅ ajout de &loading=async
     script.src = `https://maps.googleapis.com/maps/api/js?key=${data.key}&libraries=places,marker&loading=async`;
     script.async = true;
     script.defer = true;
     document.head.appendChild(script);
-  } catch (err) {
-    console.error("Erreur chargement Google Maps:", err);
-  }
+  } catch (err) { console.error("Erreur chargement Google Maps:", err); }
 }
-
 loadGoogleMaps();
 </script>
 
