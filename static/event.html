@@ -93,61 +93,92 @@ body::after{
   border-radius: 10px;
 }
 
-/* ===== Carte principale (cadre blanc) ===== */
+/* ===== Carte principale (cadre) ===== */
 .box {
   width: 95%;
   max-width: var(--card-max);
-  background: rgba(255,255,255,.96);
-  margin: 10px auto 42px;
-  padding: 28px var(--card-side) 30px;
-  border-radius: 16px;
-  border: 1px solid #eef2f7;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
-  transition: transform .2s;
+  background: rgba(255,255,255,.97);
+  margin: 12px auto 46px;
+  padding: 30px var(--card-side);
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 32px rgba(0,0,0,.09);
+  transition: transform .25s;
 }
 .box:hover { transform: translateY(-3px); }
 
-h3 { margin: 0 0 14px; color: var(--primary); text-align: center; font-weight: 700; letter-spacing: .2px; }
+h3 {
+  margin: 0 0 16px;
+  color: var(--primary);
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: .3px;
+}
 p { margin: 8px 0; }
 
-/* Séparateur design */
-.box hr{
-  margin: 25px 0;
+/* Séparateur dégradé */
+.box hr {
+  margin: 26px 0;
   border: none; height: 2px;
   background: linear-gradient(90deg, var(--primary), #00c6ff);
   border-radius: 2px;
 }
 
-/* ===== Infos événement ===== */
-.event-details p {
-  font-size: 16px;
-  margin: 10px 0;
-  color: #333;
+/* ===== Infos événement (version row moderne) ===== */
+.event-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.detail-row {
   display: flex;
   align-items: center;
+  background: #fafafa;
+  border-radius: 14px;
+  padding: 12px 16px;
+  gap: 12px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.05);
 }
-.event-details .icon {
-  margin-right: 8px;
+.detail-row .icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.2rem;
-  width: 22px; display:inline-flex; align-items:center; justify-content:center;
+  color: white;
 }
+.icon.date { background: #007bff; }
+.icon.location { background: #ef4444; }
+.icon.price { background: #8b5cf6; }
 
 /* Description */
-.about-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; color: #444; text-align: left; position: relative; }
-.about-title::after{
-  content:"";
-  position:absolute; left:0; bottom:-6px; width:42px; height:3px;
-  background: linear-gradient(90deg, var(--primary), #00c6ff);
-  border-radius: 2px;
+.about-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #374151;
+  text-align: left;
+  position: relative;
 }
-.description{
-  margin: 10px 0 30px;
+.about-title::after {
+  content: "";
+  position: absolute; left: 0; bottom: -6px;
+  width: 46px; height: 3px;
+  background: linear-gradient(90deg, var(--primary), #00c6ff);
+  border-radius: 3px;
+}
+.description {
+  margin: 12px 0 30px;
   background: #fafbff;
   border: 1px solid #eef2f7;
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
   color: #4b5563;
-  font-style: normal;
 }
 
 /* ===== Formulaire ===== */
@@ -270,14 +301,26 @@ p { margin: 8px 0; }
 
 <!-- ✅ Box infos améliorée -->
 <div class="box">
+    
 <h3 class="about-title">À propos de l’événement</h3> <!-- ✅ Nouveau titre -->
-
 <p id="event-description" class="description"></p> <!-- ✅ description restaurée -->
 
-  <div class="event-details">
-    <p><span class="icon">📅</span> <b>Date :</b>&nbsp;<span id="event-date"></span></p>
-    <p><span class="icon">📍</span> <b>Lieu :</b>&nbsp;<span id="event-location"></span></p>
-  </div>
+    <!-- ✅ Détails modernes -->
+    <div class="event-details">
+      <div class="detail-row">
+        <div class="icon date">📅</div>
+        <span id="event-date"></span>
+      </div>
+      <div class="detail-row">
+        <div class="icon location">📍</div>
+        <span id="event-location"></span>
+      </div>
+      <div class="detail-row">
+        <div class="icon price">💶</div>
+        <span id="event-price"></span> €
+      </div>
+      
+    </div>
   
   <!-- Carte affichée en permanence -->
 <div id="map-container"
@@ -285,11 +328,6 @@ p { margin: 8px 0; }
             border-radius:16px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.1);">
 </div>
 
-
-  <div class="event-details">
-    <p><span class="icon">💶</span> <b>Prix :</b>&nbsp;<span id="event-price"></span> €</p>
-  </div>
-  
   <hr>
 
     <h3>Inscription</h3>
