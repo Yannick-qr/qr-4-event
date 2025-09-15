@@ -698,6 +698,60 @@ tbody tr:hover {
   padding-bottom: 60px; /* espace pour ne pas être caché par le footer */
 }
 
+/* ===== Accordéon dans la sidebar ===== */
+.sidebar .accordion-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  color: #374151;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s ease;
+}
+
+.sidebar .accordion-btn:hover {
+  background: #f1f5f9;
+}
+
+.sidebar .accordion-btn::after {
+  content: "▸";  /* flèche */
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.sidebar .accordion-item.open .accordion-btn::after {
+  transform: rotate(90deg); /* flèche vers le bas */
+}
+
+.sidebar .accordion-content {
+  display: none;
+  flex-direction: column;
+  background: #f9fafb;
+}
+
+.sidebar .accordion-item.open .accordion-content {
+  display: flex;
+}
+
+.sidebar .accordion-content a {
+  padding: 12px 32px; /* indenté */
+  font-size: 13px;
+  color: #4b5563;
+  text-decoration: none;
+  display: block;
+  transition: background 0.2s ease;
+}
+
+.sidebar .accordion-content a:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
   </style>
 </head>
 
@@ -745,14 +799,25 @@ tbody tr:hover {
 <!-- WRAPPER -->
 <div class="layout">
   <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
-      <button id="homeBtn">🏠 Accueil</button>
-    <button id="eventsBtn" class="active">📅 Événements</button>
-    <button id="buyCreditsBtn">💳 Acheter des crédits</button>
-    <button id="paypalConfigBtn">⚙️ Mon PayPal</button>
-    <button id="logsBtn">📜 Historique</button>
-    <a href="scan_event.html" target="_blank">📷 Scan Event</a>
-  </aside>
+  
+<aside class="sidebar">
+  <button id="homeBtn">🏠 Accueil</button>
+
+  <!-- Accordéon Événements -->
+  <div class="accordion-item">
+    <button class="accordion-btn">📅 Événements</button>
+    <div class="accordion-content">
+      <a href="#" id="myEventsBtn">📋 Mes événements</a>
+      <a href="#" id="addEventBtn">➕ Ajouter un événement</a>
+      <a href="#" id="paidEventsBtn">💰 Gestion des participants</a>
+    </div>
+  </div>
+
+  <button id="buyCreditsBtn">💳 Acheter des crédits</button>
+  <button id="paypalConfigBtn">⚙️ Mon PayPal</button>
+  <button id="logsBtn">📜 Historique</button>
+  <a href="scan_event.html" target="_blank">📷 Scan Event</a>
+</aside>
 
   <!-- ===== CONTENU ===== -->
   <main>
@@ -2039,6 +2104,21 @@ document.querySelectorAll(".accordion-header").forEach(btn => {
   btn.addEventListener("click", () => {
     const item = btn.parentElement;
     item.classList.toggle("active");
+  });
+});
+
+// Accordéon Sidebar (événements)
+document.querySelectorAll(".accordion-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const item = btn.parentElement;
+
+    // 🔹 Fermer tous les autres accordéons
+    document.querySelectorAll(".sidebar .accordion-item").forEach(acc => {
+      if (acc !== item) acc.classList.remove("open");
+    });
+
+    // 🔹 Ouvrir / fermer celui cliqué
+    item.classList.toggle("open");
   });
 });
 
